@@ -4,11 +4,11 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Enabled only for an explicit allow-list of C-like filetypes
-- [ ] Test (TS buffer): `;` typed mid-line lands at end of line; cursor behaviour matches smartsemicolon
-- [ ] Test (TS buffer): a line already ending in `;` is not doubled
-- [ ] Test (TS buffer): a double `;` produces one literal `;` at the original position and no trailing one
-- [ ] Test (Python and Lua buffers): `;` is inserted literally at the cursor
-- [ ] No semicolon-insertion shortcut variant
+- [x] Enabled only for an explicit allow-list of C-like filetypes
+- [x] Test (TS buffer): `;` typed mid-line lands at end of line; cursor behaviour matches smartsemicolon
+- [x] Test (TS buffer): a line already ending in `;` is not doubled
+- [x] Test (TS buffer): a double `;` produces one literal `;` at the original position and no trailing one
+- [x] Test (Python and Lua buffers): `;` is inserted literally at the cursor
+- [x] No semicolon-insertion shortcut variant
