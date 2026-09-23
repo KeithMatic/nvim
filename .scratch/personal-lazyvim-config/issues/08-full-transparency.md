@@ -4,12 +4,12 @@
 
 **Blocked by:** 07
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Both themes use their native transparency options; the theme-change hook clears the remaining groups and prefixes
-- [ ] The theme's original Normal background is recorded before clearing
-- [ ] Rounded borders on all float types listed above
-- [ ] The statusline mode component uses coloured foreground on a transparent background; the pending-updates count is visible when updates exist
-- [ ] Update checker enabled with notifications off
-- [ ] Test: for each of the six themes, Normal, NormalFloat, SignColumn, StatusLine, explorer, bufferline and statusline section groups have no background
-- [ ] Test: for each theme, CursorLine and Visual still have a background (not cleared)
+- [x] Both themes use their native transparency options; the theme-change hook clears the remaining groups and prefixes
+- [x] The theme's original Normal background is recorded before clearing
+- [x] Rounded borders on all float types listed above
+- [x] The statusline mode component uses coloured foreground on a transparent background; the pending-updates count is visible when updates exist
+- [x] Update checker enabled with notifications off
+- [x] Test: for each of the six themes, Normal, NormalFloat, SignColumn, StatusLine, explorer, bufferline and statusline section groups have no background
+- [x] Test: for each theme, CursorLine and Visual still have a background (not cleared)

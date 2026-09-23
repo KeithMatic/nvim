@@ -1,4 +1,6 @@
--- UI: the theme LazyVim starts with, and the curated theme picker.
+-- UI: the themes and their transparency, the statusline, float borders the
+-- 'winborder' option doesn't reach, and the curated theme picker.
+-- Transparency the themes' own options leave out is done in lua/theme.lua.
 
 return {
   {
@@ -9,6 +11,33 @@ return {
         require("theme").load()
       end,
     },
+  },
+  {
+    "folke/tokyonight.nvim",
+    opts = {
+      transparent = true,
+      styles = { sidebars = "transparent", floats = "transparent" },
+    },
+  },
+  {
+    "catppuccin/nvim",
+    name = "catppuccin",
+    opts = {
+      transparent_background = true,
+      float = { transparent = true },
+    },
+  },
+  {
+    "nvim-lualine/lualine.nvim",
+    opts = function(_, opts)
+      opts.options.theme = require("theme").lualine
+      -- No powerline arrows: they'd be drawn in the (now cleared) section colours.
+      opts.options.section_separators = { left = "", right = "" }
+    end,
+  },
+  {
+    "folke/noice.nvim",
+    opts = { presets = { lsp_doc_border = true } }, -- LSP hover and signature help
   },
   {
     "folke/snacks.nvim",
