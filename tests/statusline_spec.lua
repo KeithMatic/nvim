@@ -105,7 +105,7 @@ h.test("for a file in a git repo, it shows the mode icon, file size, branch and 
   end
 end)
 
-h.test("the filename is shown, alone and centred between the left and right items", function()
+h.test("the filename is shown, alone and centred on the bar", function()
   h.with_state(nil, function()
     editing_changed_file()
     local text = wait_for_statusline(function(text)
@@ -114,14 +114,30 @@ h.test("the filename is shown, alone and centred between the left and right item
     h.eq(true, contains(text, "tracked.txt"), "filename shown by default\nstatusline: " .. text)
     h.eq(false, contains(text, "deep"), "no path\nstatusline: " .. text)
 
-    -- The filetype icon, a space, then the name.
-    local glyph = require("mini.icons").get("file", file)
-    local first = assert(text:find(glyph .. " tracked.txt", 1, true), "icon before the name: " .. text)
-    local after = first + #(glyph .. " tracked.txt")
-    local left_gap = #text:sub(1, first - 1):match(" *$")
-    local right_gap = #text:sub(after):match("^ *")
-    local centred = math.abs(left_gap - right_gap) <= 1
-    h.eq(true, centred, ("centred: %d spaces left, %d right\nstatusline: %s"):format(left_gap, right_gap, text))
+    -- The filetype icon, a space, then the name, its middle at the bar's
+    -- (the right side is wider than the left: centring between them wouldn't do).
+    local shown = require("mini.icons").get("file", file) .. " tracked.txt"
+    local first = assert(text:find(shown, 1, true), "icon before the name: " .. text)
+    local middle = vim.fn.strdisplaywidth(text:sub(1, first - 1)) + vim.fn.strdisplaywidth(shown) / 2
+    local centred = math.abs(middle - vim.o.columns / 2) <= 1
+    h.eq(true, centred, ("centred: its middle at %s of %d\nstatusline: %s"):format(middle, vim.o.columns, text))
+  end)
+end)
+
+h.test("on a bar too narrow to centre it, the filename keeps as near the middle as fits", function()
+  h.with_state(nil, function()
+    editing_changed_file()
+    -- Room for everything, but not for the padding centring would take.
+    vim.o.columns = 90
+    local shown = require("mini.icons").get("file", file) .. " tracked.txt"
+    local text = wait_for_statusline(function(text)
+      return vim.fn.strdisplaywidth(text) <= 90 and contains(text, "2.9k")
+    end)
+    vim.o.columns = 160
+    -- Nothing's cut off to make room.
+    h.eq(true, contains(text, shown), "whole filename\nstatusline: " .. text)
+    h.eq(true, contains(text, vim.trim(icons.git.added) .. " 1"), "diff\nstatusline: " .. text)
+    h.eq(true, text:match("%d%d:%d%d%s*$") ~= nil, "clock at the end\nstatusline: " .. text)
   end)
 end)
 

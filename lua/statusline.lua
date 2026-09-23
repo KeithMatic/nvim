@@ -216,7 +216,8 @@ function M.extend(opts)
   diff[1] = "fancy_diff"
   table.insert(s.lualine_c, index_of(s.lualine_c, "diagnostics") + 1, diff)
 
-  -- "%=" splits the bar's free space evenly either side of the filename.
+  -- "%=" splits the bar's free space evenly either side of the filename;
+  -- M.centre() then pads the narrower side, so it's at the bar's middle.
   vim.list_extend(s.lualine_c, { { "%=", padding = 0 }, filetype_icon, filename })
 
   local lazy_updates = index_of(s.lualine_x, require("lazy.status").updates)
@@ -241,6 +242,55 @@ function M.extend(opts)
   -- Blank while the Explorer is focused. Remove this for LazyVim's default
   -- (its neo-tree extension shows the Explorer's folder).
   table.insert(opts.options.disabled_filetypes.statusline, "neo-tree")
+end
+
+--- The display width of statusline `text` once drawn.
+local function width(text)
+  return vim.api.nvim_eval_statusline(text, { maxwidth = 10000 }).width
+end
+
+--- Put the centre of lualine's statusline `line` (between its two "%=") at
+--- the middle of the bar, not of the space between the left and right items:
+--- the narrower side gets spaces for the difference, as many as the bar has
+--- room for.
+---@param line string?
+---@return string?
+function M.centre(line)
+  -- The two "%=" markers, skipping escaped "%%" (a "%" in a filename).
+  local markers = {}
+  local at = 1
+  while #markers < 2 do
+    local found = line and line:find("%%[%%=]", at)
+    if not found then
+      return line
+    end
+    if line:sub(found + 1, found + 1) == "=" then
+      table.insert(markers, found)
+    end
+    at = found + 2
+  end
+  local left, middle, right =
+    line:sub(1, markers[1] - 1), line:sub(markers[1] + 2, markers[2] - 1), line:sub(markers[2] + 2)
+  local left_width, right_width = width(left), width(right)
+  local bar = vim.o.laststatus == 3 and vim.o.columns or vim.api.nvim_win_get_width(0)
+  local free = bar - left_width - width(middle) - right_width
+  local pad = (" "):rep(math.max(0, math.min(math.abs(right_width - left_width), free)))
+  if right_width > left_width then
+    middle = pad .. middle
+  else
+    right = pad .. right
+  end
+  return left .. "%=" .. middle .. "%=" .. right
+end
+
+--- Have lualine's statusline centred by M.centre(): lualine draws the line
+--- section by section, so no component knows the right side's width in time.
+function M.centre_lualine()
+  local lualine = require("lualine")
+  local draw = lualine.statusline
+  lualine.statusline = function(...)
+    return M.centre(draw(...))
+  end
 end
 
 --- The <leader>uN toggle: show or hide the filename, remembered across restarts.

@@ -42,6 +42,10 @@ return {
       opts.options.component_separators = { left = "", right = "" } -- no chevrons
       require("statusline").extend(opts)
     end,
+    config = function(_, opts)
+      require("lualine").setup(opts)
+      require("statusline").centre_lualine()
+    end,
   },
   {
     -- Tints the cursor line and selection by mode. Its colours come from the
