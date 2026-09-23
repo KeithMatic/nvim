@@ -5,9 +5,11 @@
 --   2. gives modes.nvim the theme's mode colours, and the background to fade
 --      them over,
 --   3. tints the "where am I" lines: the tint colour faded over that background,
---   4. saves the theme so the next start restores it (live previews in the
+--   4. makes the reference highlights (other occurrences of the word under
+--      the cursor) underlines with no background,
+--   5. saves the theme so the next start restores it (live previews in the
 --      picker and the theme applied at startup aren't saved),
---   5. clears the background of whatever the themes' native transparency
+--   6. clears the background of whatever the themes' native transparency
 --      options leave solid, so the terminal's glass shows through.
 local M = {}
 
@@ -31,6 +33,9 @@ M.default_tint = { color = "#ffffff", fade = 0.1 }
 -- What the tint colours: the cursor line (and its gutter), the explorer's line
 -- and the selected completion item.
 local tinted = { "CursorLine", "CursorLineNr", "CursorLineSign", "SnacksPickerListCursorLine", "BlinkCmpMenuSelection" }
+
+-- The reference highlights: other occurrences of the word under the cursor.
+local references = { "LspReferenceText", "LspReferenceRead", "LspReferenceWrite" }
 
 local state_file = vim.fn.stdpath("state") .. "/theme.json"
 
@@ -188,6 +193,15 @@ local function apply_tint()
   end
 end
 
+--- Make every reference group an underline with no background.
+local function underline_references()
+  for _, name in ipairs(references) do
+    local hl = vim.api.nvim_get_hl(0, { name = name, link = false })
+    hl.bg, hl.ctermbg, hl.reverse, hl.underline = nil, nil, nil, true
+    vim.api.nvim_set_hl(0, name, hl)
+  end
+end
+
 --- The hook that runs on every theme change.
 local function on_change()
   local palette = theme_palette()
@@ -201,6 +215,7 @@ local function on_change()
     end
   end
   apply_tint()
+  underline_references()
   if not (restoring or previewing()) then
     save_state({ theme = vim.g.colors_name })
   end
