@@ -4,12 +4,12 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `<leader>cx` confirmed free in LazyVim before binding; shows in which-key with a description
-- [ ] The buffer is saved before running
-- [ ] Output appears in one bottom split terminal that is reused on the next run, not duplicated
-- [ ] Test (dry-run): the correct command for python, go, javascript, typescript (deno), lua, c and cpp fixtures
-- [ ] Test (dry-run): Rust inside a Cargo project resolves to `cargo run`; a standalone `.rs` resolves to compile-then-run
-- [ ] Test (dry-run): compiled output paths are outside the project directory
-- [ ] Test: an unsupported filetype reports "no runner" and runs nothing
+- [x] `<leader>cx` confirmed free in LazyVim before binding; shows in which-key with a description
+- [x] The buffer is saved before running
+- [x] Output appears in one bottom split terminal that is reused on the next run, not duplicated
+- [x] Test (dry-run): the correct command for python, go, javascript, typescript (deno), lua, c and cpp fixtures
+- [x] Test (dry-run): Rust inside a Cargo project resolves to `cargo run`; a standalone `.rs` resolves to compile-then-run
+- [x] Test (dry-run): compiled output paths are outside the project directory
+- [x] Test: an unsupported filetype reports "no runner" and runs nothing
