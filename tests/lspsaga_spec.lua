@@ -70,61 +70,69 @@ local function close_others()
   end
 end
 
-h.test("<leader>cr renames in lspsaga's rename window", function()
+h.test("<leader>kr renames in lspsaga's rename window", function()
   open_lua()
-  local opened = filetypes_opened_by(leader .. "cr")
+  local opened = filetypes_opened_by(leader .. "kr")
   close_others()
   h.eq(true, vim.list_contains(opened, "sagarename"), "windows opened: " .. vim.inspect(opened))
 end)
 
-h.test("<leader>cs opens lspsaga's outline", function()
+h.test("<leader>ko opens lspsaga's outline", function()
   open_lua()
-  local opened = filetypes_opened_by(leader .. "cs")
+  local opened = filetypes_opened_by(leader .. "ko")
   close_others()
   h.eq(true, vim.list_contains(opened, "sagaoutline"), "windows opened: " .. vim.inspect(opened))
 end)
 
-h.test("<leader>cS is still Trouble's LSP view", function()
-  open_lua()
-  h.eq(true, mapping("cS").desc:find("(Trouble)", 1, true) ~= nil, "desc: " .. tostring(mapping("cS").desc))
-end)
-
-h.test("lspsaga's keys are labelled as lspsaga's", function()
+h.test("<leader>cr, <leader>cs and <leader>cS stay LazyVim's rename and Trouble's views", function()
   open_lua()
   -- LazyVim adds the LSP keys (<leader>cr) once the client has attached.
   vim.wait(5000, function()
     return mapping("cr").buffer == 1
   end, 50)
-  for _, lhs in ipairs({ "cr", "cs", "uB" }) do
-    local desc = mapping(lhs).desc or ""
-    h.eq(true, desc:find("(lspsaga)", 1, true) ~= nil, "<leader>" .. lhs .. " desc: " .. desc)
-  end
+  h.eq(
+    { cr = "Rename", cs = "Symbols (Trouble)", cS = "LSP references/definitions/... (Trouble)" },
+    { cr = mapping("cr").desc, cs = mapping("cs").desc, cS = mapping("cS").desc }
+  )
 end)
 
-h.test("<leader>uB hides the Breadcrumbs and shows them again", function()
+h.test("<leader>k is the lspsaga group in which-key", function()
+  local groups = vim
+    .iter(require("which-key.config").mappings)
+    :filter(function(m)
+      return m.group and vim.keycode(m.lhs) == leader .. "k"
+    end)
+    :map(function(m)
+      return m.desc
+    end)
+    :totable()
+  h.eq({ "lspsaga" }, groups, "which-key groups on <leader>k")
+end)
+
+h.test("<leader>kb hides the Breadcrumbs and shows them again", function()
   open_lua()
   h.eq(true, vim.wo.winbar:find("greet", 1, true) ~= nil, "Breadcrumbs shown after boot: " .. vim.wo.winbar)
 
-  vim.api.nvim_feedkeys(leader .. "uB", "mx", false)
+  vim.api.nvim_feedkeys(leader .. "kb", "mx", false)
   -- Moving and editing make lspsaga redraw, and must not bring them back.
   vim.api.nvim_win_set_cursor(0, { 3, 10 })
   vim.api.nvim_exec_autocmds("CursorMoved", { buffer = 0 })
   vim.wait(1000, function()
     return false
   end)
-  h.eq("", vim.wo.winbar, "Breadcrumbs after the first <leader>uB")
+  h.eq("", vim.wo.winbar, "Breadcrumbs after the first <leader>kb")
 
-  vim.api.nvim_feedkeys(leader .. "uB", "mx", false)
-  h.eq(true, breadcrumbs_shown(3000), "Breadcrumbs after the second <leader>uB: " .. vim.wo.winbar)
+  vim.api.nvim_feedkeys(leader .. "kb", "mx", false)
+  h.eq(true, breadcrumbs_shown(3000), "Breadcrumbs after the second <leader>kb: " .. vim.wo.winbar)
 end)
 
 h.test("a file opened while the Breadcrumbs are hidden shows them once they're toggled back", function()
   open_lua()
-  vim.api.nvim_feedkeys(leader .. "uB", "mx", false)
+  vim.api.nvim_feedkeys(leader .. "kb", "mx", false)
   open_lua()
   h.eq("", vim.wo.winbar, "Breadcrumbs while hidden")
-  vim.api.nvim_feedkeys(leader .. "uB", "mx", false)
-  h.eq(true, breadcrumbs_shown(3000), "Breadcrumbs after <leader>uB: " .. vim.wo.winbar)
+  vim.api.nvim_feedkeys(leader .. "kb", "mx", false)
+  h.eq(true, breadcrumbs_shown(3000), "Breadcrumbs after <leader>kb: " .. vim.wo.winbar)
 end)
 
 h.test("only Breadcrumbs, rename and outline are enabled", function()
@@ -155,7 +163,7 @@ h.test("the disabled features register no keys", function()
   for _, mode in ipairs({ "n", "x", "o", "i" }) do
     for _, map in ipairs(vim.list_extend(vim.api.nvim_get_keymap(mode), vim.api.nvim_buf_get_keymap(0, mode))) do
       local text = ((map.rhs or "") .. " " .. (map.desc or "")):lower()
-      if text:find("saga", 1, true) and not vim.list_contains({ "cr", "cs", "uB" }, map.lhs:sub(2)) then
+      if text:find("saga", 1, true) and not vim.list_contains({ "kr", "ko", "kb" }, map.lhs:sub(2)) then
         table.insert(saga, mode .. " " .. map.lhs .. " " .. text)
       end
     end

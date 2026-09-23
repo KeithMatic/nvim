@@ -88,12 +88,13 @@ return {
     end,
   },
   {
-    -- Breadcrumbs, rename and outline only: LazyVim already gives the rest
-    -- (code actions, hover, diagnostics, references).
+    -- Breadcrumbs, rename and outline only, under <leader>k: LazyVim already
+    -- gives the rest (code actions, hover, diagnostics, references).
     "nvimdev/lspsaga.nvim",
     event = "LspAttach",
     keys = {
-      { "<leader>cs", "<cmd>Lspsaga outline<cr>", desc = "Outline (lspsaga)" },
+      { "<leader>kr", "<cmd>Lspsaga rename<cr>", desc = "Rename" },
+      { "<leader>ko", "<cmd>Lspsaga outline<cr>", desc = "Outline" },
     },
     opts = {
       symbol_in_winbar = { enable = true },
@@ -126,7 +127,7 @@ return {
       })
 
       Snacks.toggle({
-        name = "Breadcrumbs (lspsaga)",
+        name = "Breadcrumbs",
         get = function()
           return breadcrumbs.enable
         end,
@@ -142,26 +143,15 @@ return {
             end
           end
         end,
-      }):map("<leader>uB")
+      }):map("<leader>kb")
     end,
   },
   {
-    "folke/trouble.nvim",
-    keys = {
-      { "<leader>cs", false }, -- lspsaga's outline; <leader>cS stays Trouble's
-    },
-  },
-  {
-    "neovim/nvim-lspconfig",
-    opts = {
-      servers = {
-        ["*"] = {
-          keys = {
-            { "<leader>cr", "<cmd>Lspsaga rename<cr>", desc = "Rename (lspsaga)", has = "rename" },
-          },
-        },
-      },
-    },
+    "folke/which-key.nvim",
+    opts = function(_, opts)
+      -- Appended: a list in opts would replace LazyVim's groups, not add to them.
+      table.insert(opts.spec, { "<leader>k", group = "lspsaga" })
+    end,
   },
   {
     "folke/noice.nvim",

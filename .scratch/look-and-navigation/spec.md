@@ -58,11 +58,11 @@ Finish integrating what I collected, fix what's broken, and add a small set of n
 20. As the config owner, I want precognition configured properly and hidden by default, so that motion hints don't clutter the screen while I type.
 21. As the config owner, I want a toggle key for precognition, so that I can show motion hints when I want to practise.
 22. As the config owner, I want lspsaga's Breadcrumbs at the top of the window, so that I can see which symbol I'm inside.
-23. As the config owner, I want to toggle Breadcrumbs with `<leader>uB`, so that I can hide them when I need the space.
-24. As the config owner, I want `<leader>cr` to rename with lspsaga, so that my existing rename key gets lspsaga's rename UI.
-25. As the config owner, I want `<leader>cs` to open lspsaga's outline, so that I get a symbol outline on the key I'd expect.
-26. As the config owner, I want Trouble's LSP view kept on `<leader>cS`, so that I don't lose it.
-27. As the config owner, I want lspsaga's keys grouped under "lspsaga" in which-key, so that I can find them.
+23. As the config owner, I want to toggle Breadcrumbs with `<leader>kb`, so that I can hide them when I need the space.
+24. As the config owner, I want `<leader>kr` to rename with lspsaga, so that I get lspsaga's rename UI alongside LazyVim's rename on `<leader>cr`.
+25. As the config owner, I want `<leader>ko` to open lspsaga's outline, so that I get a symbol outline alongside Trouble's symbols on `<leader>cs`.
+26. As the config owner, I want LazyVim's `<leader>cr`, `<leader>cs` and `<leader>cS` kept, so that I don't lose them.
+27. As the config owner, I want lspsaga's keys grouped under a `<leader>k` "lspsaga" group in which-key, so that I can browse to them.
 28. As the config owner, I want lspsaga's lightbulb, hover, code actions, diagnostics and finder turned off, so that they don't duplicate what LazyVim already gives me.
 29. As the config owner, I want lspsaga's windows to follow Transparency, so that its floats don't paint solid backgrounds.
 
@@ -154,7 +154,7 @@ Finish integrating what I collected, fix what's broken, and add a small set of n
 - **Reference highlights:** the LSP reference groups (text, read, write) lose their background and gain an underline. This is set from the theme module's theme-change hook, next to the Tint, so it survives every theme switch and applies to all Curated themes.
 - **precognition:** configured through `opts`, not visible at startup, with a toggle key in LazyVim's UI toggle group (`<leader>uP`, confirmed free before binding).
 - **smoothcursor:** unchanged: enabled outside Neovide, fancy mode, starts automatically.
-- **lspsaga:** set up with only symbol-in-winbar (Breadcrumbs), rename and outline enabled; lightbulb, hover, code action, diagnostic and finder disabled. Keys: `<leader>cr` (replaces LazyVim's LSP rename), `<leader>cs` (replaces Trouble symbols), `<leader>uB` (Breadcrumbs toggle), shown as a which-key "lspsaga" group. `Saga` joins the Transparency prefix list.
+- **lspsaga:** set up with only symbol-in-winbar (Breadcrumbs), rename and outline enabled; lightbulb, hover, code action, diagnostic and finder disabled. Keys, under a which-key "lspsaga" group on the free `<leader>k` prefix: `<leader>kr` (rename), `<leader>ko` (outline), `<leader>kb` (Breadcrumbs toggle). LazyVim's `<leader>cr` and Trouble's `<leader>cs`/`<leader>cS` are untouched. `Saga` joins the Transparency prefix list.
 - **Noice:** the popup position/size settings move to noice's top-level `views` (where they take effect, unlike the ignored preset-nested table). The cmdline popup is centred on both axes. Cmdline format icons come from the Icon set. The completion menu is placed one row below the popup's bottom border by offsetting blink's cmdline menu position from noice's reported cmdline position.
 - **Menu keys (blink.cmp):** the editor keymap keeps the `default` preset and the Tab chain, and adds: Ctrl-l = accept, else cursor right; Ctrl-h = hide menu, else cursor left; Ctrl-j = next item, else cursor down; Ctrl-k = previous item, else cursor up (replacing the preset's signature toggle). The cmdline keymap adds: Ctrl-j/Ctrl-k = next/previous item, else history next/previous; Ctrl-h/Ctrl-l = hide/accept, else cursor left/right. Ctrl-n/Ctrl-p, Shift-Tab (snippet back) and the Enter behaviour are unchanged. Cursor fallbacks use undo-safe insert-mode motions, as Tabout does.
 - **Better escape:** better-escape.nvim with `jj` and `jk` in insert and cmdline modes only (not visual, select or terminal), with a 200 ms window.
@@ -164,7 +164,7 @@ Finish integrating what I collected, fix what's broken, and add a small set of n
 - **Database client:** sqmeow.nvim is added (nui.nvim dependency, release-versioned, engine installed by its build hook, loaded on its command). From the `lang.sql` extra, vim-dadbod-ui is disabled; vim-dadbod and vim-dadbod-completion stay for blink's SQL completion source.
 - **Picker icons:** Snacks picker's prompt icon and list pointer come from the Icon set, to the owner's annotated screenshot. The design is requested before this work starts; nothing is guessed.
 - **Holding folder:** each file in `to-add/` is deleted in the same commit that implements it. The folder goes when it's empty.
-- **Key changes to LazyVim defaults** (supersedes the previous spec's "only `<leader>uC`" rule): `<leader>cr`, `<leader>cs`, blink's Ctrl-k in insert mode, and the Snacks explorer replaced by neo-tree. New keys: `<leader>o`, `<leader>uB`, `<leader>uN`, `<leader>uP`, and the Menu keys and `jj`/`jk` above. Each new key is checked free before binding.
+- **Key changes to LazyVim defaults** (supersedes the previous spec's "only `<leader>uC`" rule): blink's Ctrl-k in insert mode, and the Snacks explorer replaced by neo-tree. New keys: `<leader>o`, the `<leader>k` lspsaga group (`kr`, `ko`, `kb`), `<leader>uN`, `<leader>uP`, and the Menu keys and `jj`/`jk` above. Each new key is checked free before binding.
 
 ## Testing Decisions
 
@@ -175,7 +175,7 @@ Finish integrating what I collected, fix what's broken, and add a small set of n
   - Icon set: LazyVim's icon options hold the chosen glyphs for a sample of kinds, diagnostics and git signs; the module can be required on its own.
   - TOML: mini.icons returns the chosen glyph for `Cargo.toml` and for the `toml` filetype.
   - Reference highlights: for each Curated theme, the three LSP reference groups have no background and are underlined.
-  - lspsaga: `<leader>cr`, `<leader>cs`, `<leader>uB` map to lspsaga; the disabled features register no keys or autocmds; `Saga*` groups have no background.
+  - lspsaga: `<leader>kr`, `<leader>ko`, `<leader>kb` map to lspsaga under a `<leader>k` which-key group, and `<leader>cr`, `<leader>cs`, `<leader>cS` stay LazyVim's; the disabled features register no keys or autocmds; `Saga*` groups have no background.
   - Noice: the cmdline popup is centred; the completion menu's top row is one row below the popup's bottom border.
   - Menu keys: with a menu open, Ctrl-j/Ctrl-k change the selection, Ctrl-l inserts the item, Ctrl-h closes the menu; with no menu, each moves the cursor; in the cmdline, Ctrl-j/Ctrl-k with no menu recall history. The existing Tab-chain spec still passes.
   - Better escape: `jk` and `jj` return to normal mode with neither letter left in the buffer; a lone `j` followed by another letter is inserted as typed; `jj` in visual mode moves the cursor.

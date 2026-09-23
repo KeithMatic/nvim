@@ -1,16 +1,16 @@
 # 06: lspsaga: Breadcrumbs, rename, outline
 
-**What to build:** lspsaga provides only Breadcrumbs, rename and outline. Breadcrumbs appear at the top of the window and `<leader>uB` toggles them. `<leader>cr` renames with lspsaga (replacing LazyVim's LSP rename) and `<leader>cs` opens lspsaga's outline (replacing Trouble symbols; `<leader>cS` stays Trouble's LSP view). The keys are shown as a which-key "lspsaga" group. lspsaga's lightbulb, hover, code actions, diagnostics and finder are off. Its windows follow Transparency. This finishes the lspsaga part of the uncommitted UI experiments, with its lockfile entry.
+**What to build:** lspsaga provides only Breadcrumbs, rename and outline. Breadcrumbs appear at the top of the window. lspsaga's keys sit under a which-key "lspsaga" group on `<leader>k`: `<leader>kr` renames, `<leader>ko` opens the outline and `<leader>kb` toggles the Breadcrumbs. LazyVim's `<leader>cr` and Trouble's `<leader>cs`/`<leader>cS` stay as they are. lspsaga's lightbulb, hover, code actions, diagnostics and finder are off. Its windows follow Transparency. This finishes the lspsaga part of the uncommitted UI experiments, with its lockfile entry.
 
 **Blocked by:** None (can start immediately)
 
 **Status:** ready-for-agent
 
 - [x] Only symbol-in-winbar, rename and outline enabled
-- [x] `<leader>uB` checked free before binding
+- [x] `<leader>k` checked free before binding
 - [x] `Saga` added to the Transparency prefixes
-- [x] Test: `<leader>cr`, `<leader>cs` and `<leader>uB` map to lspsaga; `<leader>cS` is still Trouble
+- [x] Test: `<leader>kr`, `<leader>ko` and `<leader>kb` map to lspsaga under the `<leader>k` group; `<leader>cr`, `<leader>cs` and `<leader>cS` stay LazyVim's
 - [x] Test: the disabled features register no keys or lightbulb autocmds
 - [x] Test: `Saga*` groups have no background for each Curated theme
-- [x] Test: `<leader>uB` hides the Breadcrumbs and shows them again
+- [x] Test: `<leader>kb` hides the Breadcrumbs and shows them again
 - [ ] Manual: Breadcrumbs follow the cursor; rename and outline open in lspsaga's UI
