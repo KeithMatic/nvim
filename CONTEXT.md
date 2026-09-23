@@ -68,3 +68,9 @@ A `;` typed mid-line lands at the end of the code; typing it again straight away
 
 **Tabout**:
 Tab moves the cursor past a closing bracket or quote.
+
+### Tools
+
+**Database client**:
+The one database UI: connections, a schema drawer, and results that page, edit and export. SQL table and column completion in `.sql` files doesn't depend on it.
+_Avoid_: DBUI, sqmeow, dadbod (the plugins, not the concept)

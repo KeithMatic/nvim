@@ -4,11 +4,11 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] sqmeow added, release-versioned, loaded on its command, engine installed by its build hook
-- [ ] dadbod-ui disabled; vim-dadbod and dadbod-completion kept
-- [ ] Test: `:Sqmeow` exists; dadbod-ui's commands don't
-- [ ] Test: in a `.sql` buffer, blink's sources include dadbod completion
-- [ ] Test: the boot spec still passes
+- [x] sqmeow added, release-versioned, loaded on its command, engine installed by its build hook
+- [x] dadbod-ui disabled; vim-dadbod and dadbod-completion kept
+- [x] Test: `:Sqmeow` exists; dadbod-ui's commands don't
+- [x] Test: in a `.sql` buffer, blink's sources include dadbod completion
+- [x] Test: the boot spec still passes
 - [ ] Manual: connect to a database, run a query, page the results
