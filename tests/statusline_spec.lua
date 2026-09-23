@@ -218,6 +218,20 @@ h.test("every other item has its own colour, its text matching its icon, in ever
   end
 end)
 
+h.test("the filename is bold italic", function()
+  editing_changed_file()
+  local result = vim.api.nvim_eval_statusline(require("lualine").statusline(true), { highlights = true })
+  local at = assert(result.str:find("tracked.txt", 1, true)) - 1
+  local group
+  for _, hl in ipairs(result.highlights) do
+    if hl.start <= at then
+      group = hl.group
+    end
+  end
+  local hl = vim.api.nvim_get_hl(0, { name = group, link = false })
+  h.eq({ true, true }, { hl.bold, hl.italic }, "bold and italic")
+end)
+
 h.test("the filename's icon keeps the file's own colour", function()
   editing_changed_file()
   local glyph, group = require("mini.icons").get("file", file)

@@ -85,13 +85,15 @@ local function show_filename()
   return theme.statusline_filename and vim.fn.expand("%:t") ~= ""
 end
 
--- Name and extension only: the path is the Breadcrumbs' job.
+-- Name and extension only (the path is the Breadcrumbs' job), bold italic.
 local filename = {
   function()
     return vim.fn.expand("%:t")
   end,
   cond = show_filename,
-  color = mode_colour,
+  color = function()
+    return vim.tbl_extend("force", mode_colour(), { gui = "bold,italic" })
+  end,
   padding = { left = 0, right = 1 }, -- the filetype icon before it has its space
 }
 
