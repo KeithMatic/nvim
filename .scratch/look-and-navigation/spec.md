@@ -164,7 +164,7 @@ Finish integrating what I collected, fix what's broken, and add a small set of n
 - **Database client:** sqmeow.nvim is added (nui.nvim dependency, release-versioned, engine installed by its build hook, loaded on its command). From the `lang.sql` extra, vim-dadbod-ui is disabled; vim-dadbod and vim-dadbod-completion stay for blink's SQL completion source.
 - **Picker icons:** Snacks picker's prompt icon and list pointer come from the Icon set, to the owner's annotated screenshot. The design is requested before this work starts; nothing is guessed.
 - **Holding folder:** each file in `to-add/` is deleted in the same commit that implements it. The folder goes when it's empty.
-- **Key changes to LazyVim defaults** (supersedes the previous spec's "only `<leader>uC`" rule): blink's Ctrl-k in insert mode, and the Snacks explorer replaced by neo-tree. New keys: `<leader>o`, the `<leader>k` lspsaga group (`kr`, `ko`, `kb`), `<leader>uN`, `<leader>uP`, and the Menu keys and `jj`/`jk` above. Each new key is checked free before binding.
+- **Key changes to LazyVim defaults** (supersedes the previous spec's "only `<leader>uC`" rule): blink's Ctrl-k in insert mode (and LazyVim's LSP signature-help Ctrl-k, which would shadow it), and the Snacks explorer replaced by neo-tree. New keys: `<leader>o`, the `<leader>k` lspsaga group (`kr`, `ko`, `kb`), `<leader>uN`, `<leader>uP`, and the Menu keys and `jj`/`jk` above. Each new key is checked free before binding.
 
 ## Testing Decisions
 
