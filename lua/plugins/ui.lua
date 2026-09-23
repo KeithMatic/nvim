@@ -1,7 +1,8 @@
 -- UI: the themes and their transparency, the statusline, mode colours, float
 -- borders the 'winborder' option doesn't reach, the curated theme picker, the
 -- cursor trail, the motion hints, lspsaga's Breadcrumbs, rename and outline, and
--- noice's cmdline popup (centred, with the Icon set's glyphs) and its menu.
+-- noice's cmdline popup (centred, with the Icon set's glyphs) and its menu, and
+-- the Dashboard's header and sections (lua/dashboard.lua).
 -- Transparency the themes' own options leave out, and the tint, are done in
 -- lua/theme.lua.
 
@@ -220,6 +221,17 @@ return {
   },
   {
     "folke/snacks.nvim",
+    init = function()
+      -- Now, not on VeryLazy: the Dashboard opens before then.
+      require("dashboard").setup()
+    end,
+    opts = {
+      -- Only the header and sections: LazyVim's keys and pick stay.
+      dashboard = {
+        preset = { header = require("dashboard").header },
+        sections = require("dashboard").sections,
+      },
+    },
     keys = {
       -- The only change to an existing LazyVim key: same picker, curated themes.
       {

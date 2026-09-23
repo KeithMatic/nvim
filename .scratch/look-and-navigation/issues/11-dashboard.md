@@ -4,13 +4,13 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Only the Dashboard's header and sections overridden; LazyVim's keys and pick left alone
-- [ ] Colour strip guarded by an executable check; failure gives exactly one WARN notification
-- [ ] Cursor hidden and the global statusline removed while the Dashboard is current; both restored on leaving
-- [ ] Holding-folder snacks file deleted in the same commit
-- [ ] Test: the header matches; the key list equals LazyVim's
-- [ ] Test: with `colorscript` absent from `PATH`, the Dashboard opens with no error and exactly one WARN notification
-- [ ] Test: while the Dashboard is current the cursor is hidden and `laststatus` is 0; both are restored after opening a file
+- [x] Only the Dashboard's header and sections overridden; LazyVim's keys and pick left alone
+- [x] Colour strip guarded by an executable check; failure gives exactly one WARN notification
+- [x] Cursor hidden and the global statusline removed while the Dashboard is current; both restored on leaving
+- [x] Holding-folder snacks file deleted in the same commit
+- [x] Test: the header matches; the key list equals LazyVim's
+- [x] Test: with `colorscript` absent from `PATH`, the Dashboard opens with no error and exactly one WARN notification
+- [x] Test: while the Dashboard is current the cursor is hidden and `laststatus` is 0; both are restored after opening a file
 - [ ] Manual: the layout looks right with and without `colorscript`
