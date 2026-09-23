@@ -2,7 +2,8 @@
 -- mode colours, float borders the 'winborder' option doesn't reach, the curated
 -- theme picker, the cursor trail, the motion hints, lspsaga's Breadcrumbs, rename
 -- and outline, and noice's cmdline popup (centred, with the Icon set's glyphs)
--- and its menu, and the Dashboard's header and sections (lua/dashboard.lua).
+-- and its menu, the Dashboard's header and sections (lua/dashboard.lua), and
+-- the picker's prompt and pointer (lua/picker.lua).
 -- Transparency the themes' own options leave out, and the tint, are done in
 -- lua/theme.lua.
 
@@ -233,6 +234,11 @@ return {
       dashboard = {
         preset = { header = require("dashboard").header },
         sections = require("dashboard").sections,
+      },
+      -- The Icon set's prompt and pointer (lua/picker.lua).
+      picker = {
+        prompt = require("picker").prompt,
+        win = { list = { wo = { statuscolumn = "%!v:lua.require'picker'.statuscolumn()" } } },
       },
     },
     keys = {
