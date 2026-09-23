@@ -6,11 +6,11 @@
 
 **Status:** ready-for-agent
 
-- [ ] Only symbol-in-winbar, rename and outline enabled
-- [ ] `<leader>uB` checked free before binding
-- [ ] `Saga` added to the Transparency prefixes
-- [ ] Test: `<leader>cr`, `<leader>cs` and `<leader>uB` map to lspsaga; `<leader>cS` is still Trouble
-- [ ] Test: the disabled features register no keys or lightbulb autocmds
-- [ ] Test: `Saga*` groups have no background for each Curated theme
-- [ ] Test: `<leader>uB` hides the Breadcrumbs and shows them again
+- [x] Only symbol-in-winbar, rename and outline enabled
+- [x] `<leader>uB` checked free before binding
+- [x] `Saga` added to the Transparency prefixes
+- [x] Test: `<leader>cr`, `<leader>cs` and `<leader>uB` map to lspsaga; `<leader>cS` is still Trouble
+- [x] Test: the disabled features register no keys or lightbulb autocmds
+- [x] Test: `Saga*` groups have no background for each Curated theme
+- [x] Test: `<leader>uB` hides the Breadcrumbs and shows them again
 - [ ] Manual: Breadcrumbs follow the cursor; rename and outline open in lspsaga's UI

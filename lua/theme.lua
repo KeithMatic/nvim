@@ -111,6 +111,7 @@ local transparency = {
     "NoiceMini",
     "NoicePopup",
     "NoiceSplit",
+    "Saga",
     "SnacksDashboard",
     "SnacksInput",
     "SnacksNotifier",
@@ -135,7 +136,8 @@ end
 local function make_transparent()
   for name, hl in pairs(vim.api.nvim_get_hl(0, {})) do
     if not hl.link and (hl.bg or hl.ctermbg) and should_clear(name) then
-      hl.bg, hl.ctermbg = nil, nil
+      -- A `default` definition never replaces an existing one, so drop the flag.
+      hl.bg, hl.ctermbg, hl.default = nil, nil, nil
       vim.api.nvim_set_hl(0, name, hl)
     end
   end

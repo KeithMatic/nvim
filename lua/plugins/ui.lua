@@ -1,6 +1,6 @@
 -- UI: the themes and their transparency, the statusline, mode colours, float
 -- borders the 'winborder' option doesn't reach, the curated theme picker, the
--- cursor trail and the motion hints.
+-- cursor trail, the motion hints, and lspsaga's Breadcrumbs, rename and outline.
 -- Transparency the themes' own options leave out, and the tint, are done in
 -- lua/theme.lua.
 
@@ -86,6 +86,82 @@ return {
         end,
       }):map("<leader>uP")
     end,
+  },
+  {
+    -- Breadcrumbs, rename and outline only: LazyVim already gives the rest
+    -- (code actions, hover, diagnostics, references).
+    "nvimdev/lspsaga.nvim",
+    event = "LspAttach",
+    keys = {
+      { "<leader>cs", "<cmd>Lspsaga outline<cr>", desc = "Outline (lspsaga)" },
+    },
+    opts = {
+      symbol_in_winbar = { enable = true },
+      lightbulb = { enable = false },
+      beacon = { enable = false },
+    },
+    config = function(_, opts)
+      require("lspsaga").setup(opts)
+      local winbar = require("lspsaga.symbol.winbar")
+      -- lspsaga checks this flag on every redraw (its own winbar_toggle leaves
+      -- a redraw hook behind, so the Breadcrumbs come back on their own).
+      local breadcrumbs = require("lspsaga").config.symbol_in_winbar
+
+      -- Buffers that attached while the Breadcrumbs were off never got
+      -- lspsaga's redraw hook: add it when they're shown.
+      local function show(buf)
+        local hooked = pcall(vim.api.nvim_get_autocmds, { group = "SagaWinbar" .. buf })
+        if not hooked and #vim.lsp.get_clients({ bufnr = buf, method = "textDocument/documentSymbol" }) > 0 then
+          winbar.init_winbar(buf)
+        end
+        winbar.get_bar()
+      end
+      vim.api.nvim_create_autocmd("BufEnter", {
+        group = vim.api.nvim_create_augroup("breadcrumbs", { clear = true }),
+        callback = function(args)
+          if breadcrumbs.enable then
+            show(args.buf)
+          end
+        end,
+      })
+
+      Snacks.toggle({
+        name = "Breadcrumbs (lspsaga)",
+        get = function()
+          return breadcrumbs.enable
+        end,
+        set = function(state)
+          breadcrumbs.enable = state
+          if state then
+            return show(vim.api.nvim_get_current_buf())
+          end
+          -- Only lspsaga's winbars: others (nvim-dap-ui's) stay.
+          for _, win in ipairs(vim.api.nvim_list_wins()) do
+            if vim.startswith(vim.wo[win].winbar, "%#Saga") then
+              vim.wo[win].winbar = ""
+            end
+          end
+        end,
+      }):map("<leader>uB")
+    end,
+  },
+  {
+    "folke/trouble.nvim",
+    keys = {
+      { "<leader>cs", false }, -- lspsaga's outline; <leader>cS stays Trouble's
+    },
+  },
+  {
+    "neovim/nvim-lspconfig",
+    opts = {
+      servers = {
+        ["*"] = {
+          keys = {
+            { "<leader>cr", "<cmd>Lspsaga rename<cr>", desc = "Rename (lspsaga)", has = "rename" },
+          },
+        },
+      },
+    },
   },
   {
     "folke/noice.nvim",
