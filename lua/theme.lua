@@ -10,9 +10,7 @@
 --   5. saves the theme so the next start restores it (live previews in the
 --      picker and the theme applied at startup aren't saved),
 --   6. clears the background of whatever the themes' native transparency
---      options leave solid, so the terminal's glass shows through,
---   7. underlines the Explorer's tabs with a dashed line, dividing them from
---      the tree.
+--      options leave solid, so the terminal's glass shows through.
 -- It also keeps the statusline's filename toggle, saved alongside the theme
 -- and tint.
 local M = {}
@@ -207,30 +205,6 @@ local function apply_tint()
   end
 end
 
--- The Explorer's tabs (and the rest of its tab bar, drawn as an inactive tab).
-local explorer_tabs = { "NeoTreeTabActive", "NeoTreeTabInactive" }
-
---- Underline the Explorer's tabs with a dashed line in the window separators'
---- colour. Only once neo-tree (or the theme) has defined them: defined first,
---- they'd stop neo-tree's own defaults (the inactive tab's dimmer text) applying.
-local function dash_explorer_tabs()
-  local separator = vim.api.nvim_get_hl(0, { name = "WinSeparator", link = false }).fg
-  for _, name in ipairs(explorer_tabs) do
-    local hl = vim.api.nvim_get_hl(0, { name = name, link = false })
-    if not vim.tbl_isempty(hl) then
-      hl.underdashed, hl.sp, hl.default = true, separator, nil
-      vim.api.nvim_set_hl(0, name, hl)
-    end
-  end
-end
-
---- What waits for plugins to (re)define their highlights: transparency and the
---- Explorer's dashed tabs.
-local function restyle_plugins()
-  make_transparent()
-  dash_explorer_tabs()
-end
-
 --- Make every reference group an underline with no background.
 local function underline_references()
   for _, name in ipairs(references) do
@@ -258,7 +232,7 @@ local function on_change()
   end
   -- Scheduled, to run after plugins (bufferline, lualine, …) redefine their
   -- highlights for the new theme.
-  vim.schedule(restyle_plugins)
+  vim.schedule(make_transparent)
 end
 
 --- LazyVim's `colorscheme` option: set up the change hook, then apply the
@@ -279,7 +253,7 @@ function M.load()
     group = group,
     pattern = { "LazyLoad", "VeryLazy" },
     callback = function()
-      vim.schedule(restyle_plugins)
+      vim.schedule(make_transparent)
     end,
   })
   -- Scheduled, so it also covers LazyVim's own fallback (habamax) should the default fail too.

@@ -29,25 +29,6 @@ local function show_where_i_am()
   command.execute({ action = "focus", source = "filesystem", position = where, reveal = true, dir = LazyVim.root() })
 end
 
--- What the tree's rows are drawn from. The root's row draws none of them.
-local row_parts = { "indent", "icon", "current_filter", "name", "symlink_target", "clipboard" }
-vim.list_extend(row_parts, { "diagnostics", "git_status", "file_size", "type", "last_modified", "created" })
-
---- neo-tree's components, but drawing nothing on the root's row: a blank row
---- between the tab and the tree, which neo-tree has no spacing option for.
-local function blank_root_row()
-  local components = {}
-  for _, part in ipairs(row_parts) do
-    components[part] = function(config, node, state)
-      if node:get_depth() == 1 then
-        return {}
-      end
-      return require("neo-tree.sources.filesystem.components")[part](config, node, state)
-    end
-  end
-  return components
-end
-
 --- Even out the other windows when a docked Explorer opens or closes.
 local function rebalance(args)
   if args.position == "left" or args.position == "right" then
@@ -66,10 +47,8 @@ return {
       opts.sources = { "filesystem", "git_status" }
       opts.close_if_last_window = true
       opts.sort_case_insensitive = true
-      -- One tab, Files, its label centred and no border. The tab is padded to
-      -- the window's width, so the dashed line under it (part of its
-      -- highlight, lua/theme.lua) spans the whole bar. The Git view has no tab:
-      -- LazyVim's <leader>ge opens it.
+      -- One tab, Files, its label centred and no border. The Git view has no
+      -- tab: LazyVim's <leader>ge opens it.
       opts.source_selector = {
         winbar = true,
         content_layout = "center",
@@ -96,7 +75,6 @@ return {
         symlink_target = { enabled = true },
       })
       opts.filesystem = vim.tbl_deep_extend("force", opts.filesystem or {}, {
-        components = blank_root_row(),
         filtered_items = {
           hide_dotfiles = false,
           hide_gitignored = false,

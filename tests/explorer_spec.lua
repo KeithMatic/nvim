@@ -123,17 +123,13 @@ h.test("the only tab is Files, its label centred", function()
   )
 end)
 
-h.test("a blank row sits between the tab and the tree", function()
+h.test("the tree starts right under the tab, at the root folder", function()
   editing_file()
   h.eq(true, h.focus_explorer(), "the Explorer has focus")
-  local lines = vim.api.nvim_buf_get_lines(0, 0, 2, false)
+  local first = vim.api.nvim_buf_get_lines(0, 0, 1, false)[1]
   vim.cmd("Neotree close")
-  h.eq("", vim.trim(lines[1]), "the first row is blank")
-  h.eq(
-    true,
-    lines[2]:find("README.md", 1, true) ~= nil or lines[2]:find("src", 1, true) ~= nil,
-    "the tree follows: " .. lines[2]
-  )
+  -- The root is shown as its path, cut off at the window's width.
+  h.eq(true, first:find(project:sub(1, 15), 1, true) ~= nil, "the root folder first: " .. first)
 end)
 
 h.test("there is no border around the tab", function()
@@ -154,21 +150,13 @@ h.test("the Git view still opens with <leader>ge", function()
   h.eq(true, opened, "the Git view opened")
 end)
 
-h.test("a dashed line runs under the whole tab bar, in every theme", function()
+h.test("the tab bar has no underline, in every theme", function()
   for _, theme in ipairs({ "tokyonight-moon", "catppuccin-mocha" }) do
     h.apply_theme(theme)
-    local bar = tab_bar()
-    h.eq(bar.width, vim.api.nvim_strwidth(bar.str), theme .. ": the bar spans the window")
-    local separator = vim.api.nvim_get_hl(0, { name = "WinSeparator", link = false }).fg
-    -- Every segment that takes up cells (the empty separators draw nothing).
-    local drawn = vim.tbl_filter(function(segment)
-      return segment.text ~= ""
-    end, bar.segments)
-    for _, segment in ipairs(drawn) do
+    for _, segment in ipairs(tab_bar().segments) do
       local hl = vim.api.nvim_get_hl(0, { name = segment.group, link = false })
       local what = ("%s: %q (%s)"):format(theme, segment.text, segment.group)
-      h.eq(true, hl.underdashed, what .. " is underdashed")
-      h.eq(separator, hl.sp, what .. " dashes in the separator colour")
+      h.eq({}, { hl.underline, hl.underdashed }, what .. " has no underline")
     end
   end
 end)
