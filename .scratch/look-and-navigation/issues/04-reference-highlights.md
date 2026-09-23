@@ -6,8 +6,8 @@
 
 **Status:** ready-for-agent
 
-- [ ] The LSP reference groups (text, read, write) have no background and are underlined
-- [ ] Applied from the theme-change hook
-- [ ] Test: for each Curated theme, the three groups have no background and are underlined
-- [ ] Test: after switching theme, the groups are still underlined with no background
+- [x] The LSP reference groups (text, read, write) have no background and are underlined
+- [x] Applied from the theme-change hook
+- [x] Test: for each Curated theme, the three groups have no background and are underlined
+- [x] Test: after switching theme, the groups are still underlined with no background
 - [ ] Manual: in a TS file, other uses of a symbol are underlined, not blocked
