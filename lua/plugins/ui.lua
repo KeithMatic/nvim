@@ -54,7 +54,26 @@ return {
   },
   {
     "folke/noice.nvim",
-    opts = { presets = { lsp_doc_border = true } }, -- LSP hover and signature help
+    opts = {
+      presets = {
+        long_message_to_split = true,
+        inc_rename = false,
+        lsp_doc_border = true, -- LSP hover and signature help
+        -- Configure the centered command palette
+        command_palette = {
+          views = {
+            cmdline_popup = {
+              position = { row = "40%", col = "50%" },
+              size = { width = "20%", max_width = 50 },
+            },
+            cmdline_popup_menu = {
+              position = { row = "10%", col = "10%" },
+              size = { width = "10%", max_width = 10 },
+            },
+          },
+        },
+      },
+    },
   },
   {
     "folke/snacks.nvim",
