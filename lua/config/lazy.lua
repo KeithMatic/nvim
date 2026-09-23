@@ -22,6 +22,8 @@ require("lazy").setup({
     -- The debugger. The language extras below add its adapters; without it,
     -- nvim-dap still loads (nvim-dap-python's rockspec requires it) but unconfigured.
     { import = "lazyvim.plugins.extras.dap.core" },
+    -- The Explorer: neo-tree in place of the Snacks explorer (lua/plugins/explorer.lua).
+    { import = "lazyvim.plugins.extras.editor.neo-tree" },
     { import = "lazyvim.plugins.extras.lang.typescript" },
     { import = "lazyvim.plugins.extras.lang.python" },
     { import = "lazyvim.plugins.extras.lang.go" },

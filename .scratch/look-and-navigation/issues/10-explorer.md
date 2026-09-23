@@ -4,18 +4,18 @@
 
 **Blocked by:** 02 (Icon set)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Snacks explorer replaced by the neo-tree extra; only the owner's differences configured on top
-- [ ] Sources: filesystem and git_status, shown as winbar tabs; no buffers source
-- [ ] One Explorer position setting, default float, centred and borderless
-- [ ] `<leader>o` checked free before binding; behaviour per position as described
-- [ ] `NeoTree` added to the Transparency prefixes; the Explorer's cursor-line group replaces the Snacks explorer's in the tinted groups
-- [ ] Icons from the Icon set
-- [ ] Holding-folder neo-tree file deleted in the same commit
-- [ ] Test: in float mode, `<leader>o` opens a borderless centred float with the current file selected; pressing it again closes it
-- [ ] Test: in a docked position, `<leader>o` moves focus to the Explorer and back
-- [ ] Test: the tabs are exactly Files and Git
-- [ ] Test: `NeoTree*` panel groups have no background; the Explorer cursor line has the Tint
-- [ ] Test: the boot spec still passes
+- [x] Snacks explorer replaced by the neo-tree extra; only the owner's differences configured on top
+- [x] Sources: filesystem and git_status, shown as winbar tabs; no buffers source
+- [x] One Explorer position setting, default float, centred and borderless
+- [x] `<leader>o` checked free before binding; behaviour per position as described
+- [x] `NeoTree` added to the Transparency prefixes; the Explorer's cursor-line group replaces the Snacks explorer's in the tinted groups
+- [x] Icons from the Icon set
+- [x] Holding-folder neo-tree file deleted in the same commit
+- [x] Test: in float mode, `<leader>o` opens a borderless centred float with the current file selected; pressing it again closes it
+- [x] Test: in a docked position, `<leader>o` moves focus to the Explorer and back
+- [x] Test: the tabs are exactly Files and Git
+- [x] Test: `NeoTree*` panel groups have no background; the Explorer cursor line has the Tint
+- [x] Test: the boot spec still passes
 - [ ] Manual: stage and unstage a file from the Git tab; the icons match the statusline

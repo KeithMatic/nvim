@@ -48,6 +48,13 @@ h.test("file statuses are the glyphs neo-tree shows for git status", function()
   )
 end)
 
+h.test("the Explorer's folder and git-status glyphs are the Icon set's", function()
+  local components = require("neo-tree").ensure_config().default_component_configs
+  h.eq(icons.file_status, components.git_status.symbols, "git status")
+  h.eq(icons.ui.FolderAlt, components.icon.folder_closed, "folder_closed")
+  h.eq(icons.ui.FolderOpenAlt, components.icon.folder_open, "folder_open")
+end)
+
 h.test("the gutter's git signs are the Icon set's git signs", function()
   local opts = LazyVim.opts("gitsigns.nvim")
   for _, signs in ipairs({ opts.signs, opts.signs_staged }) do

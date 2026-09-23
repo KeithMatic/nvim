@@ -49,16 +49,12 @@ local function assert_boots_with(theme, backgrounds)
   h.eq(0, result.code, "second instance:\n" .. (result.stdout or "") .. (result.stderr or ""))
 end
 
---- The group the explorer's list draws its cursor line with while it has focus.
+--- The group the Explorer draws its cursor line with while it has focus.
 local function explorer_cursorline_group()
-  local explorer = Snacks.explorer()
-  vim.wait(2000, function()
-    return explorer:is_active() == false and vim.bo.filetype == "snacks_picker_list"
-  end, 50)
-  local focused = vim.bo.filetype == "snacks_picker_list"
+  local focused = h.focus_explorer()
   local group = vim.wo.winhighlight:match("%f[%w]CursorLine:([%w_]+)") or "CursorLine"
-  explorer:close()
-  assert(focused, "the explorer's list didn't get focus")
+  vim.cmd("Neotree close")
+  assert(focused, "the Explorer didn't get focus")
   return group
 end
 
@@ -75,12 +71,12 @@ local red = {
   ["catppuccin-frappe"] = "#6e2431",
 }
 
-h.test(":Tint #ff0000 0.3 tints the cursor line, the explorer line and the completion selection", function()
+h.test(":Tint #ff0000 0.3 tints the cursor line, the Explorer line and the completion selection", function()
   with_state(nil, function()
     h.apply_theme("tokyonight-moon")
     vim.cmd("Tint #ff0000 0.3")
     h.eq(red["tokyonight-moon"], bg("CursorLine"), "CursorLine")
-    h.eq(red["tokyonight-moon"], bg(explorer_cursorline_group()), "explorer cursor line")
+    h.eq(red["tokyonight-moon"], bg(explorer_cursorline_group()), "Explorer cursor line")
     h.eq(red["tokyonight-moon"], bg(completion_selection_group()), "completion selection")
   end)
 end)
@@ -100,7 +96,7 @@ h.test("the tint survives theme switches, blended against the new theme's backgr
     for _, theme in ipairs({ "tokyonight-night", "catppuccin-frappe" }) do
       h.apply_theme(theme)
       h.eq(red[theme], bg("CursorLine"), theme .. " CursorLine")
-      h.eq(red[theme], bg("SnacksPickerListCursorLine"), theme .. " explorer cursor line")
+      h.eq(red[theme], bg("NeoTreeCursorLine"), theme .. " Explorer cursor line")
       h.eq(red[theme], bg("BlinkCmpMenuSelection"), theme .. " completion selection")
     end
     assert_boots_with("catppuccin-frappe", { CursorLine = red["catppuccin-frappe"] })
@@ -112,7 +108,7 @@ h.test("invalid :Tint input errors and changes nothing", function()
     h.apply_theme("tokyonight-moon")
     vim.cmd("Tint #ff0000 0.3")
     local state = saved()
-    local groups = { "CursorLine", "SnacksPickerListCursorLine", "BlinkCmpMenuSelection" }
+    local groups = { "CursorLine", "NeoTreeCursorLine", "BlinkCmpMenuSelection" }
     local before = vim.tbl_map(bg, groups)
     for _, args in ipairs({
       "#zzzzzz 0.3",

@@ -3,7 +3,15 @@ local h = require("harness")
 -- Load everything that defines highlights or floats up front, so a group can't
 -- pass "no background" just because its plugin hasn't defined it yet.
 require("lazy").load({
-  plugins = { "blink.cmp", "bufferline.nvim", "lualine.nvim", "mason.nvim", "noice.nvim", "which-key.nvim" },
+  plugins = {
+    "blink.cmp",
+    "bufferline.nvim",
+    "lualine.nvim",
+    "mason.nvim",
+    "neo-tree.nvim",
+    "noice.nvim",
+    "which-key.nvim",
+  },
 })
 
 -- Per theme, its own editor background (from its palette).
@@ -37,7 +45,7 @@ local transparent = {
   "BufferLineFill",
   "BufferLineBackground",
   "BufferLineBufferSelected",
-  -- floats: generic, completion, which-key, Lazy, Mason, notifications, pickers and the explorer
+  -- floats: generic, completion, which-key, Lazy, Mason, notifications and pickers
   "NormalFloat",
   "FloatBorder",
   "FloatTitle",
@@ -93,26 +101,26 @@ for theme, background in pairs(themes) do
     end
   end)
 
-  h.test(theme .. ": the file explorer has no background", function()
+  h.test(theme .. ": the Explorer's panels have no background", function()
     h.apply_theme(theme)
-    local explorer = Snacks.explorer()
-    vim.wait(2000, function()
-      return explorer:is_active() == false
-    end, 50)
-    -- Each explorer window's Normal, as its 'winhighlight' maps it.
-    local solid_windows, seen = {}, 0
-    for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-      if vim.bo[vim.api.nvim_win_get_buf(win)].filetype:match("^snacks_") then
-        seen = seen + 1
-        local group = vim.wo[win].winhighlight:match("%f[%w]Normal:([%w_]+)") or "Normal"
-        if bg(group) then
-          table.insert(solid_windows, vim.bo[vim.api.nvim_win_get_buf(win)].filetype .. " " .. group)
-        end
+    local solid_groups = {}
+    for name, hl in pairs(vim.api.nvim_get_hl(0, {})) do
+      -- Links follow their target (NeoTreePreview is Search). Its cursor line
+      -- is a "where am I" highlight, which keeps the Tint.
+      if name:match("^NeoTree") and not hl.link and not name:find("Cursor", 1, true) and bg(name) then
+        table.insert(solid_groups, ("%s (#%06x)"):format(name, bg(name)))
       end
     end
-    explorer:close()
-    h.eq(true, seen > 0, "explorer windows found")
-    h.eq({}, solid_windows, "explorer windows with a background")
+    table.sort(solid_groups)
+    h.eq({}, solid_groups, "NeoTree groups with a background")
+
+    -- Each Explorer window's Normal, as its 'winhighlight' maps it.
+    local seen = h.focus_explorer()
+    local win = vim.api.nvim_get_current_win()
+    local group = vim.wo[win].winhighlight:match("%f[%w]Normal:([%w_]+)") or "Normal"
+    vim.cmd("Neotree close")
+    h.eq(true, seen, "the Explorer opened")
+    h.eq(nil, bg(group), "the Explorer window's " .. group)
   end)
 
   h.test(theme .. ": the statusline shows the mode as coloured text on no background", function()

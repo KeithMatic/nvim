@@ -36,6 +36,16 @@ function M.apply_theme(theme)
   end)
 end
 
+--- Focus the Explorer and wait until it has drawn its tree: closed before then,
+--- its pending first render opens it again.
+---@return boolean focused
+function M.focus_explorer()
+  vim.cmd("Neotree focus")
+  return vim.wait(5000, function()
+    return vim.bo.filetype == "neo-tree" and vim.api.nvim_get_current_line() ~= ""
+  end, 50)
+end
+
 ---@param keys string
 ---@param mode string
 function M.feed(keys, mode)

@@ -30,9 +30,9 @@ M.default = "tokyonight-moon"
 -- 1). Used when nothing valid is saved; `:Tint` changes it.
 M.default_tint = { color = "#ffffff", fade = 0.1 }
 
--- What the tint colours: the cursor line (and its gutter), the explorer's line
+-- What the tint colours: the cursor line (and its gutter), the Explorer's line
 -- and the selected completion item.
-local tinted = { "CursorLine", "CursorLineNr", "CursorLineSign", "SnacksPickerListCursorLine", "BlinkCmpMenuSelection" }
+local tinted = { "CursorLine", "CursorLineNr", "CursorLineSign", "NeoTreeCursorLine", "BlinkCmpMenuSelection" }
 
 -- The reference highlights: other occurrences of the word under the cursor.
 local references = { "LspReferenceText", "LspReferenceRead", "LspReferenceWrite" }
@@ -106,6 +106,7 @@ local transparency = {
   prefixes = {
     "BlinkCmp",
     "BufferLine",
+    "NeoTree",
     "NoiceCmdline",
     "NoiceConfirm",
     "NoiceMini",
