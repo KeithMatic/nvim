@@ -1,7 +1,7 @@
 -- The Explorer: neo-tree, from LazyVim's neo-tree extra (imported in
 -- lua/config/lazy.lua, which also retires the Snacks explorer), with only my
--- differences on top: Files and Git tabs, the Explorer position, <leader>o, the
--- Icon set's glyphs, what's shown and hidden, and the Git tab's keys.
+-- differences on top: a Files tab, the Explorer position, <leader>o, the Icon
+-- set's glyphs, what's shown and hidden, and the Git view's keys (<leader>ge).
 -- Its Transparency and Tint are done in lua/theme.lua.
 
 -- The Explorer position: "float" (centred, borderless), "left" or "right".
@@ -47,15 +47,16 @@ return {
       opts.sources = { "filesystem", "git_status" }
       opts.close_if_last_window = true
       opts.sort_case_insensitive = true
-      -- Labels on the left, no border between the tabs. The dashed line under them
-      -- is part of their highlights (lua/theme.lua).
+      -- One tab, Files, its label on the left and no border. The tab is padded
+      -- to the window's width, so the dashed line under it (part of its
+      -- highlight, lua/theme.lua) spans the whole bar. The Git view has no tab:
+      -- LazyVim's <leader>ge opens it.
       opts.source_selector = {
         winbar = true,
-        content_layout = "left",
+        content_layout = "start",
         separator = "",
         sources = {
           { source = "filesystem", display_name = " " .. icons.ui.Files .. "Files " },
-          { source = "git_status", display_name = " " .. icons.git.Git .. "Git " },
         },
       }
       opts.window = vim.tbl_deep_extend("force", opts.window or {}, {

@@ -36,7 +36,7 @@ The animated trail the cursor leaves as it moves; off in Neovide, which animates
 ### Navigation
 
 **Explorer**:
-The file tree, with a Files tab and a Git tab, shown in the Explorer position.
+The file tree, under a single Files tab, shown in the Explorer position; its Git view opens on its own (<leader>ge).
 _Avoid_: File tree, sidebar, neo-tree (the plugin, not the concept)
 
 **Explorer position**:

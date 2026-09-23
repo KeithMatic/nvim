@@ -112,28 +112,28 @@ local function tab_bar()
   return { str = bar.str, segments = segments, width = width }
 end
 
-h.test("the tabs are exactly Files and Git", function()
+h.test("the only tab is Files, its label on the left", function()
   local bar = tab_bar()
-  h.eq({ "Files", "Git" }, vim.iter(bar.str:gmatch("%a+")):totable(), "tab labels in: " .. bar.str)
+  h.eq({ "Files" }, vim.iter(bar.str:gmatch("%a+")):totable(), "tab labels in: " .. bar.str)
+  h.eq(true, #bar.str:match("^ *") <= 1, "at most a space before the label in: " .. bar.str)
 end)
 
-h.test("each tab's label is centred in its tab", function()
-  local bar = tab_bar()
-  local tabs = vim.tbl_filter(function(segment)
-    return segment.text:find("%a") ~= nil
-  end, bar.segments)
-  h.eq(2, #tabs, "tabs in: " .. vim.inspect(bar.segments))
-  for _, tab in ipairs(tabs) do
-    local before, after = #tab.text:match("^ *"), #tab.text:match(" *$")
-    h.eq(true, math.abs(before - after) <= 1, ("%q: %d spaces before, %d after"):format(tab.text, before, after))
-  end
-end)
-
-h.test("there is no border between the tabs", function()
+h.test("there is no border around the tab", function()
   local bar = tab_bar()
   local icons = require("util.icons")
-  local drawn = bar.str:gsub(vim.pesc(vim.trim(icons.ui.Files)), ""):gsub(vim.pesc(vim.trim(icons.git.Git)), "")
-  h.eq("", (drawn:gsub("[%a ]", "")), "anything but labels and spaces in: " .. bar.str)
+  local drawn = bar.str:gsub(vim.pesc(vim.trim(icons.ui.Files)), "")
+  h.eq("", (drawn:gsub("[%a ]", "")), "anything but the label and spaces in: " .. bar.str)
+end)
+
+h.test("the Git view still opens with <leader>ge", function()
+  editing_file()
+  press(leader .. "ge")
+  local opened = vim.wait(5000, function()
+    local win = explorer_win()
+    return win ~= nil and vim.b[vim.api.nvim_win_get_buf(win)].neo_tree_source == "git_status"
+  end, 50)
+  pcall(vim.cmd, "Neotree close")
+  h.eq(true, opened, "the Git view opened")
 end)
 
 h.test("a dashed line runs under the whole tab bar, in every theme", function()
