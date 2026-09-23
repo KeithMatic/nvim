@@ -283,6 +283,7 @@ return {
     terminal = "",
     test = "⏲",
     text = "",
+    toml = "", -- U+E615: the default U+E6B2 is missing from the symbol font
     typescript = "",
     typescriptreact = "",
     vue = "󰡄",

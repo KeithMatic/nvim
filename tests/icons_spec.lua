@@ -82,3 +82,18 @@ h.test("padding follows LazyVim's convention: one trailing space at most", funct
     end
   end
 end)
+
+-- The default TOML glyph (U+E6B2) is missing from the terminal's symbol font.
+h.test("TOML files get the Icon set's TOML glyph", function()
+  local toml = icons.misc.toml
+  h.eq("\u{e615}", toml, "misc.toml")
+  local MiniIcons = require("mini.icons")
+  h.eq(toml, (MiniIcons.get("extension", "toml")), "extension toml")
+  h.eq(toml, (MiniIcons.get("filetype", "toml")), "filetype toml")
+  h.eq("MiniIconsOrange", select(2, MiniIcons.get("filetype", "toml")), "keeps its colour")
+  for _, file in ipairs({ "Cargo.toml", "pyproject.toml", "/some/project/config.toml" }) do
+    h.eq(toml, (MiniIcons.get("file", file)), file)
+    -- bufferline and neo-tree ask through nvim-web-devicons, which mini.icons mocks.
+    h.eq(toml, (require("nvim-web-devicons").get_icon(vim.fs.basename(file), "toml")), file .. " (devicons)")
+  end
+end)

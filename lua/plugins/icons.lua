@@ -11,8 +11,19 @@ local git_signs = {
   untracked = { text = icons.git.added },
 }
 
+local toml = { glyph = icons.misc.toml }
+
 return {
   { "LazyVim/LazyVim", opts = { icons = icons } },
   -- LazyVim hard-codes the gutter's git signs rather than reading its icons.
   { "lewis6991/gitsigns.nvim", opts = { signs = git_signs, signs_staged = git_signs } },
+  -- mini.icons also answers for nvim-web-devicons, so this reaches the Explorer,
+  -- statusline, picker and bufferline.
+  {
+    "nvim-mini/mini.icons",
+    opts = {
+      extension = { toml = toml },
+      filetype = { toml = toml },
+    },
+  },
 }
