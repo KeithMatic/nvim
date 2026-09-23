@@ -1,4 +1,5 @@
--- Editing behaviour: the completion Tab chain, the Menu keys and smart strings.
+-- Editing behaviour: the completion Tab chain, the Menu keys, better escape and
+-- smart strings.
 
 --- A Menu key's insert-mode fallback: returns `keys` for blink.cmp to type.
 --- Anything else (blink also runs it in select mode, where returned keys are
@@ -73,6 +74,22 @@ return {
       -- LazyVim spells it, so the two entries match.
       table.insert(opts.servers["*"].keys, { "<c-k>", false, mode = "i" })
     end,
+  },
+  -- Better escape: jj and jk leave insert mode and the cmdline (searches too,
+  -- abandoning them). The j is typed at once and removed if the second key
+  -- follows within 200 ms, so typing never pauses; j and k are both mapped in
+  -- those modes. Visual, select and terminal modes keep j (lazygit gets jj).
+  {
+    "max397574/better-escape.nvim",
+    event = "VeryLazy",
+    opts = {
+      timeout = 200,
+      default_mappings = false,
+      mappings = {
+        i = { j = { j = "<Esc>", k = "<Esc>" } },
+        c = { j = { j = "<C-c>", k = "<C-c>" } },
+      },
+    },
   },
   -- Smart strings: typing a `{…}` placeholder turns a Python string into an
   -- f-string, and typing `${` turns a JS/TS quoted string into a template literal.
