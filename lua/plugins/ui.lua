@@ -1,8 +1,8 @@
--- UI: the themes and their transparency, the statusline, mode colours, float
--- borders the 'winborder' option doesn't reach, the curated theme picker, the
--- cursor trail, the motion hints, lspsaga's Breadcrumbs, rename and outline, and
--- noice's cmdline popup (centred, with the Icon set's glyphs) and its menu, and
--- the Dashboard's header and sections (lua/dashboard.lua).
+-- UI: the themes and their transparency, the statusline (lua/statusline.lua),
+-- mode colours, float borders the 'winborder' option doesn't reach, the curated
+-- theme picker, the cursor trail, the motion hints, lspsaga's Breadcrumbs, rename
+-- and outline, and noice's cmdline popup (centred, with the Icon set's glyphs)
+-- and its menu, and the Dashboard's header and sections (lua/dashboard.lua).
 -- Transparency the themes' own options leave out, and the tint, are done in
 -- lua/theme.lua.
 
@@ -33,10 +33,12 @@ return {
   },
   {
     "nvim-lualine/lualine.nvim",
+    dependencies = { "meuter/lualine-so-fancy.nvim" }, -- its diff (lua/statusline.lua)
     opts = function(_, opts)
       opts.options.theme = require("theme").lualine
       -- No powerline arrows: they'd be drawn in the (now cleared) section colours.
       opts.options.section_separators = { left = "", right = "" }
+      require("statusline").extend(opts)
     end,
   },
   {

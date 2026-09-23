@@ -123,6 +123,44 @@ function M.attach_ui(width, height)
   M.eq(true, attached, ("a %dx%d UI attached (screen is %dx%d)"):format(width, height, vim.o.columns, vim.o.lines))
 end
 
+--- The statusline as the attached UI (see `attach_ui`) shows it: the screen's
+--- last row above the cmdline.
+---@return string
+function M.statusline()
+  vim.cmd.redraw()
+  local row = vim.o.lines - vim.o.cmdheight
+  local cells = {}
+  for col = 1, vim.o.columns do
+    table.insert(cells, vim.fn.screenstring(row, col))
+  end
+  return table.concat(cells)
+end
+
+local state_file = vim.fn.stdpath("state") .. "/theme.json"
+
+--- Run `fn` with the theme module's saved state set to `content` (nil: no
+--- state file), then put back whatever was saved before, so other specs boot
+--- as they would have.
+---@param content string?
+---@param fn fun()
+function M.with_state(content, fn)
+  local before = vim.fn.filereadable(state_file) == 1 and vim.fn.readfile(state_file, "b") or nil
+  if content then
+    vim.fn.writefile(vim.split(content, "\n"), state_file, "b")
+  else
+    vim.fn.delete(state_file)
+  end
+  local ok, err = pcall(fn)
+  if before then
+    vim.fn.writefile(before, state_file, "b")
+  else
+    vim.fn.delete(state_file)
+  end
+  if not ok then
+    error(err, 0)
+  end
+end
+
 --- Every error the user would have seen: error notifications (early ones, and
 --- the notifier's history), error messages, and the last `v:errmsg`.
 ---@return string[]

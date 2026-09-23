@@ -13,6 +13,8 @@
 --      options leave solid, so the terminal's glass shows through,
 --   7. underlines the Explorer's tabs with a dashed line, dividing them from
 --      the tree.
+-- It also keeps the statusline's filename toggle, saved alongside the theme
+-- and tint.
 local M = {}
 
 -- The only themes the picker offers.
@@ -32,6 +34,13 @@ M.default = "tokyonight-moon"
 -- 1). Used when nothing valid is saved; `:Tint` changes it.
 M.default_tint = { color = "#ffffff", fade = 0.1 }
 
+-- modes.nvim's groups for the Mode colours.
+local mode_groups = { insert = "ModesInsert", visual = "ModesVisual", delete = "ModesDelete", copy = "ModesCopy" }
+
+-- Whether the statusline shows the filename. Off unless turned on; set by
+-- `load` from the saved state.
+M.statusline_filename = false
+
 -- What the tint colours: the cursor line (and its gutter), the Explorer's line
 -- and the selected completion item.
 local tinted = { "CursorLine", "CursorLineNr", "CursorLineSign", "NeoTreeCursorLine", "BlinkCmpMenuSelection" }
@@ -42,7 +51,7 @@ local references = { "LspReferenceText", "LspReferenceRead", "LspReferenceWrite"
 local state_file = vim.fn.stdpath("state") .. "/theme.json"
 
 --- The saved state, or an empty table when it's missing or unreadable.
----@return {theme?: string, tint?: {color: string, fade: number}}
+---@return {theme?: string, tint?: {color: string, fade: number}, statusline_filename?: boolean}
 local function read_state()
   local ok, state = pcall(function()
     return vim.json.decode(table.concat(vim.fn.readfile(state_file), "\n"))
@@ -237,7 +246,6 @@ local function on_change()
   M.background = palette.bg
   -- modes.nvim's own ColorScheme hook, which runs after this one, reads its
   -- colours from these groups.
-  local mode_groups = { insert = "ModesInsert", visual = "ModesVisual", delete = "ModesDelete", copy = "ModesCopy" }
   for mode, group in pairs(mode_groups) do
     if palette[mode] then
       vim.api.nvim_set_hl(0, group, { bg = palette[mode] })
@@ -256,7 +264,9 @@ end
 --- LazyVim's `colorscheme` option: set up the change hook, then apply the
 --- saved theme, falling back to the default.
 function M.load()
-  local tint = read_state().tint
+  local state = read_state()
+  M.statusline_filename = state.statusline_filename == true
+  local tint = state.tint
   M.tint = type(tint) == "table" and valid_color(tint.color) and valid_fade(tint.fade) and tint or M.default_tint
   vim.api.nvim_create_user_command("Tint", function(cmd)
     M.set_tint(unpack(cmd.fargs))
@@ -277,7 +287,7 @@ function M.load()
   vim.schedule(function()
     restoring = false
   end)
-  local saved = read_state().theme
+  local saved = state.theme
   if not (type(saved) == "string" and pcall(vim.cmd.colorscheme, saved)) then
     vim.cmd.colorscheme(M.default)
   end
@@ -301,6 +311,22 @@ function M.set_tint(color, fade)
   M.tint = { color = color:lower(), fade = tonumber(fade) }
   apply_tint()
   save_state({ tint = M.tint })
+end
+
+--- The current theme's colour for `mode` (the Mode colours), as "#rrggbb":
+--- from its palette for the curated themes, else modes.nvim's own.
+---@param mode "insert"|"visual"|"delete"|"copy"
+---@return string?
+function M.mode_color(mode)
+  local bg = vim.api.nvim_get_hl(0, { name = mode_groups[mode], link = false }).bg
+  return bg and ("#%06x"):format(bg)
+end
+
+--- Show or hide the statusline's filename, and save the choice.
+---@param shown boolean
+function M.set_statusline_filename(shown)
+  M.statusline_filename = shown
+  save_state({ statusline_filename = shown })
 end
 
 --- Run a plugin's `setup` so that it, and the ColorScheme hooks it creates, see

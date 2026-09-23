@@ -22,26 +22,6 @@ local function assert_boots_with(theme)
   h.eq(0, result.code, "second instance:\n" .. (result.stdout or "") .. (result.stderr or ""))
 end
 
---- Run `fn` with the saved state set to `content` (nil: no state file), then
---- put back whatever was saved before, so other specs boot as they would have.
-local function with_state(content, fn)
-  local saved = vim.fn.filereadable(state_file) == 1 and vim.fn.readfile(state_file, "b") or nil
-  if content then
-    vim.fn.writefile(vim.split(content, "\n"), state_file, "b")
-  else
-    vim.fn.delete(state_file)
-  end
-  local ok, err = pcall(fn)
-  if saved then
-    vim.fn.writefile(saved, state_file, "b")
-  else
-    vim.fn.delete(state_file)
-  end
-  if not ok then
-    error(err, 0)
-  end
-end
-
 --- Open the <leader>uC picker and return it once it has its items.
 local function open_picker()
   vim.api.nvim_feedkeys(vim.g.mapleader .. "uC", "mx", false)
@@ -62,7 +42,7 @@ local function cancel(picker, theme)
 end
 
 h.test("<leader>uC lists exactly the six curated dark themes", function()
-  with_state(nil, function()
+  h.with_state(nil, function()
     local before = vim.g.colors_name
     local picker = open_picker()
     local names = vim.tbl_map(function(item)
@@ -75,7 +55,7 @@ h.test("<leader>uC lists exactly the six curated dark themes", function()
 end)
 
 h.test("the picker previews themes live, and cancelling restores and saves nothing new", function()
-  with_state(nil, function()
+  h.with_state(nil, function()
     vim.cmd.colorscheme("tokyonight-night")
     local picker = open_picker()
     -- Move off the current theme, then see the one under the cursor applied.
@@ -102,7 +82,7 @@ h.test("the picker previews themes live, and cancelling restores and saves nothi
 end)
 
 h.test("a theme chosen in the picker is restored on the next start", function()
-  with_state(nil, function()
+  h.with_state(nil, function()
     vim.cmd.colorscheme("tokyonight-night")
     local picker = open_picker()
     -- The picker's input is in normal mode here: j moves down, <CR> confirms.
@@ -122,7 +102,7 @@ h.test("a theme chosen in the picker is restored on the next start", function()
 end)
 
 h.test("a theme applied with :colorscheme is restored on the next start", function()
-  with_state(nil, function()
+  h.with_state(nil, function()
     vim.cmd.colorscheme("catppuccin-frappe")
     assert_boots_with("catppuccin-frappe")
     vim.cmd.colorscheme("tokyonight-storm")
@@ -131,25 +111,25 @@ h.test("a theme applied with :colorscheme is restored on the next start", functi
 end)
 
 h.test("with no saved theme, startup uses tokyonight-moon", function()
-  with_state(nil, function()
+  h.with_state(nil, function()
     assert_boots_with("tokyonight-moon")
   end)
 end)
 
 h.test("an unknown saved theme falls back to tokyonight-moon without errors", function()
-  with_state('{"theme":"no-such-theme"}', function()
+  h.with_state('{"theme":"no-such-theme"}', function()
     assert_boots_with("tokyonight-moon")
   end)
 end)
 
 h.test("a corrupt state file falls back to tokyonight-moon without errors", function()
-  with_state("{not json", function()
+  h.with_state("{not json", function()
     assert_boots_with("tokyonight-moon")
   end)
 end)
 
 h.test("the saved state lives in Neovim's state directory", function()
-  with_state(nil, function()
+  h.with_state(nil, function()
     vim.cmd.colorscheme("catppuccin-mocha")
     h.eq(1, vim.fn.filereadable(state_file), state_file .. " written")
   end)

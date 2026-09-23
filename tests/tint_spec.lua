@@ -17,26 +17,6 @@ local function saved()
   return vim.fn.filereadable(state_file) == 1 and vim.fn.readfile(state_file, "b") or nil
 end
 
---- Run `fn` with the saved state set to `content` (nil: no state file), then
---- put back whatever was saved before, so other specs boot as they would have.
-local function with_state(content, fn)
-  local before = saved()
-  if content then
-    vim.fn.writefile(vim.split(content, "\n"), state_file, "b")
-  else
-    vim.fn.delete(state_file)
-  end
-  local ok, err = pcall(fn)
-  if before then
-    vim.fn.writefile(before, state_file, "b")
-  else
-    vim.fn.delete(state_file)
-  end
-  if not ok then
-    error(err, 0)
-  end
-end
-
 --- Boot a second headless Neovim on this config and assert that it starts with
 --- `theme`, the given group backgrounds and no errors.
 ---@param backgrounds table<string, string> group name to "#rrggbb"
@@ -72,7 +52,7 @@ local red = {
 }
 
 h.test(":Tint #ff0000 0.3 tints the cursor line, the Explorer line and the completion selection", function()
-  with_state(nil, function()
+  h.with_state(nil, function()
     h.apply_theme("tokyonight-moon")
     vim.cmd("Tint #ff0000 0.3")
     h.eq(red["tokyonight-moon"], bg("CursorLine"), "CursorLine")
@@ -82,7 +62,7 @@ h.test(":Tint #ff0000 0.3 tints the cursor line, the Explorer line and the compl
 end)
 
 h.test("the tint is restored on the next start", function()
-  with_state(nil, function()
+  h.with_state(nil, function()
     h.apply_theme("tokyonight-moon")
     vim.cmd("Tint #ff0000 0.3")
     assert_boots_with("tokyonight-moon", { CursorLine = red["tokyonight-moon"] })
@@ -90,7 +70,7 @@ h.test("the tint is restored on the next start", function()
 end)
 
 h.test("the tint survives theme switches, blended against the new theme's background", function()
-  with_state(nil, function()
+  h.with_state(nil, function()
     h.apply_theme("tokyonight-moon")
     vim.cmd("Tint #ff0000 0.3")
     for _, theme in ipairs({ "tokyonight-night", "catppuccin-frappe" }) do
@@ -104,7 +84,7 @@ h.test("the tint survives theme switches, blended against the new theme's backgr
 end)
 
 h.test("invalid :Tint input errors and changes nothing", function()
-  with_state(nil, function()
+  h.with_state(nil, function()
     h.apply_theme("tokyonight-moon")
     vim.cmd("Tint #ff0000 0.3")
     local state = saved()
@@ -132,14 +112,14 @@ h.test("invalid :Tint input errors and changes nothing", function()
 end)
 
 h.test("with no saved tint, startup uses a default one", function()
-  with_state('{"theme":"tokyonight-moon"}', function()
+  h.with_state('{"theme":"tokyonight-moon"}', function()
     -- #ffffff at 0.1 over tokyonight-moon's background.
     assert_boots_with("tokyonight-moon", { CursorLine = "#383a4a" })
   end)
 end)
 
 h.test("a corrupt saved tint falls back to the default", function()
-  with_state('{"theme":"tokyonight-moon","tint":{"color":"nope","fade":7}}', function()
+  h.with_state('{"theme":"tokyonight-moon","tint":{"color":"nope","fade":7}}', function()
     assert_boots_with("tokyonight-moon", { CursorLine = "#383a4a" })
   end)
 end)
@@ -174,7 +154,7 @@ for theme, colours in pairs(modes) do
 end
 
 h.test("mode colours come from the palette from the start", function()
-  with_state('{"theme":"catppuccin-mocha"}', function()
+  h.with_state('{"theme":"catppuccin-mocha"}', function()
     local colours = modes["catppuccin-mocha"]
     assert_boots_with("catppuccin-mocha", {
       ModesInsertCursorLine = colours.Insert[2],

@@ -4,15 +4,15 @@
 
 **Blocked by:** 02 (Icon set), 10 (Explorer)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Components added to the existing lualine options, not a replacement config
-- [ ] Mode colours exposed by the theme module for the mode icon
-- [ ] `<leader>uN` checked free before binding; the toggle is saved in the theme state
-- [ ] Blank bar while the Explorer is focused
-- [ ] Holding-folder lualine file and the empty holding folder deleted in the same commit
-- [ ] Test: for a file in a git repo, the rendered statusline contains the mode icon, file size, branch and diff
-- [ ] Test: `<leader>uN` adds the filename, and a second boot keeps it
-- [ ] Test: the statusline is blank while the Explorer is focused
-- [ ] Test: after switching theme, the mode icon's colour follows the new theme's Mode colours
+- [x] Components added to the existing lualine options, not a replacement config
+- [x] Mode colours exposed by the theme module for the mode icon
+- [x] `<leader>uN` checked free before binding; the toggle is saved in the theme state
+- [x] Blank bar while the Explorer is focused
+- [x] Holding-folder lualine file and the empty holding folder deleted in the same commit
+- [x] Test: for a file in a git repo, the rendered statusline contains the mode icon, file size, branch and diff
+- [x] Test: `<leader>uN` adds the filename, and a second boot keeps it
+- [x] Test: the statusline is blank while the Explorer is focused
+- [x] Test: after switching theme, the mode icon's colour follows the new theme's Mode colours
 - [ ] Manual: the statusline reads well in every Curated theme
