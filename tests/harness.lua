@@ -27,6 +27,15 @@ function M.eq(expected, actual, what)
   end
 end
 
+--- Apply `theme` and let the scheduled transparency pass run.
+---@param theme string
+function M.apply_theme(theme)
+  vim.cmd.colorscheme(theme)
+  vim.wait(200, function()
+    return false
+  end)
+end
+
 --- Every error the user would have seen: error notifications (early ones, and
 --- the notifier's history), error messages, and the last `v:errmsg`.
 ---@return string[]

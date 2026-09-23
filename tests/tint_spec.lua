@@ -6,14 +6,6 @@ require("lazy").load({ plugins = { "blink.cmp" } })
 
 local state_file = vim.fn.stdpath("state") .. "/theme.json"
 
---- Apply `theme` and let the scheduled transparency pass run.
-local function apply(theme)
-  vim.cmd.colorscheme(theme)
-  vim.wait(200, function()
-    return false
-  end)
-end
-
 --- The background of `group`, following links, as "#rrggbb".
 local function bg(group)
   local value = vim.api.nvim_get_hl(0, { name = group, link = false }).bg
@@ -85,7 +77,7 @@ local red = {
 
 h.test(":Tint #ff0000 0.3 tints the cursor line, the explorer line and the completion selection", function()
   with_state(nil, function()
-    apply("tokyonight-moon")
+    h.apply_theme("tokyonight-moon")
     vim.cmd("Tint #ff0000 0.3")
     h.eq(red["tokyonight-moon"], bg("CursorLine"), "CursorLine")
     h.eq(red["tokyonight-moon"], bg(explorer_cursorline_group()), "explorer cursor line")
@@ -95,7 +87,7 @@ end)
 
 h.test("the tint is restored on the next start", function()
   with_state(nil, function()
-    apply("tokyonight-moon")
+    h.apply_theme("tokyonight-moon")
     vim.cmd("Tint #ff0000 0.3")
     assert_boots_with("tokyonight-moon", { CursorLine = red["tokyonight-moon"] })
   end)
@@ -103,10 +95,10 @@ end)
 
 h.test("the tint survives theme switches, blended against the new theme's background", function()
   with_state(nil, function()
-    apply("tokyonight-moon")
+    h.apply_theme("tokyonight-moon")
     vim.cmd("Tint #ff0000 0.3")
     for _, theme in ipairs({ "tokyonight-night", "catppuccin-frappe" }) do
-      apply(theme)
+      h.apply_theme(theme)
       h.eq(red[theme], bg("CursorLine"), theme .. " CursorLine")
       h.eq(red[theme], bg("SnacksPickerListCursorLine"), theme .. " explorer cursor line")
       h.eq(red[theme], bg("BlinkCmpMenuSelection"), theme .. " completion selection")
@@ -117,7 +109,7 @@ end)
 
 h.test("invalid :Tint input errors and changes nothing", function()
   with_state(nil, function()
-    apply("tokyonight-moon")
+    h.apply_theme("tokyonight-moon")
     vim.cmd("Tint #ff0000 0.3")
     local state = saved()
     local groups = { "CursorLine", "SnacksPickerListCursorLine", "BlinkCmpMenuSelection" }
@@ -176,7 +168,7 @@ local modes = {
 
 for theme, colours in pairs(modes) do
   h.test(theme .. ": mode colours come from its palette, faded over its background", function()
-    apply(theme)
+    h.apply_theme(theme)
     for mode, colour in pairs(colours) do
       local line = mode == "Visual" and "ModesVisualVisual" or ("Modes%sCursorLine"):format(mode)
       h.eq(colour[1], bg("Modes" .. mode), "Modes" .. mode)
@@ -196,7 +188,7 @@ h.test("mode colours come from the palette from the start", function()
 end)
 
 h.test("insert mode tints the cursor line with the insert colour", function()
-  apply("tokyonight-moon")
+  h.apply_theme("tokyonight-moon")
   vim.cmd.enew()
   -- Look at the window from inside insert mode, then leave it.
   local mode, group

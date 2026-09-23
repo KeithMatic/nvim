@@ -16,14 +16,6 @@ local themes = {
   ["tokyonight-storm"] = "#24283b",
 }
 
---- Apply `theme` and let the scheduled transparency pass run.
-local function apply(theme)
-  vim.cmd.colorscheme(theme)
-  vim.wait(200, function()
-    return false
-  end)
-end
-
 --- The background of `group`, following links.
 local function bg(group)
   return vim.api.nvim_get_hl(0, { name = group, link = false }).bg
@@ -77,7 +69,7 @@ local chips = {
 
 for theme, background in pairs(themes) do
   h.test(theme .. ": editor, sidebars, bars and floats have no background", function()
-    apply(theme)
+    h.apply_theme(theme)
     local solid_groups = {}
     for _, group in ipairs(transparent) do
       if bg(group) then
@@ -88,21 +80,21 @@ for theme, background in pairs(themes) do
   end)
 
   h.test(theme .. ": the cursor line, selection and completion selection keep a background", function()
-    apply(theme)
+    h.apply_theme(theme)
     for _, group in ipairs(solid) do
       h.eq(true, bg(group) ~= nil, group .. " has a background")
     end
   end)
 
   h.test(theme .. ": accent chips (progress bar, badges, tab blocks) keep their background", function()
-    apply(theme)
+    h.apply_theme(theme)
     for _, group in ipairs(chips[theme:match("^%a+")]) do
       h.eq(true, bg(group) ~= nil, group .. " has a background")
     end
   end)
 
   h.test(theme .. ": the file explorer has no background", function()
-    apply(theme)
+    h.apply_theme(theme)
     local explorer = Snacks.explorer()
     vim.wait(2000, function()
       return explorer:is_active() == false
@@ -124,7 +116,7 @@ for theme, background in pairs(themes) do
   end)
 
   h.test(theme .. ": the statusline shows the mode as coloured text on no background", function()
-    apply(theme)
+    h.apply_theme(theme)
     for _, section in ipairs({ "a", "b", "c" }) do
       for _, mode in ipairs({ "normal", "insert", "visual" }) do
         local group = ("lualine_%s_%s"):format(section, mode)
@@ -137,7 +129,7 @@ for theme, background in pairs(themes) do
   end)
 
   h.test(theme .. ": its own editor background is recorded before clearing", function()
-    apply(theme)
+    h.apply_theme(theme)
     h.eq(background, require("theme").background)
   end)
 end

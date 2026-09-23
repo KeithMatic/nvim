@@ -2,14 +2,6 @@ local h = require("harness")
 
 local references = { "LspReferenceText", "LspReferenceRead", "LspReferenceWrite" }
 
---- Apply `theme` and let the scheduled transparency pass run.
-local function apply(theme)
-  vim.cmd.colorscheme(theme)
-  vim.wait(200, function()
-    return false
-  end)
-end
-
 --- The reference groups that have a background, are reversed or aren't underlined.
 local function misstyled_references()
   local misstyled = {}
@@ -24,15 +16,15 @@ end
 
 for _, theme in ipairs(require("theme").themes) do
   h.test(theme .. ": reference highlights are underlines with no background", function()
-    apply(theme)
+    h.apply_theme(theme)
     h.eq({}, misstyled_references(), "reference groups")
   end)
 end
 
 h.test("reference highlights stay underlines with no background after switching theme", function()
-  apply("tokyonight-moon")
-  apply("catppuccin-mocha")
+  h.apply_theme("tokyonight-moon")
+  h.apply_theme("catppuccin-mocha")
   h.eq({}, misstyled_references(), "after switching to catppuccin-mocha")
-  apply("tokyonight-storm")
+  h.apply_theme("tokyonight-storm")
   h.eq({}, misstyled_references(), "after switching to tokyonight-storm")
 end)
