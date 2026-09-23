@@ -87,7 +87,7 @@ end
 h.test("for a file in a git repo, it shows the mode icon, file size, branch and diff, with no chevrons", function()
   editing_changed_file()
   local parts = {
-    vim.trim(icons.modes.normal),
+    vim.trim(icons.separators.honeycomb.right),
     "2.9k",
     "statusline-branch",
     vim.trim(icons.git.added) .. " 1",
@@ -186,35 +186,42 @@ h.test("after switching theme, the mode icon and filename follow the new theme's
       h.eq(colours.insert, insert.colour(vim.trim(icons.modes.insert)), theme .. " insert-mode icon")
       h.eq(colours.insert, insert.colour("tracked.txt"), theme .. " insert-mode filename")
       local copy = drawn_after("y")
-      h.eq(colours.copy, copy.colour(vim.trim(icons.modes.normal)), theme .. " icon while copying")
+      h.eq(colours.copy, copy.colour(vim.trim(icons.separators.honeycomb.right)), theme .. " icon while copying")
       h.eq(colours.copy, copy.colour("tracked.txt"), theme .. " filename while copying")
       local normal = drawn()
-      local icon = normal.colour(vim.trim(icons.modes.normal))
+      local icon = normal.colour(vim.trim(icons.separators.honeycomb.right))
       h.eq(icon, normal.colour("tracked.txt"), theme .. " normal-mode filename")
     end
   end)
 end)
 
-h.test("every other item's icon has its own colour, and they and their text keep it in every mode", function()
+h.test("every other item has its own colour, its text matching its icon, in every mode", function()
   editing_changed_file()
   h.apply_theme("tokyonight-moon")
-  local item_icons = {
-    file_size = vim.trim(icons.ui.File),
-    branch = vim.trim(icons.git.Branch),
-    position = vim.trim(icons.misc.location_point),
-    clock = vim.trim(icons.ui.Clock),
+  -- Each item's icon, and text it shows.
+  local items = {
+    file_size = { vim.trim(icons.ui.Code), "2.9k" },
+    branch = { vim.trim(icons.git.Branch), "statusline-branch" },
+    position = { vim.trim(icons.misc.location_point), "Top" },
+    clock = { vim.trim(icons.ui.Clock), os.date("%R") },
   }
   local normal, insert = drawn(), drawn_after("i")
   local seen = {}
-  for item, icon in pairs(item_icons) do
+  for item, parts in pairs(items) do
+    local icon, text = unpack(parts)
     local colour = normal.colour(icon)
-    h.eq(nil, seen[colour], ("%s's icon colour %s is its own"):format(item, colour))
+    h.eq(nil, seen[colour], ("%s's colour %s is its own"):format(item, colour))
     seen[colour] = item
-    h.eq(colour, insert.colour(icon), item .. "'s icon colour in insert mode")
+    h.eq(colour, normal.colour(text), item .. "'s text matches its icon")
+    h.eq(colour, insert.colour(icon), item .. "'s icon in insert mode")
+    h.eq(colour, insert.colour(text), item .. "'s text in insert mode")
   end
-  for _, text in ipairs({ "statusline-branch", "2.9k" }) do
-    h.eq(normal.colour(text), insert.colour(text), text .. " in insert mode")
-  end
+end)
+
+h.test("the filename's icon keeps the file's own colour", function()
+  editing_changed_file()
+  local glyph, group = require("mini.icons").get("file", file)
+  h.eq(fg(group), drawn().colour(glyph .. " tracked.txt"), "filename icon")
 end)
 
 h.test("the scrollbar's eight blocks each have their own colour, down to the last line", function()

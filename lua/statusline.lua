@@ -4,8 +4,8 @@
 -- updates, the filetype (coloured by its language server's state), git
 -- branch, position, a scrollbar and the clock.
 -- Colours all come from the theme. Only the mode icon and the filename follow
--- the mode; every other item has an icon in its own colour, and text in the
--- theme's soft foreground (lua/theme.lua's lualine theme).
+-- the mode (the filename's icon keeps the file's colour); every other item,
+-- icon and text, has a colour of its own.
 -- Blank while the Explorer is focused.
 local M = {}
 
@@ -38,10 +38,10 @@ local operator_colours = { y = "copy", d = "delete", c = "delete" }
 local function mode()
   local m = vim.fn.mode(1)
   if vim.startswith(m, "no") then -- waiting for a motion: d, c or y
-    return icons.modes.normal, operator_colours[vim.v.operator]
+    return icons.separators.honeycomb.right, operator_colours[vim.v.operator]
   end
   local found = modes[m:sub(1, 1)] or {}
-  return found[1] or icons.modes.normal, found[2]
+  return found[1] or icons.separators.honeycomb.right, found[2]
 end
 
 --- The current mode's colour: the mode icon's and the filename's.
@@ -66,9 +66,12 @@ local function fg_of(group)
   end
 end
 
---- An icon from the Icon set, drawn in `group`'s foreground.
-local function icon(glyph, group)
-  return { vim.trim(glyph), color = fg_of(group) }
+--- Give `component` an icon from the Icon set, and draw both in `group`'s
+--- foreground.
+---@return table component
+local function coloured(component, glyph, group)
+  component.icon, component.color = vim.trim(glyph), fg_of(group)
+  return component
 end
 
 local mode_icon = {
@@ -124,16 +127,15 @@ local filetype_status = {
   end,
 }
 
-local updates = {
+-- The Icon set's package glyph: lazy.nvim's own doesn't render.
+local updates = coloured({
   function()
     return tostring(#require("lazy.manage.checker").updated)
   end,
   cond = function()
     return require("lazy.status").has_updates()
   end,
-  -- The Icon set's: lazy.nvim's own glyph doesn't render.
-  icon = icon(icons.ui.Package, "Special"),
-}
+}, icons.ui.Package, "Special")
 
 local python_venv = {
   function()
@@ -142,11 +144,9 @@ local python_venv = {
   cond = function()
     return vim.bo.filetype == "python" and vim.env.VIRTUAL_ENV ~= nil
   end,
-  -- Python's glyph in its own colour, as the filetype icons are drawn.
-  icon = (function()
-    local glyph, hl = require("mini.icons").get("filetype", "python")
-    return { glyph, color = hl }
-  end)(),
+  -- Python's glyph and colour, as the filetype icons are drawn.
+  icon = require("mini.icons").get("filetype", "python"),
+  color = fg_of(select(2, require("mini.icons").get("filetype", "python"))),
 }
 
 local blocks = { "█", "▇", "▆", "▅", "▄", "▃", "▂", "▁" }
@@ -196,11 +196,11 @@ function M.extend(opts)
 
   -- The branch moves right, next to the position; the file size takes its place.
   local branch = table.remove(s.lualine_b, index_of(s.lualine_b, "branch"))
-  s.lualine_b = { { "filesize", icon = icon(icons.ui.File, "Constant") } }
+  s.lualine_b = { coloured({ "filesize" }, icons.ui.Code, "Constant") }
   if type(branch) == "string" then
     branch = { branch }
   end
-  branch.icon = icon(icons.git.Branch, "Statement")
+  coloured(branch, icons.git.Branch, "Statement")
 
   -- LazyVim's filetype icon moves to the centre, before the filename, in place
   -- of its path.
@@ -223,17 +223,17 @@ function M.extend(opts)
   table.insert(s.lualine_x, filetype_status)
 
   table.insert(s.lualine_y, 1, branch)
-  s.lualine_y[index_of(s.lualine_y, "progress")].icon = icon(icons.misc.location_point, "Function")
+  coloured(s.lualine_y[index_of(s.lualine_y, "progress")], icons.misc.location_point, "Function")
+  s.lualine_y[index_of(s.lualine_y, "location")].color = fg_of("Function")
   table.insert(s.lualine_y, scrollbar)
 
-  -- LazyVim's clock, rebuilt to give its glyph a colour of its own.
+  -- LazyVim's clock, rebuilt to give it a colour of its own.
   s.lualine_z = {
-    {
+    coloured({
       function()
         return os.date("%R")
       end,
-      icon = icon(icons.ui.Clock, "Operator"),
-    },
+    }, icons.ui.Clock, "Operator"),
   }
 
   -- Blank while the Explorer is focused. Remove this for LazyVim's default
