@@ -4,11 +4,11 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `<leader>uC` opens a previewing picker listing exactly the six curated themes; this is the only change to an existing LazyVim key
-- [ ] Saving happens in the theme-change hook, so any way of switching theme is persisted
-- [ ] Test: the picker source yields exactly the six curated names, no light themes
-- [ ] Test: applying a theme, then booting a second headless instance, restores that theme
-- [ ] Test: a corrupt or unknown saved theme falls back to the default with no error
-- [ ] State lives in Neovim's state directory (sandboxed in tests)
+- [x] `<leader>uC` opens a previewing picker listing exactly the six curated themes; this is the only change to an existing LazyVim key
+- [x] Saving happens in the theme-change hook, so any way of switching theme is persisted
+- [x] Test: the picker source yields exactly the six curated names, no light themes
+- [x] Test: applying a theme, then booting a second headless instance, restores that theme
+- [x] Test: a corrupt or unknown saved theme falls back to the default with no error
+- [x] State lives in Neovim's state directory (sandboxed in tests)
