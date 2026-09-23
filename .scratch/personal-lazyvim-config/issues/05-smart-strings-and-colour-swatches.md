@@ -4,11 +4,11 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] nvim-puppeteer installed and active for Python and JS/TS filetypes
-- [ ] mini-hipatterns LazyVim extra enabled
-- [ ] Test (Python buffer): typing `{name}` inside `"hello "` results in an f-string
-- [ ] Test (TS buffer): typing `${` inside a single- or double-quoted string results in a template literal
-- [ ] Test: a hex colour in a buffer receives a highlight whose background is that colour
-- [ ] Path completion confirmed available as a completion source
+- [x] nvim-puppeteer installed and active for Python and JS/TS filetypes
+- [x] mini-hipatterns LazyVim extra enabled
+- [x] Test (Python buffer): typing `{name}` inside `"hello "` results in an f-string
+- [x] Test (TS buffer): typing `${` inside a single- or double-quoted string results in a template literal
+- [x] Test: a hex colour in a buffer receives a highlight whose background is that colour
+- [x] Path completion confirmed available as a completion source
