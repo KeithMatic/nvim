@@ -112,10 +112,28 @@ local function tab_bar()
   return { str = bar.str, segments = segments, width = width }
 end
 
-h.test("the only tab is Files, its label on the left", function()
+h.test("the only tab is Files, its label centred", function()
   local bar = tab_bar()
   h.eq({ "Files" }, vim.iter(bar.str:gmatch("%a+")):totable(), "tab labels in: " .. bar.str)
-  h.eq(true, #bar.str:match("^ *") <= 1, "at most a space before the label in: " .. bar.str)
+  local before, after = #bar.str:match("^ *"), #bar.str:match(" *$")
+  h.eq(
+    true,
+    math.abs(before - after) <= 1,
+    ("%d spaces before the label, %d after in: %q"):format(before, after, bar.str)
+  )
+end)
+
+h.test("a blank row sits between the tab and the tree", function()
+  editing_file()
+  h.eq(true, h.focus_explorer(), "the Explorer has focus")
+  local lines = vim.api.nvim_buf_get_lines(0, 0, 2, false)
+  vim.cmd("Neotree close")
+  h.eq("", vim.trim(lines[1]), "the first row is blank")
+  h.eq(
+    true,
+    lines[2]:find("README.md", 1, true) ~= nil or lines[2]:find("src", 1, true) ~= nil,
+    "the tree follows: " .. lines[2]
+  )
 end)
 
 h.test("there is no border around the tab", function()
