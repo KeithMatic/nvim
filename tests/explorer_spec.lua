@@ -94,14 +94,65 @@ h.test("float: <leader>o again closes it", function()
   h.eq(file, vim.api.nvim_buf_get_name(0), "back in the file")
 end)
 
-h.test("the tabs are exactly Files and Git", function()
+--- The Explorer's tab bar as drawn: its text, its highlight segments (each
+--- with its text and group) and the window's width.
+local function tab_bar()
   editing_file()
   press(leader .. "o")
   wait_for_selected("target.txt")
   local win = assert(explorer_win(), "the Explorer opened")
-  local bar = vim.api.nvim_eval_statusline(vim.wo[win].winbar, { winid = win, use_winbar = true }).str
+  local bar = vim.api.nvim_eval_statusline(vim.wo[win].winbar, { winid = win, use_winbar = true, highlights = true })
+  local width = vim.api.nvim_win_get_width(win)
   vim.cmd("Neotree close")
-  h.eq({ "Files", "Git" }, vim.iter(bar:gmatch("%a+")):totable(), "tab labels in: " .. bar)
+  local segments = {}
+  for i, hl in ipairs(bar.highlights) do
+    local next_start = bar.highlights[i + 1] and bar.highlights[i + 1].start or #bar.str
+    table.insert(segments, { text = bar.str:sub(hl.start + 1, next_start), group = hl.group })
+  end
+  return { str = bar.str, segments = segments, width = width }
+end
+
+h.test("the tabs are exactly Files and Git", function()
+  local bar = tab_bar()
+  h.eq({ "Files", "Git" }, vim.iter(bar.str:gmatch("%a+")):totable(), "tab labels in: " .. bar.str)
+end)
+
+h.test("each tab's label is centred in its tab", function()
+  local bar = tab_bar()
+  local tabs = vim.tbl_filter(function(segment)
+    return segment.text:find("%a") ~= nil
+  end, bar.segments)
+  h.eq(2, #tabs, "tabs in: " .. vim.inspect(bar.segments))
+  for _, tab in ipairs(tabs) do
+    local before, after = #tab.text:match("^ *"), #tab.text:match(" *$")
+    h.eq(true, math.abs(before - after) <= 1, ("%q: %d spaces before, %d after"):format(tab.text, before, after))
+  end
+end)
+
+h.test("there is no border between the tabs", function()
+  local bar = tab_bar()
+  local icons = require("util.icons")
+  local drawn = bar.str:gsub(vim.pesc(vim.trim(icons.ui.Files)), ""):gsub(vim.pesc(vim.trim(icons.git.Git)), "")
+  h.eq("", (drawn:gsub("[%a ]", "")), "anything but labels and spaces in: " .. bar.str)
+end)
+
+h.test("a dashed line runs under the whole tab bar, in every theme", function()
+  for _, theme in ipairs({ "tokyonight-moon", "catppuccin-mocha" }) do
+    h.apply_theme(theme)
+    local bar = tab_bar()
+    h.eq(bar.width, vim.api.nvim_strwidth(bar.str), theme .. ": the bar spans the window")
+    local separator = vim.api.nvim_get_hl(0, { name = "WinSeparator", link = false }).fg
+    -- Every segment that takes up cells (the empty separators draw nothing).
+    local drawn = vim.tbl_filter(function(segment)
+      return segment.text ~= ""
+    end, bar.segments)
+    for _, segment in ipairs(drawn) do
+      local hl = vim.api.nvim_get_hl(0, { name = segment.group, link = false })
+      local what = ("%s: %q (%s)"):format(theme, segment.text, segment.group)
+      h.eq(true, hl.underdashed, what .. " is underdashed")
+      h.eq(separator, hl.sp, what .. " dashes in the separator colour")
+    end
+  end
 end)
 
 h.test("docked: <leader>o switches focus between the Explorer and the file", function()

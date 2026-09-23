@@ -47,8 +47,12 @@ return {
       opts.sources = { "filesystem", "git_status" }
       opts.close_if_last_window = true
       opts.sort_case_insensitive = true
+      -- Labels centred, no border between the tabs. The dashed line under them
+      -- is part of their highlights (lua/theme.lua).
       opts.source_selector = {
         winbar = true,
+        content_layout = "center",
+        separator = "",
         sources = {
           { source = "filesystem", display_name = " " .. icons.ui.Files .. "Files " },
           { source = "git_status", display_name = " " .. icons.git.Git .. "Git " },
