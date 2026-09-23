@@ -37,9 +37,9 @@ M.default_tint = { color = "#ffffff", fade = 0.1 }
 -- modes.nvim's groups for the Mode colours.
 local mode_groups = { insert = "ModesInsert", visual = "ModesVisual", delete = "ModesDelete", copy = "ModesCopy" }
 
--- Whether the statusline shows the filename. Off unless turned on; set by
+-- Whether the statusline shows the filename. On unless turned off; set by
 -- `load` from the saved state.
-M.statusline_filename = false
+M.statusline_filename = true
 
 -- What the tint colours: the cursor line (and its gutter), the Explorer's line
 -- and the selected completion item.
@@ -188,7 +188,7 @@ end
 
 --- `color` at `alpha` over `base`, all "#rrggbb": a solid colour that looks
 --- like `color` faded.
-local function blend(color, base, alpha)
+function M.blend(color, base, alpha)
   local channels = {}
   for i = 2, 6, 2 do
     local c, b = tonumber(color:sub(i, i + 1), 16), tonumber(base:sub(i, i + 1), 16)
@@ -199,7 +199,7 @@ end
 
 --- Give every tinted group the tint faded over the theme's background.
 local function apply_tint()
-  local bg = blend(M.tint.color, M.background or "#000000", M.tint.fade)
+  local bg = M.blend(M.tint.color, M.background or "#000000", M.tint.fade)
   for _, name in ipairs(tinted) do
     local hl = vim.api.nvim_get_hl(0, { name = name, link = false })
     hl.bg = bg
@@ -265,7 +265,7 @@ end
 --- saved theme, falling back to the default.
 function M.load()
   local state = read_state()
-  M.statusline_filename = state.statusline_filename == true
+  M.statusline_filename = state.statusline_filename ~= false
   local tint = state.tint
   M.tint = type(tint) == "table" and valid_color(tint.color) and valid_fade(tint.fade) and tint or M.default_tint
   vim.api.nvim_create_user_command("Tint", function(cmd)
@@ -363,14 +363,20 @@ function M.pick()
 end
 
 --- A lualine theme for the current colorscheme with no backgrounds: the mode
---- section shows the mode colour as bold text instead of a solid block.
+--- section shows the mode colour as bold text instead of a solid block, and
+--- every other section the theme's soft foreground, whatever the mode.
 --- A function, so lualine rebuilds it on every theme change.
 function M.lualine()
   local theme = require("lualine.utils.loader").load_theme("auto")
+  local soft = theme.normal.c.fg
   for mode, sections in pairs(theme) do
     for name, section in pairs(sections) do
-      if (name == "a" or name == "z") and mode ~= "inactive" then
-        section.fg, section.gui = section.bg or section.fg, "bold"
+      if mode ~= "inactive" then
+        if name == "a" then
+          section.fg, section.gui = section.bg or section.fg, "bold"
+        else
+          section.fg, section.gui = soft, nil
+        end
       end
       section.bg = "NONE"
     end

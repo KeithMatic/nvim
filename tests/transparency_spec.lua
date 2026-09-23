@@ -238,8 +238,9 @@ h.test("the statusline shows the pending plugin update count", function()
   require("lualine").refresh({ force = true })
   local line = vim.api.nvim_eval_statusline(vim.o.statusline, {}).str
   checker.updated = updated
-  local icon = require("lazy.core.config").options.ui.icons.plugin
-  h.eq(true, line:find(icon .. "3", 1, true) ~= nil, "statusline: " .. line)
+  -- The Icon set's package glyph: lazy.nvim's own doesn't render.
+  local icon = vim.trim(require("util.icons").ui.Package)
+  h.eq(true, line:find(icon .. " 3", 1, true) ~= nil, "statusline: " .. line)
 end)
 
 h.test("the update checker runs without notifying", function()

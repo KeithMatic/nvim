@@ -38,6 +38,7 @@ return {
       opts.options.theme = require("theme").lualine
       -- No powerline arrows: they'd be drawn in the (now cleared) section colours.
       opts.options.section_separators = { left = "", right = "" }
+      opts.options.component_separators = { left = "", right = "" } -- no chevrons
       require("statusline").extend(opts)
     end,
   },
