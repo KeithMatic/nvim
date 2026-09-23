@@ -19,6 +19,9 @@ require("lazy").setup({
     -- add LazyVim and import its plugins
     { "LazyVim/LazyVim", import = "lazyvim.plugins" },
     -- LazyVim extras, enabled here rather than through the :LazyExtras UI
+    -- The debugger. The language extras below add its adapters; without it,
+    -- nvim-dap still loads (nvim-dap-python's rockspec requires it) but unconfigured.
+    { import = "lazyvim.plugins.extras.dap.core" },
     { import = "lazyvim.plugins.extras.lang.typescript" },
     { import = "lazyvim.plugins.extras.lang.python" },
     { import = "lazyvim.plugins.extras.lang.go" },
