@@ -1,5 +1,6 @@
 -- UI: the themes and their transparency, the statusline, mode colours, float
--- borders the 'winborder' option doesn't reach, and the curated theme picker.
+-- borders the 'winborder' option doesn't reach, the curated theme picker, the
+-- cursor trail and the motion hints.
 -- Transparency the themes' own options leave out, and the tint, are done in
 -- lua/theme.lua.
 
@@ -50,6 +51,40 @@ return {
       require("theme").with_background(function()
         require("modes").setup(opts)
       end)
+    end,
+  },
+  {
+    -- An animated cursor trail. Neovide animates its own cursor.
+    "gen740/smoothcursor.nvim",
+    cond = vim.g.neovide == nil,
+    lazy = false,
+    opts = {
+      autostart = true,
+      fancy = { enable = true },
+    },
+  },
+  {
+    -- Motion hints (w, b, e, ^, $, ...) under the cursor line: hidden until
+    -- toggled with <leader>uP, for practising motions.
+    "tris203/precognition.nvim",
+    event = "VeryLazy",
+    opts = { startVisible = false },
+    config = function(_, opts)
+      local precognition = require("precognition")
+      precognition.setup(opts)
+      Snacks.toggle({
+        name = "Precognition",
+        get = precognition.is_visible,
+        set = function(state)
+          if state then
+            precognition.show()
+          else
+            -- hide() also deletes the autocmd that restores the hints' highlight
+            -- on theme change; setup() hides (startVisible = false) and re-adds it.
+            precognition.setup(opts)
+          end
+        end,
+      }):map("<leader>uP")
     end,
   },
   {

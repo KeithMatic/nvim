@@ -30,6 +30,9 @@ _Avoid_: Icons file, symbols
 The marks on other occurrences of the word under the cursor; shown as an underline, never as a background block.
 _Avoid_: Links, word highlights, LSP references
 
+**Cursor trail**:
+The animated trail the cursor leaves as it moves; off in Neovide, which animates its own cursor.
+
 ### Navigation
 
 **Explorer**:
@@ -46,6 +49,10 @@ _Avoid_: Winbar, symbol path
 **Dashboard**:
 The start screen shown when Neovim opens with no file.
 _Avoid_: Start page, splash
+
+**Motion hints**:
+The keys that reach each spot on the cursor line (w, b, e, ^, $, ...), drawn beneath it; hidden until toggled, for practising motions.
+_Avoid_: Precognition (the plugin, not the concept)
 
 ### Editing
 
