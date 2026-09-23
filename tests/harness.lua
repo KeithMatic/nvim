@@ -36,6 +36,83 @@ function M.apply_theme(theme)
   end)
 end
 
+---@param keys string
+---@param mode string
+function M.feed(keys, mode)
+  vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(keys, true, false, true), mode, false)
+end
+
+--- Enter insert or cmdline mode with `keys` and stay there while `steps` run
+--- one after another from a timer, so asynchronous things (the completion
+--- menu, noice's popup) can happen. A string step is typed; a function step is
+--- polled until it returns something other than false. The mode is left with
+--- <Esc> once every step is done.
+---@param keys string
+---@param steps (string|fun(): any)[]
+function M.drive(keys, steps)
+  local i, err = 1, nil
+  local deadline = vim.uv.now() + 5000
+  local timer = assert(vim.uv.new_timer())
+  local function stop()
+    timer:stop()
+    timer:close()
+  end
+  local function finish()
+    stop()
+    M.feed("<Esc>", "t")
+  end
+  timer:start(
+    50,
+    50,
+    vim.schedule_wrap(function()
+      if timer:is_closing() then
+        return
+      end
+      local step = steps[i]
+      if step == nil then
+        return finish()
+      elseif type(step) == "string" then
+        M.feed(step, "t")
+        i = i + 1
+      else
+        local ok, ret = pcall(step)
+        if not ok or vim.uv.now() > deadline then
+          err = ok and ("step %d timed out"):format(i) or ret
+          return finish()
+        elseif ret ~= false then
+          i = i + 1
+        end
+      end
+    end)
+  )
+  M.feed(keys, "x!")
+  if not timer:is_closing() then -- the mode ended early (e.g. into select mode)
+    stop()
+    err = err or ("mode ended before step %d"):format(i)
+  end
+  if err then
+    error(err, 2)
+  end
+end
+
+--- Attach Neovim's own TUI, `width` by `height`, from a child process. Headless
+--- Neovim has no UI, so it never redraws, and plugins that draw through
+--- vim.ui_attach (noice's cmdline) get no events until a UI is attached.
+---@param width integer
+---@param height integer
+function M.attach_ui(width, height)
+  vim.fn.jobstart({ "nvim", "--server", vim.v.servername, "--remote-ui" }, {
+    pty = true,
+    width = width,
+    height = height,
+    env = { NVIM = "" }, -- else the child refuses to attach to its "parent"
+  })
+  local attached = vim.wait(5000, function()
+    return vim.o.columns == width and vim.o.lines == height
+  end, 20)
+  M.eq(true, attached, ("a %dx%d UI attached (screen is %dx%d)"):format(width, height, vim.o.columns, vim.o.lines))
+end
+
 --- Every error the user would have seen: error notifications (early ones, and
 --- the notifier's history), error messages, and the last `v:errmsg`.
 ---@return string[]

@@ -271,6 +271,7 @@ return {
     info = " ",
     loaded = "󰽢",
     location_point = "",
+    lua = "󰢱", -- as mini.icons draws Lua files
     not_loaded = "󰏝",
     plugin = "",
     prompt_prefix = " ",

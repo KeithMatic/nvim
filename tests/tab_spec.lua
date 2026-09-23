@@ -1,8 +1,6 @@
 local h = require("harness")
 
-local function feed(keys, mode)
-  vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(keys, true, false, true), mode, false)
-end
+local feed, drive = h.feed, h.drive
 
 --- A fresh scratch buffer holding `lines`, with the cursor at `pos` ({row, col}).
 local function scratch(lines, pos)
@@ -20,56 +18,6 @@ local function type_keys(keys)
   end
   feed(keys .. "<Cmd>lua tab_spec_cursor()<CR><Esc>", "xt")
   return vim.api.nvim_buf_get_lines(0, 0, -1, false), cursor
-end
-
---- Enter insert mode with `keys` and stay there while `steps` run one after
---- another from a timer, so asynchronous things (the completion menu) can
---- happen. A string step is typed; a function step is polled until it returns
---- something other than false. Insert mode is left once every step is done.
-local function drive(keys, steps)
-  local i, err = 1, nil
-  local deadline = vim.uv.now() + 5000
-  local timer = assert(vim.uv.new_timer())
-  local function stop()
-    timer:stop()
-    timer:close()
-  end
-  local function finish()
-    stop()
-    feed("<Esc>", "t")
-  end
-  timer:start(
-    50,
-    50,
-    vim.schedule_wrap(function()
-      if timer:is_closing() then
-        return
-      end
-      local step = steps[i]
-      if step == nil then
-        return finish()
-      elseif type(step) == "string" then
-        feed(step, "t")
-        i = i + 1
-      else
-        local ok, ret = pcall(step)
-        if not ok or vim.uv.now() > deadline then
-          err = ok and ("step %d timed out"):format(i) or ret
-          return finish()
-        elseif ret ~= false then
-          i = i + 1
-        end
-      end
-    end)
-  )
-  feed(keys, "x!")
-  if not timer:is_closing() then -- insert mode ended early (e.g. into select mode)
-    stop()
-    err = err or ("insert mode ended before step %d"):format(i)
-  end
-  if err then
-    error(err, 2)
-  end
 end
 
 local function menu_open()

@@ -1,6 +1,7 @@
 -- UI: the themes and their transparency, the statusline, mode colours, float
 -- borders the 'winborder' option doesn't reach, the curated theme picker, the
--- cursor trail, the motion hints, and lspsaga's Breadcrumbs, rename and outline.
+-- cursor trail, the motion hints, lspsaga's Breadcrumbs, rename and outline, and
+-- noice's cmdline popup (centred, with the Icon set's glyphs) and its menu.
 -- Transparency the themes' own options leave out, and the tint, are done in
 -- lua/theme.lua.
 
@@ -155,23 +156,64 @@ return {
   },
   {
     "folke/noice.nvim",
-    opts = {
-      presets = {
+    opts = function(_, opts)
+      local icons = require("util.icons")
+      -- A cmdline format showing `glyph`: noice puts its own space after it.
+      local function format_with(glyph)
+        return { icon = vim.trim(glyph) }
+      end
+      local search = vim.trim(icons.ui.Search) .. " "
+
+      opts.presets = vim.tbl_extend("force", opts.presets or {}, {
         long_message_to_split = true,
         inc_rename = false,
         lsp_doc_border = true, -- LSP hover and signature help
-        -- Configure the centered command palette
-        command_palette = {
-          views = {
-            cmdline_popup = {
-              position = { row = "40%", col = "50%" },
-              size = { width = "20%", max_width = 50 },
-            },
-            cmdline_popup_menu = {
-              position = { row = "10%", col = "10%" },
-              size = { width = "10%", max_width = 10 },
-            },
-          },
+      })
+      -- Top-level views are merged after the presets, so these win over
+      -- LazyVim's command_palette preset (which puts the popup near the top).
+      opts.views = vim.tbl_deep_extend("force", opts.views or {}, {
+        cmdline_popup = {
+          position = { row = "50%", col = "50%" }, -- the exact centre of the screen
+          size = { width = "20%", max_width = 50 },
+        },
+      })
+      opts.cmdline = vim.tbl_deep_extend("force", opts.cmdline or {}, {
+        format = {
+          cmdline = format_with(icons.misc.Vim),
+          search_down = format_with(search .. icons.ui.ChevronShortDown),
+          search_up = format_with(search .. icons.ui.ChevronShortUp),
+          filter = format_with(icons.ui.Terminal), -- :!, run in the shell
+          lua = format_with(icons.misc.lua),
+          help = format_with(icons.diagnostics.Question),
+        },
+      })
+    end,
+  },
+  {
+    "saghen/blink.cmp",
+    opts = {
+      completion = {
+        menu = {
+          -- blink opens the cmdline's menu on the row after the one given here.
+          -- By default that's the row below the cmdline's text: in noice's popup
+          -- that's the bottom border, so give the frame's last row instead.
+          cmdline_position = function()
+            local cmdline = package.loaded.noice and require("noice").api.get_cmdline_position()
+            if cmdline and vim.api.nvim_win_is_valid(cmdline.win) then
+              -- noice draws the frame (border and padding) as a window of its
+              -- own, which the text's window sits in.
+              local config = vim.api.nvim_win_get_config(cmdline.win)
+              local frame = config.relative == "win" and config.win or cmdline.win
+              local last_row = vim.api.nvim_win_get_position(frame)[1] + vim.api.nvim_win_get_height(frame) - 1
+              return { last_row, cmdline.screenpos.col - 1 }
+            end
+            -- No noice cmdline: blink's own default.
+            local pos = vim.g.ui_cmdline_pos -- (1, 0)-indexed, from any UI plugin
+            if pos then
+              return { pos[1] - 1, pos[2] }
+            end
+            return { vim.o.lines - math.max(vim.o.cmdheight, 1), 0 }
+          end,
         },
       },
     },
