@@ -1,6 +1,8 @@
 -- Code runner (VS Code Code Runner parity). `:RunFile` saves the current file
 -- and runs it with the command for its filetype, in one bottom split terminal
--- that each run reuses. Compiled binaries go to a temp file, never the project.
+-- that each run reuses. LazyVim has no runner extra, so this module holds only
+-- the filetype → command table; the terminal is Snacks'. Compiled binaries go
+-- to a temp file, never the project.
 local M = {}
 
 local q = vim.fn.shellescape
@@ -41,34 +43,25 @@ local runners = {
   end,
 }
 
--- The terminal the last run went to, so the next run can reuse its window.
-local term = { buf = nil, job = nil }
+-- The last run's terminal (a Snacks terminal, which LazyVim ships).
+---@type snacks.win?
+local term
 
---- Run `cmd` in the runner's bottom split, replacing the previous run's
---- terminal in the same window. Focus stays where it was.
+--- Run `cmd` in a bottom split terminal that replaces the previous run's,
+--- stopping it if it's still going. Focus stays where it was.
 local function run_in_terminal(cmd)
-  local from = vim.api.nvim_get_current_win()
-  local win = term.buf and vim.fn.bufwinid(term.buf) or -1
-  if win == -1 then
-    vim.cmd("botright " .. math.floor(vim.o.lines * 0.3) .. "split")
-    win = vim.api.nvim_get_current_win()
-    vim.wo[win].winfixheight = true
+  if term then
+    term:close() -- also deletes the buffer, which stops its job
   end
-  if term.job then
-    vim.fn.jobstop(term.job)
-  end
-  local old = term.buf
-  term.buf = vim.api.nvim_create_buf(false, true)
-  vim.api.nvim_win_set_buf(win, term.buf)
-  vim.api.nvim_win_call(win, function()
-    term.job = vim.fn.jobstart(cmd, { term = true })
-    -- A terminal window only follows new output while its cursor is on the last line.
+  term = Snacks.terminal.open(cmd, {
+    -- Not interactive: no insert mode, and the output stays after the program exits.
+    interactive = false,
+    win = { position = "bottom", height = 0.3, enter = false },
+  })
+  -- A terminal window only follows new output while its cursor is on the last line.
+  vim.api.nvim_win_call(term.win, function()
     vim.cmd.normal({ "G", bang = true })
   end)
-  if old and vim.api.nvim_buf_is_valid(old) then
-    vim.api.nvim_buf_delete(old, { force = true })
-  end
-  vim.api.nvim_set_current_win(from)
 end
 
 --- The command that runs the current buffer's file, or nil and why not.
