@@ -4,11 +4,11 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The completion engine is the sole owner of insert-mode `<Tab>`; no other plugin maps it
-- [ ] Test: with the menu open, `<Tab>` accepts the selected item
-- [ ] Test: with the cursor before each closer character and no menu, `<Tab>` moves past it without inserting text
-- [ ] Test: in plain text with no menu, `<Tab>` inserts indentation
-- [ ] Test: with the menu open, `<Enter>` inserts a newline and accepts nothing
-- [ ] Snippet placeholder jumping still works (manual check if not practical headlessly)
+- [x] The completion engine is the sole owner of insert-mode `<Tab>`; no other plugin maps it
+- [x] Test: with the menu open, `<Tab>` accepts the selected item
+- [x] Test: with the cursor before each closer character and no menu, `<Tab>` moves past it without inserting text
+- [x] Test: in plain text with no menu, `<Tab>` inserts indentation
+- [x] Test: with the menu open, `<Enter>` inserts a newline and accepts nothing
+- [x] Snippet placeholder jumping still works (manual check if not practical headlessly)
