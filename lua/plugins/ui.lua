@@ -1,6 +1,7 @@
--- UI: the themes and their transparency, the statusline, float borders the
--- 'winborder' option doesn't reach, and the curated theme picker.
--- Transparency the themes' own options leave out is done in lua/theme.lua.
+-- UI: the themes and their transparency, the statusline, mode colours, float
+-- borders the 'winborder' option doesn't reach, and the curated theme picker.
+-- Transparency the themes' own options leave out, and the tint, are done in
+-- lua/theme.lua.
 
 return {
   {
@@ -33,6 +34,22 @@ return {
       opts.options.theme = require("theme").lualine
       -- No powerline arrows: they'd be drawn in the (now cleared) section colours.
       opts.options.section_separators = { left = "", right = "" }
+    end,
+  },
+  {
+    -- Tints the cursor line and selection by mode. Its colours come from the
+    -- theme's palette: lua/theme.lua sets them on every theme change.
+    "mvllow/modes.nvim",
+    event = "VeryLazy",
+    opts = {
+      line_opacity = 0.2,
+      set_cursorline = false, -- leave 'cursorline' on everywhere, as LazyVim sets it
+    },
+    config = function(_, opts)
+      -- It fades its colours over Normal's background, which transparency clears.
+      require("theme").with_background(function()
+        require("modes").setup(opts)
+      end)
     end,
   },
   {

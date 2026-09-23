@@ -1,6 +1,6 @@
 # nvim
 
-My personal Neovim config. I moved to it from VS Code. It covers the languages I write, recreates the small VS Code extensions my muscle memory depends on, and is built for a translucent, blurred WezTerm window: the UI is transparent, and only the "where am I" indicators (cursor line, selection, completion item) are solid, tinted by mode. Theme and tint are chosen at runtime and remembered across restarts.
+My personal Neovim config. I moved to it from VS Code. It covers the languages I write, recreates the small VS Code extensions my muscle memory depends on, and is built for a translucent, blurred WezTerm window: the UI is transparent, and only the "where am I" indicators (cursor line, selection, completion item) are solid, tinted by mode. Theme (`<leader>uC`) and tint (`:Tint <#rrggbb> <fade 0-1>`) are chosen at runtime and remembered across restarts.
 
 ## Why LazyVim is still the base
 
