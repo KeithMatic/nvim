@@ -52,7 +52,6 @@ write("src/main.rs", { "fn main() {}" })
 write("tailwind.config.js", { "module.exports = {}" })
 write("package.json", { "{}" })
 write("eslint.config.js", { "export default [];" })
-write(".sqlfluff", { "[sqlfluff]", "dialect = ansi" }) -- conform only runs sqlfluff in a sqlfluff project
 
 --- Open `file` (created empty if missing) in the scratch project and return its buffer.
 local function open(file)
@@ -116,7 +115,7 @@ local cases = {
     server = "docker_compose_language_service",
     formatter = "prettier",
   },
-  { file = "query.sql", ft = "sql", formatter = "sqlfluff" },
+  { file = "query.sql", ft = "sql", server = "postgres_lsp", formatter = "sqlfluff" },
   { file = "Cargo.toml", ft = "toml", server = "taplo" },
   { file = "init.lua", ft = "lua", server = "lua_ls", formatter = "stylua" },
 }
@@ -151,6 +150,46 @@ h.test("ESLint attaches to JavaScript and TypeScript", function()
   for _, file in ipairs({ "app.ts", "App.tsx", "app.js" }) do
     assert_attaches(file, "eslint")
   end
+end)
+
+-- DISTINCT ON is Postgres-only: sqlfluff keeps "on (a)" as Postgres, but reads
+-- "on" as a function call under ANSI and closes it up to "on(a)".
+local postgres_query = "select distinct on (a) a  from t"
+
+--- Write `postgres_query` to a fresh `dir`/query.sql, format it with conform, return line 1.
+local function format_query(dir)
+  vim.fn.mkdir(dir, "p")
+  local path = dir .. "/query.sql"
+  vim.fn.writefile({ postgres_query }, path)
+  vim.cmd.edit(vim.fn.fnameescape(path))
+  require("conform").format({ bufnr = 0, async = false, timeout_ms = 20000 })
+  return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1]
+end
+
+h.test("sqlfluff formats a .sql file outside any sqlfluff project, as Postgres", function()
+  h.eq("select distinct on (a) a from t", format_query(vim.fn.tempname()))
+end)
+
+h.test("a project's .sqlfluff dialect wins over the Postgres default", function()
+  local dir = vim.fn.tempname()
+  vim.fn.mkdir(dir, "p")
+  vim.fn.writefile({ "[sqlfluff]", "dialect = ansi" }, dir .. "/.sqlfluff")
+  h.eq("select distinct on(a) a from t", format_query(dir))
+end)
+
+h.test("sqlfluff lints a .sql file outside any sqlfluff project", function()
+  local path = vim.fn.tempname() .. ".sql"
+  vim.fn.writefile({ postgres_query }, path)
+  vim.cmd.edit(vim.fn.fnameescape(path))
+  require("lint").try_lint("sqlfluff")
+  local ns = require("lint").get_namespace("sqlfluff")
+  vim.wait(20000, function()
+    return #vim.diagnostic.get(0, { namespace = ns }) > 0
+  end, 100)
+  local codes = vim.tbl_map(function(d)
+    return d.code
+  end, vim.diagnostic.get(0, { namespace = ns }))
+  includes(codes, "LT01", "sqlfluff flags the double space")
 end)
 
 h.test("MDX files get Treesitter highlighting", function()

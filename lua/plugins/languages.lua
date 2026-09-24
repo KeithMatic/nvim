@@ -1,5 +1,5 @@
--- Languages LazyVim has no extra for: HTML, CSS, Emmet and MDX.
--- Everything else comes from the extras imported in config/lazy.lua.
+-- Languages LazyVim has no extra for: HTML, CSS, Emmet and MDX, plus the gaps
+-- in the extras imported in config/lazy.lua (Rust's server, SQL's server and dialect).
 
 -- The TypeScript SDK bundled with vtsls, which the typescript extra installs.
 local vtsls_tsdk = "$MASON/packages/vtsls/node_modules/@vtsls/language-server/node_modules/typescript/lib"
@@ -27,6 +27,20 @@ vim.filetype.add({
   },
 })
 
+-- SQL is Postgres. The sql extra ships no server, and sqlfluff refuses to run
+-- without a dialect, which only a project's .sqlfluff used to give it.
+local sql_dialect = "postgres"
+
+--- sqlfluff arguments to `verb` (lint or format) `filename` from stdin: config is
+--- found from the file, not Neovim's cwd, and a project's .sqlfluff dialect wins.
+local function sqlfluff_args(verb, filename, extra)
+  local args = { verb, "--stdin-filename", filename }
+  if not vim.fs.root(filename, ".sqlfluff") then
+    table.insert(args, "--dialect=" .. sql_dialect)
+  end
+  return vim.list_extend(vim.list_extend(args, extra or {}), { "-" })
+end
+
 return {
   {
     "neovim/nvim-lspconfig",
@@ -45,6 +59,9 @@ return {
             config.init_options.typescript.tsdk = tsdk
           end,
         },
+        -- Without a postgres-language-server.jsonc it still checks syntax;
+        -- add one (with a connection) for schema-aware completion and type checks.
+        postgres_lsp = { workspace_required = false },
       },
     },
   },
@@ -60,6 +77,30 @@ return {
   },
   {
     "stevearc/conform.nvim",
-    opts = { formatters_by_ft = { mdx = { "prettier" } } },
+    opts = {
+      formatters_by_ft = { mdx = { "prettier" } },
+      formatters = {
+        sqlfluff = {
+          require_cwd = false,
+          args = function(_, ctx)
+            return sqlfluff_args("format", ctx.filename)
+          end,
+        },
+      },
+    },
+  },
+  {
+    "mfussenegger/nvim-lint",
+    opts = {
+      linters = {
+        -- A function, so the arguments are built for the buffer being linted.
+        sqlfluff = function()
+          local filename = vim.api.nvim_buf_get_name(0)
+          return vim.tbl_extend("force", require("lint.linters.sqlfluff"), {
+            args = sqlfluff_args("lint", filename, { "--format=json" }),
+          })
+        end,
+      },
+    },
   },
 }
