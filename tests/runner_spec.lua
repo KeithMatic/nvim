@@ -1,5 +1,9 @@
 local h = require("harness")
 
+-- mini.animate draws a closing window's animation in a float, and :only
+-- can't close that float (E445): the next test's :only would race it.
+vim.g.minianimate_disable = true
+
 local function write(path, lines)
   vim.fn.mkdir(vim.fs.dirname(path), "p")
   vim.fn.writefile(lines, path)
