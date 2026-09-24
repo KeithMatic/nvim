@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] Only symbol-in-winbar, rename and outline enabled
 - [x] `<leader>k` checked free before binding
@@ -13,4 +13,4 @@
 - [x] Test: the disabled features register no keys or lightbulb autocmds
 - [x] Test: `Saga*` groups have no background for each Curated theme
 - [x] Test: `<leader>kb` hides the Breadcrumbs and shows them again
-- [ ] Manual: Breadcrumbs follow the cursor; rename and outline open in lspsaga's UI
+- [x] Manual: Breadcrumbs follow the cursor; rename and outline open in lspsaga's UI
