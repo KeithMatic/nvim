@@ -12,8 +12,14 @@ The short list of dark themes the theme picker offers; the last one applied is r
 _Avoid_: Colorschemes (for the curated list), theme list
 
 **Transparency**:
-Panel and float backgrounds cleared so the terminal's glass shows through, whatever the theme.
+Panel and float backgrounds cleared so the terminal's glass shows through, whatever the theme; also
+the **In-text blocks**, which keep only their colour.
 _Avoid_: Glass, no-background
+
+**In-text blocks**:
+Highlights drawn inside the text as a solid block: diagnostics at the end of a line, and Markdown heading
+bars, inline code and code blocks.
+_Avoid_: Chips (those are accents that keep their background)
 
 **Tint**:
 The colour faded over the theme's background that marks "where am I" lines: the cursor line, the explorer's line and the selected menu item.

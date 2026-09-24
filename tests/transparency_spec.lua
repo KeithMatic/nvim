@@ -10,6 +10,7 @@ require("lazy").load({
     "mason.nvim",
     "neo-tree.nvim",
     "noice.nvim",
+    "render-markdown.nvim",
     "which-key.nvim",
   },
 })
@@ -64,6 +65,25 @@ local transparent = {
   "SnacksPickerPreview",
   -- sidebars
   "NormalSB",
+  -- in-text blocks: diagnostics shown at the end of a line, in every filetype
+  "DiagnosticVirtualTextError",
+  "DiagnosticVirtualTextWarn",
+  "DiagnosticVirtualTextInfo",
+  "DiagnosticVirtualTextHint",
+  -- Markdown: heading bars, inline code and code blocks, as rendered and as
+  -- treesitter highlights them
+  "RenderMarkdownH1Bg",
+  "RenderMarkdownH2Bg",
+  "RenderMarkdownH3Bg",
+  "RenderMarkdownH4Bg",
+  "RenderMarkdownH5Bg",
+  "RenderMarkdownH6Bg",
+  "RenderMarkdownCode",
+  "RenderMarkdownCodeBorder",
+  "RenderMarkdownCodeInline",
+  "@markup.heading.1.markdown",
+  "@markup.heading.2.markdown",
+  "@markup.raw.markdown_inline",
 }
 
 -- The "where am I" highlights keep a background.
@@ -76,7 +96,7 @@ local chips = {
 }
 
 for theme, background in pairs(themes) do
-  h.test(theme .. ": editor, sidebars, bars and floats have no background", function()
+  h.test(theme .. ": editor, sidebars, bars, floats and in-text blocks have no background", function()
     h.apply_theme(theme)
     local solid_groups = {}
     for _, group in ipairs(transparent) do

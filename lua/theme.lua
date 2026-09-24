@@ -73,7 +73,8 @@ local function previewing()
   return #Snacks.picker.get({ source = "colorschemes", tab = false }) > 0
 end
 
--- What transparency clears: panel and float backgrounds, named or by prefix.
+-- What transparency clears: panel and float backgrounds, named or by prefix,
+-- and the blocks drawn inside the text (see `in_text`).
 -- Accent "chips" (progress bars, badges, Mason's tab blocks, window-pick labels)
 -- aren't panels, so they're left out, as is anything whose name marks a "where
 -- am I" highlight or a scrollbar.
@@ -128,23 +129,39 @@ local transparency = {
     "SnacksPicker",
     "WhichKey",
   },
+  -- Blocks inside the text, by prefix: diagnostics at the end of a line, and
+  -- Markdown heading bars, inline code and code blocks. They keep only their
+  -- colour. Cleared even when they're links: render-markdown, which loads after
+  -- the theme, links its groups to ones that keep a background (DiffAdd,
+  -- ColorColumn).
+  in_text = { "@markup.heading", "@markup.raw", "DiagnosticVirtualText", "RenderMarkdown" },
   keep = { "Cursor", "Sel", "Visual", "Search", "Diff", "Thumb", "ScrollBar", "Scrollbar", "PickWin" },
 }
 
+--- Whether `name` starts with one of `prefixes`.
+local function has_prefix(name, prefixes)
+  return vim.iter(prefixes):any(function(prefix)
+    return vim.startswith(name, prefix)
+  end)
+end
+
 local function should_clear(name)
   local listed = vim.list_contains(transparency.groups, name)
-    or vim.iter(transparency.prefixes):any(function(prefix)
-      return vim.startswith(name, prefix)
-    end)
+    or has_prefix(name, transparency.prefixes)
+    or has_prefix(name, transparency.in_text)
   return listed and not vim.iter(transparency.keep):any(function(word)
     return name:find(word, 1, true) ~= nil
   end)
 end
 
 --- Clear the background of every group transparency covers. Linked groups are
---- left alone: they follow their target.
+--- left alone, to follow their target, except in-text ones, which take their
+--- target's colours instead.
 local function make_transparent()
   for name, hl in pairs(vim.api.nvim_get_hl(0, {})) do
+    if hl.link and has_prefix(name, transparency.in_text) then
+      hl = vim.api.nvim_get_hl(0, { name = name, link = false })
+    end
     if not hl.link and (hl.bg or hl.ctermbg) and should_clear(name) then
       -- A `default` definition never replaces an existing one, so drop the flag.
       hl.bg, hl.ctermbg, hl.default = nil, nil, nil
