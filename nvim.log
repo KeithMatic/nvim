@@ -1,4 +1,0 @@
-WRN 2026-09-24T12:51:11.350 ?.66439    server_start:197: Failed to start server: operation not permitted: /var/folders/8f/_92tjzg968qb664cwnbr4g440000gn/T/nvim.matic/mZDsbj/nvim.66439.0
-WRN 2026-09-24T12:51:12.149 ?.66436    server_start:197: Failed to start server: operation not permitted: /var/folders/8f/_92tjzg968qb664cwnbr4g440000gn/T/nvim.matic/wP5Z4C/nvim.66436.0
-WRN 2026-09-24T13:13:54.114 ?.95529    server_start:197: Failed to start server: operation not permitted: /var/folders/8f/_92tjzg968qb664cwnbr4g440000gn/T/nvim.matic/s5TQV2/nvim.95529.0
-WRN 2026-09-24T21:39:13.785 ?.87517    server_start:197: Failed to start server: operation not permitted: /var/folders/8f/_92tjzg968qb664cwnbr4g440000gn/T/nvim.matic/MIPnCQ/nvim.87517.0

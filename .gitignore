@@ -1,2 +1,5 @@
 # Headless test sandbox (tests/run.sh)
 .tests/
+
+# Neovim's runtime log, written to on every session
+nvim.log
