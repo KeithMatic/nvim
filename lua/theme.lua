@@ -129,12 +129,12 @@ local transparency = {
     "SnacksPicker",
     "WhichKey",
   },
-  -- Blocks inside the text, by prefix: diagnostics at the end of a line, and
-  -- Markdown heading bars, inline code and code blocks. They keep only their
-  -- colour. Cleared even when they're links: render-markdown, which loads after
-  -- the theme, links its groups to ones that keep a background (DiffAdd,
-  -- ColorColumn).
-  in_text = { "@markup.heading", "@markup.raw", "DiagnosticVirtualText", "RenderMarkdown" },
+  -- Blocks inside the text, by prefix: diagnostics at the end of a line, inlay
+  -- hints, and Markdown heading bars, inline code and code blocks. They keep
+  -- only their colour. Cleared even when they're links: render-markdown, which
+  -- loads after the theme, links its groups to ones that keep a background
+  -- (DiffAdd, ColorColumn).
+  in_text = { "@markup.heading", "@markup.raw", "DiagnosticVirtualText", "LspInlayHint", "RenderMarkdown" },
   keep = { "Cursor", "Sel", "Visual", "Search", "Diff", "Thumb", "ScrollBar", "Scrollbar", "PickWin" },
 }
 

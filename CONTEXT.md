@@ -17,8 +17,8 @@ the **In-text blocks**, which keep only their colour.
 _Avoid_: Glass, no-background
 
 **In-text blocks**:
-Highlights drawn inside the text as a solid block: diagnostics at the end of a line, and Markdown heading
-bars, inline code and code blocks.
+Highlights drawn inside the text as a solid block: diagnostics at the end of a line, inlay hints, and
+Markdown heading bars, inline code and code blocks.
 _Avoid_: Chips (those are accents that keep their background)
 
 **Tint**:

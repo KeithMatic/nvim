@@ -70,6 +70,8 @@ local transparent = {
   "DiagnosticVirtualTextWarn",
   "DiagnosticVirtualTextInfo",
   "DiagnosticVirtualTextHint",
+  -- inlay hints (types and parameter names the LSP shows inline), in every filetype
+  "LspInlayHint",
   -- Markdown: heading bars, inline code and code blocks, as rendered and as
   -- treesitter highlights them
   "RenderMarkdownH1Bg",
