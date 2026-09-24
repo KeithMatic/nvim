@@ -12,7 +12,7 @@
 - [x] Test: the cmdline popup is centred horizontally and vertically
 - [x] Test: with the cmdline completion menu open, its top row is one row below the popup's bottom border
 - [x] Test: the boot spec still passes
-- [ ] Manual: `:`, `/` and `:lua` show their icons; the gap between cmdline and menu looks right
+- [x] Manual: `:`, `/` and `:lua` show their icons; the gap between cmdline and menu looks right
 
 ## Comments
 

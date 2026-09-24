@@ -15,4 +15,4 @@
 - [x] Test: `<leader>uN` adds the filename, and a second boot keeps it
 - [x] Test: the statusline is blank while the Explorer is focused
 - [x] Test: after switching theme, the mode icon's colour follows the new theme's Mode colours
-- [ ] Manual: the statusline reads well in every Curated theme
+- [x] Manual: the statusline reads well in every Curated theme

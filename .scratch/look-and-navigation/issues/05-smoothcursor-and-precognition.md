@@ -13,7 +13,7 @@
 - [x] Lockfile entries for these two plugins only
 - [x] Test: precognition is hidden after boot; `<leader>uP` shows it and pressing it again hides it
 - [x] Test: the boot spec still passes
-- [ ] Manual: the cursor trail animates; precognition hints appear only after the toggle
+- [x] Manual: the cursor trail animates; precognition hints appear only after the toggle
 
 ## Comments
 

@@ -11,7 +11,7 @@
 - [x] Test: `ja` in insert mode inserts `ja`
 - [x] Test: `jj` in visual mode moves the cursor two lines
 - [x] Test: `jk` in the cmdline leaves the cmdline
-- [ ] Manual: typing words with `j` in them feels instant
+- [x] Manual: typing words with `j` in them feels instant
 
 ## Comments
 

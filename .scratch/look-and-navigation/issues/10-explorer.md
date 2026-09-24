@@ -18,4 +18,4 @@
 - [x] Test: the tabs are exactly Files and Git
 - [x] Test: `NeoTree*` panel groups have no background; the Explorer cursor line has the Tint
 - [x] Test: the boot spec still passes
-- [ ] Manual: stage and unstage a file from the Git tab; the icons match the statusline
+- [x] Manual: stage and unstage a file from the Git tab; the icons match the statusline

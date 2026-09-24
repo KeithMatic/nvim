@@ -14,4 +14,4 @@
 - [x] Test: the module can be required without the rest of the config
 - [x] Test: the boot spec still passes
 - [x] Glossary and spec committed with this ticket
-- [ ] Manual: the completion menu, sign column and which-key show the new glyphs
+- [x] Manual: the completion menu, sign column and which-key show the new glyphs

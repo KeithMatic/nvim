@@ -22,4 +22,4 @@
 - [x] Test: the scrollbar's eight blocks each have a different colour, and the last line still shows a block
 - [x] Test: with a pending update, the package glyph and count show (in transparency_spec)
 - [x] Test: the filetype is the "ok" colour with a server attached, the error colour once it's stopped, and muted for a filetype with no server
-- [ ] Manual: the statusline reads well in every Curated theme
+- [x] Manual: the statusline reads well in every Curated theme

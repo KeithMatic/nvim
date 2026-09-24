@@ -11,4 +11,4 @@
 - [x] Test: `:Sqmeow` exists; dadbod-ui's commands don't
 - [x] Test: in a `.sql` buffer, blink's sources include dadbod completion
 - [x] Test: the boot spec still passes
-- [ ] Manual: connect to a database, run a query, page the results
+- [x] Manual: connect to a database, run a query, page the results

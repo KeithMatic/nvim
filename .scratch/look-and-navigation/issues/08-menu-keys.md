@@ -13,7 +13,7 @@
 - [x] Test: with no menu in insert mode, each key moves the cursor one step in its direction
 - [x] Test: in the cmdline with no menu, Ctrl-k recalls the previous history entry
 - [x] Test: the existing Tab-chain spec still passes
-- [ ] Manual: the keys feel right in the editor and the noice cmdline
+- [x] Manual: the keys feel right in the editor and the noice cmdline
 
 ## Comments
 

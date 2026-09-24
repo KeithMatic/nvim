@@ -9,7 +9,7 @@
 - [x] First: ask the owner for the annotated design screenshot and wait for it; don't guess the design
 - [x] Search-bar and pointer glyphs come from the Icon set
 - [x] Test: the picker's prompt and pointer use the chosen glyphs
-- [ ] Manual: the picker matches the screenshot
+- [x] Manual: the picker matches the screenshot
 
 ## Comments
 

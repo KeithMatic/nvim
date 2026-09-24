@@ -13,4 +13,4 @@
 - [x] Test: the header matches; the key list equals LazyVim's
 - [x] Test: with `colorscript` absent from `PATH`, the Dashboard opens with no error and exactly one WARN notification
 - [x] Test: while the Dashboard is current the cursor is hidden and `laststatus` is 0; both are restored after opening a file
-- [ ] Manual: the layout looks right with and without `colorscript`
+- [x] Manual: the layout looks right with and without `colorscript`

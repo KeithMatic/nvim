@@ -9,4 +9,4 @@
 - [x] Three candidate glyphs shown to the owner in their terminal; the owner picks one (U+E615, seti config)
 - [x] Override covers the `toml` extension and the `toml` filetype
 - [x] Test: the icon provider returns the chosen glyph for `Cargo.toml`, `pyproject.toml` and the `toml` filetype
-- [ ] Manual: the glyph renders in the bufferline, picker and statusline
+- [x] Manual: the glyph renders in the bufferline, picker and statusline
