@@ -25,3 +25,7 @@ vim.keymap.set("n", "<leader>cx", "<Cmd>RunFile<CR>", { desc = "Run File" })
 
 -- Show or hide the statusline's filename (lua/statusline.lua). <leader>uN is free in LazyVim's "ui" group.
 require("statusline").filename_toggle():map("<leader>uN")
+
+-- Every current toggle has an explicit persistence policy. Local choices
+-- become future buffer defaults; temporary modes always start off.
+require("persistent_toggles").setup()

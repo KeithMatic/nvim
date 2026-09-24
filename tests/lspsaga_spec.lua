@@ -2,6 +2,13 @@ local h = require("harness")
 
 local leader = vim.g.mapleader
 
+local function breadcrumbs()
+  return vim.api.nvim_eval_statusline(vim.wo.winbar, {
+    winid = vim.api.nvim_get_current_win(),
+    use_winbar = true,
+  }).str
+end
+
 --- Move onto `M.greet`'s body as a user would, until the Breadcrumbs show it
 --- (or `ms` has passed); return whether they do. The redraw is nudged outside
 --- the wait's condition: firing autocmds inside it keeps vim.wait from timing out.
@@ -10,7 +17,7 @@ local function breadcrumbs_shown(ms)
   for _ = 1, ms / 200 do
     vim.api.nvim_exec_autocmds("CursorMoved", { buffer = 0 })
     if vim.wait(200, function()
-      return vim.wo.winbar:find("greet", 1, true) ~= nil
+      return breadcrumbs():find("greet", 1, true) ~= nil
     end, 20) then
       return true
     end
@@ -19,10 +26,13 @@ local function breadcrumbs_shown(ms)
 end
 
 --- Edit a Lua file with a couple of symbols, and wait until lua_ls has attached
---- and, unless they are hidden, lspsaga has drawn the Breadcrumbs.
+--- and, unless they are hidden, Dropbar has drawn the Breadcrumbs.
 local function open_lua()
   local file = vim.fn.tempname() .. ".lua"
-  vim.fn.writefile({ "local M = {}", "", "function M.greet(name)", "  return 'hi ' .. name", "end", "", "return M" }, file)
+  vim.fn.writefile(
+    { "local M = {}", "", "function M.greet(name)", "  return 'hi ' .. name", "end", "", "return M" },
+    file
+  )
   vim.cmd.edit(file)
   h.eq(
     true,
@@ -84,19 +94,19 @@ h.test("<leader>ko opens lspsaga's outline", function()
   h.eq(true, vim.list_contains(opened, "sagaoutline"), "windows opened: " .. vim.inspect(opened))
 end)
 
-h.test("<leader>cr, <leader>cs and <leader>cS stay LazyVim's rename and Trouble's views", function()
+h.test("<leader>cr, <leader>cs and <leader>cS stay the configured rename and symbol views", function()
   open_lua()
   -- LazyVim adds the LSP keys (<leader>cr) once the client has attached.
   vim.wait(5000, function()
     return mapping("cr").buffer == 1
   end, 50)
   h.eq(
-    { cr = "Rename", cs = "Symbols (Trouble)", cS = "LSP references/definitions/... (Trouble)" },
+    { cr = "Rename (inc-rename.nvim)", cs = "Aerial (Symbols)", cS = "LSP references/definitions/... (Trouble)" },
     { cr = mapping("cr").desc, cs = mapping("cs").desc, cS = mapping("cS").desc }
   )
 end)
 
-h.test("<leader>k is the lspsaga group in which-key", function()
+h.test("<leader>k is the navigation group in which-key", function()
   local groups = vim
     .iter(require("which-key.config").mappings)
     :filter(function(m)
@@ -106,15 +116,15 @@ h.test("<leader>k is the lspsaga group in which-key", function()
       return m.desc
     end)
     :totable()
-  h.eq({ "lspsaga" }, groups, "which-key groups on <leader>k")
+  h.eq({ "navigation" }, groups, "which-key groups on <leader>k")
 end)
 
 h.test("<leader>kb hides the Breadcrumbs and shows them again", function()
   open_lua()
-  h.eq(true, vim.wo.winbar:find("greet", 1, true) ~= nil, "Breadcrumbs shown after boot: " .. vim.wo.winbar)
+  h.eq(true, breadcrumbs():find("greet", 1, true) ~= nil, "Breadcrumbs shown after boot: " .. breadcrumbs())
 
   vim.api.nvim_feedkeys(leader .. "kb", "mx", false)
-  -- Moving and editing make lspsaga redraw, and must not bring them back.
+  -- Moving and editing make Dropbar redraw, and must not bring them back.
   vim.api.nvim_win_set_cursor(0, { 3, 10 })
   vim.api.nvim_exec_autocmds("CursorMoved", { buffer = 0 })
   vim.wait(1000, function()
@@ -135,18 +145,15 @@ h.test("a file opened while the Breadcrumbs are hidden shows them once they're t
   h.eq(true, breadcrumbs_shown(3000), "Breadcrumbs after <leader>kb: " .. vim.wo.winbar)
 end)
 
-h.test("only Breadcrumbs, rename and outline are enabled", function()
+h.test("Lspsaga keeps rename and outline but disables its Breadcrumbs", function()
   open_lua()
   local config = require("lspsaga").config
-  h.eq(
-    { symbol_in_winbar = true, lightbulb = false, beacon = false, implement = false },
-    {
-      symbol_in_winbar = config.symbol_in_winbar.enable,
-      lightbulb = config.lightbulb.enable,
-      beacon = config.beacon.enable,
-      implement = config.implement.enable,
-    }
-  )
+  h.eq({ symbol_in_winbar = false, lightbulb = false, beacon = false, implement = false }, {
+    symbol_in_winbar = config.symbol_in_winbar.enable,
+    lightbulb = config.lightbulb.enable,
+    beacon = config.beacon.enable,
+    implement = config.implement.enable,
+  })
 end)
 
 h.test("the disabled features register no lightbulb autocmds", function()
@@ -163,12 +170,12 @@ h.test("the disabled features register no keys", function()
   for _, mode in ipairs({ "n", "x", "o", "i" }) do
     for _, map in ipairs(vim.list_extend(vim.api.nvim_get_keymap(mode), vim.api.nvim_buf_get_keymap(0, mode))) do
       local text = ((map.rhs or "") .. " " .. (map.desc or "")):lower()
-      if text:find("saga", 1, true) and not vim.list_contains({ "kr", "ko", "kb" }, map.lhs:sub(2)) then
+      if text:find("saga", 1, true) and not vim.list_contains({ "kr", "ko" }, map.lhs:sub(2)) then
         table.insert(saga, mode .. " " .. map.lhs .. " " .. text)
       end
     end
   end
-  h.eq({}, saga, "lspsaga mappings besides rename, outline and Breadcrumbs")
+  h.eq({}, saga, "lspsaga mappings besides rename and outline")
 end)
 
 -- Search keeps its background (see lua/theme.lua), and SagaSearch links to it.

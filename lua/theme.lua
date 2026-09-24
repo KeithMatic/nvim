@@ -11,8 +11,6 @@
 --      picker and the theme applied at startup aren't saved),
 --   6. clears the background of whatever the themes' native transparency
 --      options leave solid, so the terminal's glass shows through.
--- It also keeps the statusline's filename toggle, saved alongside the theme
--- and tint.
 local M = {}
 
 -- The only themes the picker offers.
@@ -49,7 +47,7 @@ local references = { "LspReferenceText", "LspReferenceRead", "LspReferenceWrite"
 local state_file = vim.fn.stdpath("state") .. "/theme.json"
 
 --- The saved state, or an empty table when it's missing or unreadable.
----@return {theme?: string, tint?: {color: string, fade: number}, statusline_filename?: boolean}
+---@return {theme?: string, tint?: {color: string, fade: number}, statusline_filename?: boolean} (the last only until migrated)
 local function read_state()
   local ok, state = pcall(function()
     return vim.json.decode(table.concat(vim.fn.readfile(state_file), "\n"))
@@ -122,6 +120,7 @@ local transparency = {
     "NoiceMini",
     "NoicePopup",
     "NoiceSplit",
+    "DropBar",
     "Saga",
     "SnacksDashboard",
     "SnacksInput",
@@ -256,7 +255,17 @@ end
 --- saved theme, falling back to the default.
 function M.load()
   local state = read_state()
-  M.statusline_filename = state.statusline_filename ~= false
+  -- The filename toggle used to be saved here: move it to the toggle state, so
+  -- that :ToggleStateReset can't bring the old value back.
+  local toggles = require("toggle_state")
+  if state.statusline_filename ~= nil then
+    if not toggles.has("ui.statusline_filename") then
+      toggles.set("ui.statusline_filename", state.statusline_filename ~= false)
+    end
+    state.statusline_filename = nil
+    vim.fn.writefile({ vim.json.encode(state) }, state_file)
+  end
+  M.statusline_filename = toggles.get("ui.statusline_filename", true)
   local tint = state.tint
   M.tint = type(tint) == "table" and valid_color(tint.color) and valid_fade(tint.fade) and tint or M.default_tint
   vim.api.nvim_create_user_command("Tint", function(cmd)
@@ -317,7 +326,7 @@ end
 ---@param shown boolean
 function M.set_statusline_filename(shown)
   M.statusline_filename = shown
-  save_state({ statusline_filename = shown })
+  require("toggle_state").set("ui.statusline_filename", shown)
 end
 
 --- Run a plugin's `setup` so that it, and the ColorScheme hooks it creates, see

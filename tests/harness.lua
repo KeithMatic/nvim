@@ -23,7 +23,10 @@ end
 
 function M.eq(expected, actual, what)
   if not vim.deep_equal(expected, actual) then
-    error(("%s\nexpected: %s\n  actual: %s"):format(what or "values differ", vim.inspect(expected), vim.inspect(actual)), 2)
+    error(
+      ("%s\nexpected: %s\n  actual: %s"):format(what or "values differ", vim.inspect(expected), vim.inspect(actual)),
+      2
+    )
   end
 end
 
@@ -137,6 +140,7 @@ function M.statusline()
 end
 
 local state_file = vim.fn.stdpath("state") .. "/theme.json"
+local toggle_state_file = vim.fn.stdpath("state") .. "/toggle-state.json"
 
 --- Run `fn` with the theme module's saved state set to `content` (nil: no
 --- state file), then put back whatever was saved before, so other specs boot
@@ -145,16 +149,29 @@ local state_file = vim.fn.stdpath("state") .. "/theme.json"
 ---@param fn fun()
 function M.with_state(content, fn)
   local before = vim.fn.filereadable(state_file) == 1 and vim.fn.readfile(state_file, "b") or nil
+  local toggles_before = vim.fn.filereadable(toggle_state_file) == 1 and vim.fn.readfile(toggle_state_file, "b") or nil
   if content then
     vim.fn.writefile(vim.split(content, "\n"), state_file, "b")
   else
     vim.fn.delete(state_file)
+  end
+  vim.fn.delete(toggle_state_file)
+  if package.loaded.toggle_state then
+    require("toggle_state").reload()
   end
   local ok, err = pcall(fn)
   if before then
     vim.fn.writefile(before, state_file, "b")
   else
     vim.fn.delete(state_file)
+  end
+  if toggles_before then
+    vim.fn.writefile(toggles_before, toggle_state_file, "b")
+  else
+    vim.fn.delete(toggle_state_file)
+  end
+  if package.loaded.toggle_state then
+    require("toggle_state").reload()
   end
   if not ok then
     error(err, 0)
@@ -193,7 +210,9 @@ local function run(spec)
   -- Headless Neovim has no UI, so lazy.nvim's VeryLazy (fired on UIEnter) would never run.
   vim.api.nvim_exec_autocmds("UIEnter", {})
   -- Let deferred startup work (VeryLazy plugins, replayed notifications) settle.
-  vim.wait(1000, function() return false end)
+  vim.wait(1000, function()
+    return false
+  end)
 
   local ok, err = pcall(dofile, spec)
   if not ok then
@@ -220,7 +239,9 @@ package.loaded.harness = M
 vim.api.nvim_create_autocmd("VimEnter", {
   once = true,
   callback = function()
-    vim.schedule(function() run(spec) end)
+    vim.schedule(function()
+      run(spec)
+    end)
   end,
 })
 

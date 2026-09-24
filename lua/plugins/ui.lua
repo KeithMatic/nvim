@@ -1,7 +1,7 @@
 -- UI: the themes and their transparency, the statusline (lua/statusline.lua),
 -- mode colours, float borders the 'winborder' option doesn't reach, the curated
--- theme picker, the cursor trail, the motion hints, lspsaga's Breadcrumbs, rename
--- and outline, and noice's cmdline popup (centred, with the Icon set's glyphs)
+-- theme picker, the cursor trail, the motion hints, Dropbar's Breadcrumbs,
+-- lspsaga's rename and outline, and noice's cmdline popup (centred, with the Icon set's glyphs)
 -- and its menu, the Dashboard's header and sections (lua/dashboard.lua), and
 -- the picker's prompt and pointer (lua/picker.lua).
 -- Transparency the themes' own options leave out, and the tint, are done in
@@ -78,28 +78,36 @@ return {
     -- toggled with <leader>uP, for practising motions.
     "tris203/precognition.nvim",
     event = "VeryLazy",
-    opts = { startVisible = false },
+    opts = function()
+      return { startVisible = require("toggle_state").get("ui.precognition", false) }
+    end,
     config = function(_, opts)
       local precognition = require("precognition")
       precognition.setup(opts)
-      Snacks.toggle({
-        name = "Precognition",
-        get = precognition.is_visible,
-        set = function(state)
-          if state then
-            precognition.show()
-          else
-            -- hide() also deletes the autocmd that restores the hints' highlight
-            -- on theme change; setup() hides (startVisible = false) and re-adds it.
-            precognition.setup(opts)
-          end
-        end,
-      }):map("<leader>uP")
+      require("toggle_state")
+        .persist(
+          "ui.precognition",
+          Snacks.toggle({
+            name = "Precognition",
+            get = precognition.is_visible,
+            set = function(state)
+              if state then
+                precognition.show()
+              else
+                -- hide() also deletes the autocmd that restores the hints'
+                -- highlight on theme change; setup() re-adds it.
+                precognition.setup(vim.tbl_extend("force", opts, { startVisible = false }))
+              end
+            end,
+          }),
+          { default = false, restore = false }
+        )
+        :map("<leader>uP")
     end,
   },
   {
-    -- Breadcrumbs, rename and outline only, under <leader>k: LazyVim already
-    -- gives the rest (code actions, hover, diagnostics, references).
+    -- Rename and outline only: LazyVim already gives the rest (code actions,
+    -- hover, diagnostics, references), and Dropbar owns the Breadcrumbs.
     "nvimdev/lspsaga.nvim",
     event = "LspAttach",
     keys = {
@@ -107,60 +115,98 @@ return {
       { "<leader>ko", "<cmd>Lspsaga outline<cr>", desc = "Outline" },
     },
     opts = {
-      symbol_in_winbar = { enable = true },
+      symbol_in_winbar = { enable = false },
       lightbulb = { enable = false },
       beacon = { enable = false },
     },
-    config = function(_, opts)
-      require("lspsaga").setup(opts)
-      local winbar = require("lspsaga.symbol.winbar")
-      -- lspsaga checks this flag on every redraw (its own winbar_toggle leaves
-      -- a redraw hook behind, so the Breadcrumbs come back on their own).
-      local breadcrumbs = require("lspsaga").config.symbol_in_winbar
+  },
+  {
+    "Bekaboo/dropbar.nvim",
+    lazy = false,
+    dependencies = {
+      {
+        "nvim-telescope/telescope-fzf-native.nvim",
+        build = "make",
+      },
+    },
+    keys = {
+      {
+        "<leader>;",
+        function()
+          require("dropbar.api").pick()
+        end,
+        desc = "Pick Breadcrumbs",
+      },
+      {
+        "[;",
+        function()
+          require("dropbar.api").goto_context_start()
+        end,
+        desc = "Breadcrumbs Context Start",
+      },
+      {
+        "];",
+        function()
+          require("dropbar.api").select_next_context()
+        end,
+        desc = "Breadcrumbs Next Context",
+      },
+      {
+        "<leader>kb",
+        function()
+          require("dropbar_config").toggle():toggle()
+        end,
+        desc = "Toggle Breadcrumbs",
+      },
+    },
+    opts = function()
+      local api = require("dropbar.api")
+      local configs = require("dropbar.configs")
+      local menu = require("dropbar.utils.menu")
 
-      -- Buffers that attached while the Breadcrumbs were off never got
-      -- lspsaga's redraw hook: add it when they're shown.
-      local function show(buf)
-        local hooked = pcall(vim.api.nvim_get_autocmds, { group = "SagaWinbar" .. buf })
-        if not hooked and #vim.lsp.get_clients({ bufnr = buf, method = "textDocument/documentSymbol" }) > 0 then
-          winbar.init_winbar(buf)
+      local function click()
+        local current = menu.get_current()
+        if not current then
+          return
         end
-        winbar.get_bar()
+        local cursor = vim.api.nvim_win_get_cursor(current.win)
+        local component = current.entries[cursor[1]]:first_clickable(cursor[2])
+        if component then
+          current:click_on(component, nil, 1, "l")
+        end
       end
-      vim.api.nvim_create_autocmd("BufEnter", {
-        group = vim.api.nvim_create_augroup("breadcrumbs", { clear = true }),
-        callback = function(args)
-          if breadcrumbs.enable then
-            show(args.buf)
-          end
-        end,
-      })
 
-      Snacks.toggle({
-        name = "Breadcrumbs",
-        get = function()
-          return breadcrumbs.enable
-        end,
-        set = function(state)
-          breadcrumbs.enable = state
-          if state then
-            return show(vim.api.nvim_get_current_buf())
-          end
-          -- Only lspsaga's winbars: others (nvim-dap-ui's) stay.
-          for _, win in ipairs(vim.api.nvim_list_wins()) do
-            if vim.startswith(vim.wo[win].winbar, "%#Saga") then
-              vim.wo[win].winbar = ""
-            end
-          end
-        end,
-      }):map("<leader>kb")
+      return {
+        bar = {
+          enable = require("dropbar_config").enable(configs.opts.bar.enable),
+        },
+        menu = {
+          keymaps = {
+            ["<C-h>"] = "<C-w>q",
+            ["<C-j>"] = "j",
+            ["<C-k>"] = "k",
+            ["<C-l>"] = click,
+          },
+        },
+        fzf = {
+          keymaps = {
+            ["<C-h>"] = function()
+              local current = menu.get_current()
+              if current then
+                current:fuzzy_find_close()
+              end
+            end,
+            ["<C-l>"] = api.fuzzy_find_click,
+          },
+        },
+      }
     end,
   },
   {
     "folke/which-key.nvim",
     opts = function(_, opts)
       -- Appended: a list in opts would replace LazyVim's groups, not add to them.
-      table.insert(opts.spec, { "<leader>k", group = "lspsaga" })
+      table.insert(opts.spec, { "<leader>k", group = "navigation" })
     end,
   },
   {

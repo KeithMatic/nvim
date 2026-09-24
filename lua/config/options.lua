@@ -6,5 +6,8 @@
 -- signature help, blink.cmp, which-key, Mason, and Snacks' `border = true`.
 vim.o.winborder = "rounded"
 
--- No Trouble symbols in the statusline: the Breadcrumbs (lspsaga) show them.
+-- Dropbar highlights bar and menu entries as the mouse moves over them.
+vim.o.mousemoveevent = true
+
+-- No Trouble symbols in the statusline: Dropbar shows the Breadcrumbs.
 vim.g.trouble_lualine = false
