@@ -4,12 +4,12 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Starter git history removed; fresh repo initialised with a first commit on `main`
-- [ ] Starter example plugin file, README and licence removed; stylua, neoconf and LazyVim JSON state kept
-- [ ] Plugin lockfile tracked in git
-- [ ] README contains: purpose, one-sentence rationale for keeping LazyVim, VS Code extension → Neovim equivalent table, Roadmap section
-- [ ] A single command runs the test suite headlessly in a sandboxed XDG environment (plugins install into the sandbox on first run)
-- [ ] First test passes: the config boots with no errors or error notifications
-- [ ] Running the tests leaves the real Neovim state and data directories untouched
+- [x] Starter git history removed; fresh repo initialised with a first commit on `main`
+- [x] Starter example plugin file, README and licence removed; stylua, neoconf and LazyVim JSON state kept
+- [x] Plugin lockfile tracked in git
+- [x] README contains: purpose, one-sentence rationale for keeping LazyVim, VS Code extension → Neovim equivalent table, Roadmap section
+- [x] A single command runs the test suite headlessly in a sandboxed XDG environment (plugins install into the sandbox on first run)
+- [x] First test passes: the config boots with no errors or error notifications
+- [x] Running the tests leaves the real Neovim state and data directories untouched
