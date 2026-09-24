@@ -2,6 +2,10 @@
 -- Default keymaps that are always set: https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/keymaps.lua
 -- Add any additional keymaps here
 
+-- AstroNvim's comment shortcuts; project search remains on <leader>sg.
+vim.keymap.set("n", "<leader>/", "gcc", { remap = true, desc = "Toggle comment line" })
+vim.keymap.set("x", "<leader>/", "gc", { remap = true, desc = "Toggle comment" })
+
 -- The code runner (:RunFile, set up in autocmds.lua). <leader>cx is free in LazyVim's "code" group.
 vim.keymap.set("n", "<leader>cx", "<Cmd>RunFile<CR>", { desc = "Run File" })
 
