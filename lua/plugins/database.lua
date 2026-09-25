@@ -8,8 +8,7 @@
 -- The Database client: "sqmeow" or "dadbod-ui". Going back is this one line.
 local client = "sqmeow"
 
--- The filetypes the lang.sql extra serves.
-local sql_ft = { "sql", "mysql", "plsql" }
+local sql_ft = require("database").sql_ft
 
 --- The URL of the database queries from `buf` run on in sqmeow, for vim-dadbod,
 --- or nil when there's none it can reach.
@@ -40,6 +39,14 @@ return {
       require("sqmeow").install()
     end,
     cmd = "Sqmeow",
+    config = function(_, opts)
+      require("sqmeow").setup(opts)
+      -- The database is named by the first Breadcrumb (lua/database.lua), not
+      -- sqmeow's winbar, which would stand in for the Breadcrumbs in a
+      -- scratchpad or bound buffer. sqmeow calls this whenever that database
+      -- may have changed: a switch, a bind, a connection opening or closing.
+      require("sqmeow.ui.editor").update_winbar = require("database").refresh
+    end,
     init = function()
       -- Every SQL buffer gets the keys sqmeow gives its scratchpads (<CR> runs
       -- the statement or selection, <leader>E the buffer, <C-c> stops). Not
@@ -54,6 +61,61 @@ return {
           -- and its keymap overrides can only move keys, not add them.
           -- This takes ? (backward search) in SQL buffers.
           vim.keymap.set("n", "?", actions.help, { buffer = ev.buf, desc = "sqmeow: Show these mappings" })
+        end,
+      })
+      -- The Menu keys walk the drawer's tree: <C-j>/<C-k> down and up, <C-l>
+      -- opens (or steps into what is open), <C-h> closes (or steps out to the
+      -- parent). They take the drawer's window moves; <C-w> still has them.
+      vim.api.nvim_create_autocmd("FileType", {
+        group = vim.api.nvim_create_augroup("sqmeow_drawer_keys", { clear = true }),
+        pattern = "sqmeow-drawer",
+        callback = function(ev)
+          local drawer = require("sqmeow.ui.drawer")
+          local function open_node()
+            local node = drawer.current_node()
+            return node and node.expandable and node:is_expanded() and node
+          end
+          local keys = {
+            ["<C-j>"] = { "j", "Down" },
+            ["<C-k>"] = { "k", "Up" },
+            ["<C-l>"] = {
+              function()
+                if open_node() then
+                  vim.cmd("normal! j")
+                else
+                  drawer.actions.toggle()
+                end
+              end,
+              "Open the node",
+            },
+            ["<C-h>"] = {
+              function()
+                if open_node() then
+                  return drawer.actions.toggle()
+                end
+                local node = drawer.current_node()
+                local parent = node and node:get_parent_id()
+                if not parent then
+                  return
+                end
+                -- The drawer finds nodes only under the cursor, and indents
+                -- leaves past their open siblings, so walk up to the parent.
+                local start = vim.api.nvim_win_get_cursor(0)
+                for above = start[1] - 1, 1, -1 do
+                  vim.api.nvim_win_set_cursor(0, { above, 0 })
+                  local candidate = drawer.current_node()
+                  if candidate and candidate:get_id() == parent then
+                    return
+                  end
+                end
+                vim.api.nvim_win_set_cursor(0, start)
+              end,
+              "Close the node, or go to its parent",
+            },
+          }
+          for lhs, map in pairs(keys) do
+            vim.keymap.set("n", lhs, map[1], { buffer = ev.buf, nowait = true, desc = "sqmeow: " .. map[2] })
+          end
         end,
       })
       -- dadbod completion reads b:db and knows nothing of sqmeow, so point it at
@@ -78,6 +140,14 @@ return {
       { "<leader>Dc", "<cmd>Sqmeow cancel<cr>", desc = "Cancel Query" },
       { "<leader>Da", "<cmd>Sqmeow add<cr>", desc = "Add Connection" },
       { "<leader>Ds", "<cmd>Sqmeow scratch<cr>", desc = "New Scratchpad" },
+      {
+        "<leader>Db",
+        function()
+          require("database").pick(vim.api.nvim_get_current_buf())
+        end,
+        ft = sql_ft,
+        desc = "Switch Database",
+      },
       -- sqmeow only maps its run keys in its scratchpads; these run any SQL file.
       {
         "<leader>Dr",

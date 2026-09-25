@@ -124,3 +124,77 @@ h.test("blink offers dadbod completion in a .sql buffer", function()
   local providers = require("blink.cmp.sources.lib").get_enabled_providers("default")
   h.eq(true, providers.dadbod ~= nil, ("dadbod among %s"):format(vim.inspect(vim.tbl_keys(providers))))
 end)
+
+h.test("the first Breadcrumb in a .sql buffer names its database", function()
+  use_connection({
+    id = 95,
+    name = "PostgreSQL@18/dvdrental",
+    url = "postgres://localhost/",
+    database = "dvdrental",
+    state = "connected",
+  })
+  open("sql")
+  local sources = require("dropbar.configs").eval(require("dropbar.configs").opts.bar.sources, 0, 0)
+  h.eq(require("database").source, sources[1], "the database source first")
+  h.eq("dvdrental", sources[1].get_symbols(0)[1].name, "the crumb's name")
+
+  require("sqmeow.state").connections = {}
+  require("sqmeow.state").current = nil
+  h.eq("no database", require("database").label(0), "with nothing connected")
+end)
+
+h.test("the database Breadcrumb stays out of other buffers", function()
+  open("lua")
+  local sources = require("dropbar.configs").eval(require("dropbar.configs").opts.bar.sources, 0, 0)
+  h.eq(false, vim.list_contains(sources, require("database").source), "database source in a Lua buffer")
+end)
+
+h.test("switching database ties the buffer to it, and can untie it", function()
+  local state = require("sqmeow.state")
+  state.connections = {
+    [97] = { id = 97, name = "PostgreSQL@18", url = "postgres://localhost/", current_database = "postgres", state = "connected" },
+    [98] = { id = 98, name = "PostgreSQL@18/dvdrental", parent = 97, database = "dvdrental", url = "postgres://localhost/", state = "connected" },
+  }
+  state.current = 97
+  open("sql")
+
+  local select = vim.ui.select
+  local offered
+  local choose = 2
+  vim.ui.select = function(items, opts, on_choice)
+    offered = vim.tbl_map(opts.format_item, items)
+    on_choice(items[choose])
+  end
+  local ok, err = pcall(function()
+    require("database").pick(0)
+    h.eq({ "● postgres  (PostgreSQL@18)", "  dvdrental  (PostgreSQL@18)" }, offered, "the open databases")
+    h.eq("PostgreSQL@18/dvdrental", vim.b.sqmeow_connection, "the buffer's database")
+    h.eq("dvdrental", require("database").label(0), "the crumb after switching")
+
+    choose = 1
+    require("database").pick(0)
+    h.eq("Follow the drawer (postgres)", offered[1], "the way back")
+    h.eq(nil, vim.b.sqmeow_connection, "the buffer follows the drawer again")
+  end)
+  vim.ui.select = select
+  assert(ok, err)
+end)
+
+h.test("<leader>Db switches a .sql buffer's database", function()
+  open("sql")
+  h.eq("Switch Database", vim.fn.maparg(vim.g.mapleader .. "Db", "n", false, true).desc)
+end)
+
+h.test("sqmeow's winbar gives way to the Breadcrumbs", function()
+  h.eq(require("database").refresh, require("sqmeow.ui.editor").update_winbar)
+end)
+
+h.test("the Menu keys walk the Database drawer", function()
+  vim.cmd.enew({ bang = true })
+  vim.bo.filetype = "sqmeow-drawer"
+  for _, lhs in ipairs({ "<C-h>", "<C-j>", "<C-k>", "<C-l>" }) do
+    local mapping = vim.fn.maparg(lhs, "n", false, true)
+    h.eq(1, mapping.buffer, lhs .. " is buffer-local")
+    h.eq(true, vim.startswith(mapping.desc or "", "sqmeow: "), lhs .. "'s desc")
+  end
+end)

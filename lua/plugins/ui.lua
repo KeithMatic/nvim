@@ -179,6 +179,8 @@ return {
       return {
         bar = {
           enable = require("dropbar_config").enable(configs.opts.bar.enable),
+          -- SQL buffers lead with the database their queries run on (lua/database.lua).
+          sources = require("database").sources(configs.opts.bar.sources),
         },
         menu = {
           keymaps = {
