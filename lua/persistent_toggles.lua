@@ -61,7 +61,11 @@ local function restore_per_buffer(key, events, apply)
 end
 
 local function formats()
-  persist("format.global", LazyVim.format.snacks_toggle(), "<leader>uf")
+  -- Restored directly: the toggle's setter shows LazyFormat's status, which
+  -- would pop up on every startup.
+  local default = vim.g.autoformat == nil or vim.g.autoformat
+  vim.g.autoformat = state.get("format.global", default)
+  persist("format.global", LazyVim.format.snacks_toggle(), "<leader>uf", { default = default, restore = false })
 
   -- vim.b.autoformat outranks the global toggle, so it's set only when a
   -- buffer choice was saved: otherwise <leader>uf would miss visited buffers.

@@ -22,6 +22,10 @@ h.test("restores ordinary toggles and leaves temporary modes off", function()
   h.eq(false, vim.diagnostic.is_enabled(), "diagnostics")
   h.eq(false, require("dropbar_config").enabled(), "Dropbar")
   h.eq(false, vim.g.autoformat, "global formatting")
+  local format_notices = vim.tbl_filter(function(notif)
+    return (notif.title or ""):find("LazyFormat", 1, true) ~= nil
+  end, Snacks.notifier.get_history())
+  h.eq(0, #format_notices, "LazyFormat notifications at startup")
   -- Local choices are defaults for files opened after startup.
   vim.cmd.edit(vim.fn.tempname() .. ".lua")
   vim.wait(200, function()
