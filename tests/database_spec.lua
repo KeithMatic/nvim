@@ -198,3 +198,61 @@ h.test("the Menu keys walk the Database drawer", function()
     h.eq(true, vim.startswith(mapping.desc or "", "sqmeow: "), lhs .. "'s desc")
   end
 end)
+
+--- The window showing the Database drawer in this tab, or nil.
+local function drawer_win()
+  return vim.iter(vim.api.nvim_tabpage_list_wins(0)):find(function(win)
+    return vim.bo[vim.api.nvim_win_get_buf(win)].filetype == "sqmeow-drawer"
+  end)
+end
+
+--- Run the normal-mode mapping `lhs`, once sqmeow has loaded and set its keys.
+local function press(lhs)
+  require("lazy").load({ plugins = { "sqmeow.nvim" } })
+  local mapping = vim.fn.maparg(lhs, "n", false, true)
+  assert(mapping.callback, lhs .. " has no callback")
+  mapping.callback()
+end
+
+--- Close the Database client, leaving one window.
+local function close_database()
+  require("sqmeow.ui.drawer").close()
+  require("sqmeow.ui.result").close()
+  vim.cmd.only({ bang = true })
+end
+
+h.test("<leader>0 jumps to the Database drawer and back", function()
+  close_database()
+  open("sql")
+  local editor = vim.api.nvim_get_current_win()
+  h.eq("Database Drawer", vim.fn.maparg(vim.g.mapleader .. "0", "n", false, true).desc, "<leader>0's desc")
+
+  press(vim.g.mapleader .. "0")
+  h.eq(true, drawer_win() ~= nil, "the drawer opens")
+  h.eq(drawer_win(), vim.api.nvim_get_current_win(), "the cursor is in the drawer")
+  h.eq(false, require("sqmeow.ui.result").is_open(), "results stay closed")
+
+  press(vim.g.mapleader .. "0")
+  h.eq(editor, vim.api.nvim_get_current_win(), "back in the editor")
+  h.eq(true, drawer_win() ~= nil, "the drawer stays open")
+end)
+
+h.test("<leader>Dd puts the cursor in the Database drawer", function()
+  close_database()
+  open("sql")
+  press(vim.g.mapleader .. "Dd")
+  h.eq(true, drawer_win() ~= nil, "the drawer opens")
+  h.eq(drawer_win(), vim.api.nvim_get_current_win(), "the cursor is in the drawer")
+
+  press(vim.g.mapleader .. "Dd")
+  h.eq(nil, drawer_win(), "the drawer closes again")
+end)
+
+h.test("the Database drawer opened any other way leaves the cursor put", function()
+  close_database()
+  open("sql")
+  local editor = vim.api.nvim_get_current_win()
+  require("sqmeow.api").open_drawer()
+  h.eq(true, drawer_win() ~= nil, "the drawer opens")
+  h.eq(editor, vim.api.nvim_get_current_win(), "the cursor stays in the editor")
+end)

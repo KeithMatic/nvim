@@ -78,5 +78,9 @@ Tab moves the cursor past a closing bracket or quote.
 ### Tools
 
 **Database client**:
-The one database UI: connections, a schema drawer, and results that page, edit and export. SQL table and column completion in `.sql` files doesn't depend on it.
+The one database UI: connections, the Database drawer, and results that page, edit and export. SQL table and column completion in `.sql` files doesn't depend on it.
 _Avoid_: DBUI, sqmeow, dadbod (the plugins, not the concept)
+
+**Database drawer**:
+The Database client's tree of connections and their schemas, docked on the left; opening it from the Database client's keys puts the cursor in it, and one key (<leader>0) jumps to it and back.
+_Avoid_: sqmeow drawer, database explorer, Explorer (that's the file tree)

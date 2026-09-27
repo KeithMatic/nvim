@@ -29,6 +29,32 @@ local function sqmeow_db_url(buf)
   return authority .. "/" .. connection.database .. (rest:match("[?#].*$") or "")
 end
 
+--- The window showing the Database drawer in this tab, or nil.
+local function drawer_win()
+  return vim.iter(vim.api.nvim_tabpage_list_wins(0)):find(function(win)
+    return vim.bo[vim.api.nvim_win_get_buf(win)].filetype == "sqmeow-drawer"
+  end)
+end
+
+--- Put the cursor in the Database drawer, if it's showing. sqmeow hands the
+--- cursor back whenever it opens the drawer (a query run may open it), so the
+--- keys that open it on purpose take it there.
+local function focus_drawer()
+  local win = drawer_win()
+  if win then
+    vim.api.nvim_set_current_win(win)
+  end
+end
+
+--- <leader>0: jump to the Database drawer, opening it, or back again.
+local function drawer_and_back()
+  if vim.bo.filetype == "sqmeow-drawer" then
+    return vim.cmd.wincmd("p")
+  end
+  require("sqmeow.api").open_drawer()
+  focus_drawer()
+end
+
 return {
   {
     "2giosangmitom/sqmeow.nvim",
@@ -136,7 +162,15 @@ return {
     end,
     -- Under <leader>D, where the extra kept dadbod-ui's toggle.
     keys = {
-      { "<leader>Dd", "<cmd>Sqmeow toggle<cr>", desc = "Toggle Database" },
+      {
+        "<leader>Dd",
+        function()
+          require("sqmeow.api").toggle()
+          focus_drawer()
+        end,
+        desc = "Toggle Database",
+      },
+      { "<leader>0", drawer_and_back, desc = "Database Drawer" },
       { "<leader>Dc", "<cmd>Sqmeow cancel<cr>", desc = "Cancel Query" },
       { "<leader>Da", "<cmd>Sqmeow add<cr>", desc = "Add Connection" },
       { "<leader>Ds", "<cmd>Sqmeow scratch<cr>", desc = "New Scratchpad" },
