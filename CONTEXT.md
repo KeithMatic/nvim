@@ -21,6 +21,12 @@ Highlights drawn inside the text as a solid block: diagnostics at the end of a l
 Markdown heading bars, inline code and code blocks.
 _Avoid_: Chips (those are accents that keep their background)
 
+**Theme italics**:
+Which kinds of code (comments, keywords, functions, ...) a theme draws in italics, chosen separately
+for each theme family from the options that family offers. The line diagnostics and **Breadcrumbs**
+are italic whatever the theme, and aren't among them.
+_Avoid_: Font style, italic toggles
+
 **Tint**:
 The colour faded over the theme's background that marks "where am I" lines: the cursor line, the explorer's line and the selected menu item.
 _Avoid_: Cursorline colour, highlight

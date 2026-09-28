@@ -58,7 +58,7 @@ local references = { "LspReferenceText", "LspReferenceRead", "LspReferenceWrite"
 local state_file = vim.fn.stdpath("state") .. "/theme.json"
 
 --- The saved state, or an empty table when it's missing or unreadable.
----@return {theme?: string, tint?: {color: string, fade: number}, statusline_filename?: boolean} (the last only until migrated)
+---@return {theme?: string, tint?: {color: string, fade: number}, italics?: table<string, table<string, boolean>>, statusline_filename?: boolean} (the last only until migrated)
 local function read_state()
   local ok, state = pcall(function()
     return vim.json.decode(table.concat(vim.fn.readfile(state_file), "\n"))
@@ -73,6 +73,12 @@ local function save_state(changes)
   vim.fn.mkdir(vim.fs.dirname(state_file), "p")
   vim.fn.writefile({ vim.json.encode(state) }, state_file)
 end
+
+--- The saved state (theme, tint, Theme italics), for other theme modules.
+M.saved = read_state
+
+--- Merge `changes` into the saved state.
+M.save = save_state
 
 -- True while startup applies the saved theme (or a fallback), which is never saved.
 local restoring = false
