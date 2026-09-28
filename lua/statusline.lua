@@ -225,6 +225,13 @@ function M.extend(opts)
   table.insert(s.lualine_x, lazy_updates, python_venv)
   table.insert(s.lualine_x, filetype_status)
 
+  -- The aerial extra's symbol path echoes the Breadcrumbs, dimmed to comment
+  -- colour: the symbols' own kind colours would outshine the top bar.
+  local symbols = s.lualine_c[index_of(s.lualine_c, "aerial")]
+  if symbols then
+    symbols.colored, symbols.color = false, fg_of("Comment")
+  end
+
   table.insert(s.lualine_y, 1, branch)
   coloured(s.lualine_y[index_of(s.lualine_y, "progress")], icons.misc.location_point, "Function")
   s.lualine_y[index_of(s.lualine_y, "location")].color = fg_of("Function")

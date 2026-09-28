@@ -61,7 +61,8 @@ _Avoid_: File tree, sidebar, neo-tree (the plugin, not the concept)
 Where the Explorer appears: floating in the centre (the default), or docked left or right.
 
 **Breadcrumbs**:
-The path to the symbol under the cursor, shown at the top of the window.
+The path to the symbol under the cursor, in italics at the top of the window, and echoed in the
+statusline in comment colour.
 _Avoid_: Winbar, symbol path
 
 **Dashboard**:
