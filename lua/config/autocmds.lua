@@ -9,3 +9,4 @@
 
 require("semicolon").setup()
 require("runner").setup()
+require("autosave").setup()
