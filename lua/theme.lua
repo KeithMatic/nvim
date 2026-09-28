@@ -12,7 +12,8 @@
 --   6. saves the theme so the next start restores it (live previews in the
 --      picker and the theme applied at startup aren't saved),
 --   7. clears the background of whatever the themes' native transparency
---      options leave solid, so the terminal's glass shows through.
+--      options leave solid, so the terminal's glass shows through, and makes
+--      the line diagnostics and the Breadcrumbs italic.
 local M = {}
 
 -- The only themes the picker offers.
@@ -179,6 +180,30 @@ local function make_transparent()
   end
 end
 
+-- What's italic whatever the theme: the diagnostics at the end of a line, and
+-- the Breadcrumbs' text, by name or prefix.
+local italic = {
+  groups = { "WinBar", "WinBarNC" },
+  prefixes = { "DiagnosticVirtualText", "DropBarKind" },
+}
+
+--- Make every group `italic` covers italic, keeping the rest of its style.
+local function italicise()
+  for name in pairs(vim.api.nvim_get_hl(0, {})) do
+    if vim.list_contains(italic.groups, name) or has_prefix(name, italic.prefixes) then
+      local hl = vim.api.nvim_get_hl(0, { name = name, link = false })
+      hl.italic, hl.default = true, nil
+      vim.api.nvim_set_hl(0, name, hl)
+    end
+  end
+end
+
+--- Restyle what plugins define for the new theme: transparency, then italics.
+local function restyle()
+  make_transparent()
+  italicise()
+end
+
 --- The current theme's own editor background and mode colours, as "#rrggbb".
 --- The curated themes' native transparency has already cleared Normal, so
 --- theirs come from their palette. Other themes get only a background, and
@@ -296,7 +321,7 @@ local function on_change()
   end
   -- Scheduled, to run after plugins (bufferline, lualine, …) redefine their
   -- highlights for the new theme.
-  vim.schedule(make_transparent)
+  vim.schedule(restyle)
 end
 
 --- LazyVim's `colorscheme` option: set up the change hook, then apply the
@@ -327,7 +352,7 @@ function M.load()
     group = group,
     pattern = { "LazyLoad", "VeryLazy" },
     callback = function()
-      vim.schedule(make_transparent)
+      vim.schedule(restyle)
     end,
   })
   -- Scheduled, so it also covers LazyVim's own fallback (habamax) should the default fail too.
