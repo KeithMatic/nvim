@@ -25,8 +25,14 @@ _Avoid_: Chips (those are accents that keep their background)
 The colour faded over the theme's background that marks "where am I" lines: the cursor line, the explorer's line and the selected menu item.
 _Avoid_: Cursorline colour, highlight
 
+**Cursor line**:
+The line under the cursor in a file's window, marked by the **Tint**; hidden while typing, and
+switched off and on as a Toggle. Menus and panels keep their own selected line either way.
+_Avoid_: Cursorline (the option), current-line highlight
+
 **Mode colours**:
-The theme's colours for insert, visual, delete and copy, shared by the cursor-line tint and the statusline's mode icon.
+The theme's colours for insert, visual, delete and copy, shared by the **Cursor line** (which is
+hidden in insert) and the statusline's mode icon.
 
 **Icon set**:
 The single collection of glyphs every part of the editor draws from: kinds, diagnostics, gutter signs, file statuses, and extra UI and misc glyphs.
