@@ -33,12 +33,18 @@ _Avoid_: Cursorline colour, highlight
 
 **Cursor line**:
 The line under the cursor in a file's window, marked by the **Tint**; hidden while typing, and
-switched off and on as a Toggle. Menus and panels keep their own selected line either way.
+switched off and on as a Toggle. Hidden, it leaves only its **Mode-coloured line number**. Menus
+and panels keep their own selected line either way.
 _Avoid_: Cursorline (the option), current-line highlight
 
 **Mode colours**:
-The theme's colours for insert, visual, delete and copy, shared by the **Cursor line** (which is
-hidden in insert) and the statusline's mode icon.
+The theme's colours for normal, insert, visual, command, delete and copy, shared by the **Cursor
+line** (which is hidden in insert), the **Mode-coloured line number** and the statusline's mode icon.
+
+**Mode-coloured line number**:
+The cursor's line number, drawn in the current mode's **Mode colour**, whether or not the **Cursor
+line** shows; on its own it has no **Tint** behind it.
+_Avoid_: Modicator (the plugin that inspired it), CursorLineNr
 
 **Icon set**:
 The single collection of glyphs every part of the editor draws from: kinds, diagnostics, gutter signs, file statuses, and extra UI and misc glyphs.

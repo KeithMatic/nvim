@@ -1,7 +1,8 @@
 -- The Cursor line: the tinted line under the cursor, in file windows only.
 -- Menus and panels (the picker, the Explorer, the Database drawer) keep their
 -- own selected line whatever this says. Hidden while typing; <leader>uH turns
--- it off and on (lua/persistent_toggles.lua).
+-- it off and on (lua/persistent_toggles.lua). Hidden, it leaves its line
+-- number, in the Mode colour (lua/line_number.lua).
 local M = {}
 
 M.enabled = true
@@ -16,7 +17,8 @@ end
 ---@param typing boolean
 local function apply(win, typing)
   if is_editor(win) then
-    vim.wo[win].cursorline = M.enabled and not typing
+    vim.wo[win].cursorline = true
+    vim.wo[win].cursorlineopt = M.enabled and not typing and "both" or "number"
   end
 end
 
@@ -42,6 +44,7 @@ function M.toggle()
       for _, win in ipairs(vim.api.nvim_list_wins()) do
         apply(win, false)
       end
+      require("line_number").refresh()
     end,
   })
 end

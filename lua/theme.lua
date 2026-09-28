@@ -33,8 +33,16 @@ M.default = "tokyonight-moon"
 -- 1). Used when nothing valid is saved; `:Tint` changes it.
 M.default_tint = { color = "#ffffff", fade = 0.1 }
 
--- modes.nvim's groups for the Mode colours.
-local mode_groups = { insert = "ModesInsert", visual = "ModesVisual", delete = "ModesDelete", copy = "ModesCopy" }
+-- The Mode colours' groups: modes.nvim's, then normal and command, which only
+-- the mode-coloured line number uses (lua/line_number.lua).
+local mode_groups = {
+  insert = "ModesInsert",
+  visual = "ModesVisual",
+  delete = "ModesDelete",
+  copy = "ModesCopy",
+  normal = "ModesNormal",
+  command = "ModesCommand",
+}
 
 -- Whether the statusline shows the filename. On unless turned off; set by
 -- `load` from the saved state.
@@ -43,6 +51,12 @@ M.statusline_filename = true
 -- What the tint colours: the cursor line (and its gutter), the Explorer's line
 -- and the selected completion item.
 local tinted = { "CursorLine", "CursorLineNr", "CursorLineSign", "NeoTreeCursorLine", "BlinkCmpMenuSelection" }
+
+-- The tinted groups in the cursor line's gutter, and whether they're tinted:
+-- not while the Cursor line is off and its number shows alone
+-- (lua/line_number.lua).
+local gutter = { CursorLineNr = true, CursorLineSign = true }
+M.gutter_tinted = true
 
 -- The Rainbow brackets' groups, outermost first.
 M.rainbow = { "RainbowBracket1", "RainbowBracket2", "RainbowBracket3" }
@@ -214,7 +228,8 @@ end
 --- The curated themes' native transparency has already cleared Normal, so
 --- theirs come from their palette. Other themes get only a background, and
 --- modes.nvim's own colours.
----@return {bg?: string, insert?: string, visual?: string, delete?: string, copy?: string, rainbow?: string[]}
+--- Normal and command match the statusline's mode section.
+---@return {bg?: string, insert?: string, visual?: string, delete?: string, copy?: string, normal?: string, command?: string, rainbow?: string[]}
 local function theme_palette()
   local name = vim.g.colors_name or ""
   local style = name:match("^tokyonight%-(%a+)$")
@@ -226,6 +241,8 @@ local function theme_palette()
       visual = c.magenta,
       delete = c.red,
       copy = c.yellow,
+      normal = c.blue,
+      command = c.yellow,
       rainbow = { c.yellow, c.magenta, c.blue },
     }
   end
@@ -238,6 +255,8 @@ local function theme_palette()
       visual = c.mauve,
       delete = c.red,
       copy = c.yellow,
+      normal = c.blue,
+      command = c.peach,
       rainbow = { c.yellow, c.mauve, c.blue },
     }
   end
@@ -266,15 +285,27 @@ function M.blend(color, base, alpha)
   return ("#%02x%02x%02x"):format(unpack(channels))
 end
 
+--- The global definition of `name`, links followed. Not `link = false` alone:
+--- for a built-in group that gives what the current window's 'winhighlight'
+--- puts in its place (modes.nvim's groups, outside normal mode).
+---@param name string
+---@return table
+function M.get_hl(name)
+  local hl = vim.api.nvim_get_hl(0, { name = name })
+  return hl.link and vim.api.nvim_get_hl(0, { name = name, link = false }) or hl
+end
+
 --- Give every tinted group the tint faded over the theme's background.
 local function apply_tint()
   local bg = M.blend(M.tint.color, M.background or "#000000", M.tint.fade)
   for _, name in ipairs(tinted) do
-    local hl = vim.api.nvim_get_hl(0, { name = name, link = false })
-    hl.bg = bg
+    local hl = M.get_hl(name)
+    hl.bg = (M.gutter_tinted or not gutter[name]) and bg or nil
     vim.api.nvim_set_hl(0, name, hl)
   end
 end
+
+M.apply_tint = apply_tint
 
 -- Other themes' nearest yellow, purple and blue.
 local rainbow_fallback = { "DiagnosticWarn", "Keyword", "Function" }
@@ -393,8 +424,9 @@ function M.set_tint(color, fade)
 end
 
 --- The current theme's colour for `mode` (the Mode colours), as "#rrggbb":
---- from its palette for the curated themes, else modes.nvim's own.
----@param mode "insert"|"visual"|"delete"|"copy"
+--- from its palette for the curated themes, else modes.nvim's own (and none
+--- for normal and command).
+---@param mode "insert"|"visual"|"delete"|"copy"|"normal"|"command"
 ---@return string?
 function M.mode_color(mode)
   local bg = vim.api.nvim_get_hl(0, { name = mode_groups[mode], link = false }).bg
