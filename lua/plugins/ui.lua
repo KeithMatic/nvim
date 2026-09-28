@@ -34,18 +34,24 @@ return {
   },
   {
     "folke/tokyonight.nvim",
-    opts = {
-      transparent = true,
-      styles = { sidebars = "transparent", floats = "transparent" },
-    },
+    opts = function(_, opts)
+      opts.transparent = true
+      opts.styles = vim.tbl_extend(
+        "force",
+        opts.styles or {},
+        { sidebars = "transparent", floats = "transparent" },
+        require("theme_italics").styles("tokyonight") -- lua/theme_italics.lua
+      )
+    end,
   },
   {
     "catppuccin/nvim",
     name = "catppuccin",
-    opts = {
-      transparent_background = true,
-      float = { transparent = true },
-    },
+    opts = function(_, opts)
+      opts.transparent_background = true
+      opts.float = vim.tbl_extend("force", opts.float or {}, { transparent = true })
+      opts.styles = vim.tbl_extend("force", opts.styles or {}, require("theme_italics").styles("catppuccin"))
+    end,
   },
   {
     "nvim-lualine/lualine.nvim",
@@ -363,6 +369,13 @@ return {
           require("theme").pick()
         end,
         desc = "Colorschemes",
+      },
+      {
+        "<leader>uy",
+        function()
+          require("theme_italics").pick()
+        end,
+        desc = "Theme Italics",
       },
     },
   },
