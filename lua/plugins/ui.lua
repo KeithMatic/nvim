@@ -147,6 +147,14 @@ return {
     },
   },
   {
+    -- No diagnostic icons in the gutter: the message at the end of the line
+    -- and the statusline's count already show them.
+    "neovim/nvim-lspconfig",
+    opts = function(_, opts)
+      opts.diagnostics.signs = false
+    end,
+  },
+  {
     "Bekaboo/dropbar.nvim",
     lazy = false,
     dependencies = {
