@@ -138,7 +138,10 @@ local function ordinary()
     Snacks.toggle.option("background", { off = "light", on = "dark", global = true, name = "Dark Background" }),
     "<leader>ub"
   )
-  persist("ui.indent_guides", Snacks.toggle.indent(), "<leader>ug")
+  -- The key keeps its old name, so the saved choice survives the rename.
+  local block_guide = Snacks.toggle.indent()
+  block_guide.opts.name = "Block Guide"
+  persist("ui.indent_guides", block_guide, "<leader>ug")
   persist("ui.smooth_scroll", Snacks.toggle.scroll(), "<leader>uS")
 end
 

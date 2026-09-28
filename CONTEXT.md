@@ -36,6 +36,18 @@ _Avoid_: Icons file, symbols
 The marks on other occurrences of the word under the cursor; shown as an underline, never as a background block.
 _Avoid_: Links, word highlights, LSP references
 
+**Rainbow brackets**:
+Bracket pairs coloured by how deeply they nest, cycling the theme's yellow, purple and blue; `( )`,
+`[ ]`, `{ }`, and `< >` only where they really are brackets (templates, generics, tags), never
+`<<`, a comparison, or an `#include`'s angle brackets. Always on.
+_Avoid_: Bracket pair colourisation, rainbow-delimiters (the plugin, not the concept)
+
+**Block guide**:
+The single dotted line drawn down the block the cursor is in (its bracket lines included), in a faint
+shade of that block's **Rainbow brackets**, and animated in from the cursor except while typing. A block is
+any indented body, braces or not; outer blocks show no guide. Only in code, never in prose or tool panels.
+_Avoid_: Indent guides, scope
+
 **Cursor trail**:
 The animated trail the cursor leaves as it moves; off in Neovide, which animates its own cursor.
 

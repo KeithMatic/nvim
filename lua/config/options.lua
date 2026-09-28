@@ -11,3 +11,7 @@ vim.o.mousemoveevent = true
 
 -- No Trouble symbols in the statusline: Dropbar shows the Breadcrumbs.
 vim.g.trouble_lualine = false
+
+-- Trailing spaces aren't marked: on a blank line inside a block they'd draw a
+-- dashed line across it. Formatting on save removes them anyway.
+vim.opt.listchars = { tab = "> ", nbsp = "+" }

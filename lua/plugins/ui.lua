@@ -1,11 +1,26 @@
 -- UI: the themes and their transparency, the statusline (lua/statusline.lua),
 -- mode colours, float borders the 'winborder' option doesn't reach, the curated
--- theme picker, the cursor trail, the motion hints, Dropbar's Breadcrumbs,
+-- theme picker, the cursor trail, the motion hints, the Rainbow brackets and
+-- the Block guide, Dropbar's Breadcrumbs,
 -- lspsaga's rename and outline, and noice's cmdline popup (centred, with the Icon set's glyphs)
 -- and its menu, the Dashboard's header and sections (lua/dashboard.lua), and
 -- the picker's prompt and pointer (lua/picker.lua).
 -- Transparency the themes' own options leave out, and the tint, are done in
 -- lua/theme.lua.
+
+-- Where the Block guide never shows: prose, whose indents are lists and quotes,
+-- and tool panels.
+local prose_and_panels = {
+  "markdown",
+  "text",
+  "rst",
+  "org",
+  "norg",
+  "gitcommit",
+  "snacks_dashboard",
+  "sqmeow-drawer",
+  "sqmeow-result",
+}
 
 return {
   {
@@ -72,6 +87,17 @@ return {
       autostart = true,
       fancy = { enable = true },
     },
+  },
+  {
+    -- Rainbow brackets: pairs found from the syntax tree, so `<<` and
+    -- comparisons are never coloured. Its colours come from the theme
+    -- (lua/theme.lua). Not lazy: it attaches when a buffer's filetype is set,
+    -- including the file Neovim opens with.
+    "HiPhish/rainbow-delimiters.nvim",
+    lazy = false,
+    init = function()
+      vim.g.rainbow_delimiters = { highlight = require("theme").rainbow }
+    end,
   },
   {
     -- Motion hints (w, b, e, ^, $, ...) under the cursor line: hidden until
@@ -280,8 +306,36 @@ return {
     init = function()
       -- Now, not on VeryLazy: the Dashboard opens before then.
       require("dashboard").setup()
+      -- The Block guide jumps into place while typing, rather than animating in
+      -- on every new line.
+      local group = vim.api.nvim_create_augroup("block_guide", { clear = true })
+      vim.api.nvim_create_autocmd({ "InsertEnter", "InsertLeave" }, {
+        group = group,
+        callback = function(ev)
+          -- Cleared on leaving, so the global setting applies again.
+          if ev.event == "InsertEnter" then
+            vim.b[ev.buf].snacks_animate_indent = false
+          else
+            vim.b[ev.buf].snacks_animate_indent = nil
+          end
+        end,
+      })
     end,
     opts = {
+      -- The Block guide: only the block the cursor is in (its bracket lines
+      -- too), no guides for the others. Snacks colours it by indent level, which
+      -- matches the Rainbow brackets in formatted code, faded (lua/theme.lua).
+      indent = {
+        indent = { enabled = false },
+        scope = { char = require("util.icons").ui.LineDashedMiddle, hl = require("theme").guide },
+        animate = { style = "out", duration = { step = 10, total = 150 } },
+        filter = function(buf)
+          return vim.g.snacks_indent ~= false
+            and vim.b[buf].snacks_indent ~= false
+            and vim.bo[buf].buftype == ""
+            and not vim.list_contains(prose_and_panels, vim.bo[buf].filetype)
+        end,
+      },
       -- Only the header and sections: LazyVim's keys and pick stay.
       dashboard = {
         preset = { header = require("dashboard").header },
