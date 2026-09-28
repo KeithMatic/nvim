@@ -459,8 +459,16 @@ function M.with_background(setup)
   -- Hooks run in the order they were created, so the plugin's run in between.
   vim.api.nvim_create_autocmd("ColorScheme", { group = group, callback = solidify_normal })
   solidify_normal()
-  setup()
+  -- No redraws while Normal is solid: modes.nvim's setup redraws, which would
+  -- flash the theme's background over the glass at startup. `vim.cmd` caches
+  -- each command's function in itself, so clearing the stub brings it back.
+  vim.cmd.redraw = function() end
+  local ok, err = pcall(setup)
+  vim.cmd.redraw = nil
   restore_normal()
+  if not ok then
+    error(err, 0)
+  end
   vim.api.nvim_create_autocmd("ColorScheme", { group = group, callback = restore_normal })
 end
 
