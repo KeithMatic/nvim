@@ -1,6 +1,6 @@
 -- UI: the themes and their transparency, the statusline (lua/statusline.lua),
 -- mode colours, float borders the 'winborder' option doesn't reach, the curated
--- theme picker, the cursor trail, the motion hints, the Rainbow brackets and
+-- theme picker, the Buffer sticks, the cursor trail, the motion hints, the Rainbow brackets and
 -- the Block guide, Dropbar's Breadcrumbs,
 -- lspsaga's rename and outline, and noice's cmdline popup (centred, with the Icon set's glyphs)
 -- and its menu, the Dashboard's header and sections (lua/dashboard.lua), and
@@ -68,6 +68,55 @@ return {
       require("statusline").centre_lualine()
     end,
   },
+  -- The Buffer sticks replace bufferline's tabs. They're drawn, and stepped
+  -- through, in the Column order (lua/column_order.lua).
+  { "akinsho/bufferline.nvim", enabled = false },
+  {
+    "ahkohd/buffer-sticks.nvim",
+    lazy = false, -- the sticks first draw on entering a buffer, so be ready for the first one
+    keys = function()
+      local order = require("column_order")
+      return {
+        { "<leader>bj", function() BufferSticks.jump() end, desc = "Jump to File" },
+        { "<leader>bx", function() order.pick("close") end, desc = "Close a File" },
+        { "<leader>bv", function() order.pick("vsplit") end, desc = "Open a File in a Vertical Split" },
+        { "<leader>bs", function() order.pick("split") end, desc = "Open a File in a Split" },
+        { "<leader>bp", order.toggle_pin, desc = "Toggle Pin" },
+        { "<leader>bP", function() order.close("unpinned") end, desc = "Close Unpinned Files" },
+        { "<leader>bo", function() order.close("others") end, desc = "Close Other Files" },
+        { "<leader>bl", function() order.close("left") end, desc = "Close Files Above" },
+        { "<leader>br", function() order.close("right") end, desc = "Close Files Below" },
+        { "[B", function() order.move(-1) end, desc = "Move File Up" },
+        { "]B", function() order.move(1) end, desc = "Move File Down" },
+        { "<S-h>", function() order.cycle(-1) end, desc = "Prev File" },
+        { "<S-l>", function() order.cycle(1) end, desc = "Next File" },
+        { "[b", function() order.cycle(-1) end, desc = "Prev File" },
+        { "]b", function() order.cycle(1) end, desc = "Next File" },
+      }
+    end,
+    opts = {
+      filter = { buftypes = { "terminal", "help", "quickfix", "nofile", "prompt" } },
+      preview = { mode = "current" },
+      -- Links, so they follow every theme. A link can't add italics, so the
+      -- labels are italic only where the theme's comments are.
+      highlights = {
+        active = { link = "Statement" },
+        alternate = { link = "Function" },
+        inactive = { link = "Comment" },
+        active_modified = { link = "DiagnosticWarn" },
+        alternate_modified = { link = "DiagnosticWarn" },
+        inactive_modified = { link = "DiagnosticWarn" },
+        label = { link = "Comment" },
+        filter_title = { link = "Comment" },
+        filter_selected = { link = "Statement" },
+        list_selected = { link = "Statement" },
+      },
+    },
+    config = function(_, opts)
+      require("buffer-sticks").setup(opts)
+      require("column_order").setup()
+    end,
+  },
   {
     -- Tints the cursor line and selection by mode. Its colours come from the
     -- theme's palette: lua/theme.lua sets them on every theme change.
@@ -82,6 +131,7 @@ return {
       require("theme").with_background(function()
         require("modes").setup(opts)
       end)
+      require("line_number").setup()
     end,
   },
   {

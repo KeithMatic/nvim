@@ -41,7 +41,7 @@ return {
     "nvim-neo-tree/neo-tree.nvim",
     keys = {
       { "<leader>o", show_where_i_am, desc = "Explorer (Current File)" },
-      { "<leader>be", false }, -- no buffers source: bufferline shows open buffers
+      { "<leader>be", false }, -- no buffers source: the Buffer sticks show open files
     },
     opts = function(_, opts)
       opts.sources = { "filesystem", "git_status" }
