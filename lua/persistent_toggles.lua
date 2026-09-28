@@ -143,6 +143,8 @@ local function ordinary()
   block_guide.opts.name = "Block Guide"
   persist("ui.indent_guides", block_guide, "<leader>ug")
   persist("ui.smooth_scroll", Snacks.toggle.scroll(), "<leader>uS")
+  require("cursor_line").setup()
+  persist("ui.cursor_line", require("cursor_line").toggle(), "<leader>uH")
 end
 
 -- A fresh process starts these off already, so their saved state is never
