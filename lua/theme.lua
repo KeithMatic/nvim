@@ -5,11 +5,13 @@
 --   2. gives modes.nvim the theme's mode colours, and the background to fade
 --      them over,
 --   3. tints the "where am I" lines: the tint colour faded over that background,
---   4. makes the reference highlights (other occurrences of the word under
+--   4. colours the Rainbow brackets, and the Block guide with them, from the
+--      theme's yellow, purple and blue,
+--   5. makes the reference highlights (other occurrences of the word under
 --      the cursor) underlines with no background,
---   5. saves the theme so the next start restores it (live previews in the
+--   6. saves the theme so the next start restores it (live previews in the
 --      picker and the theme applied at startup aren't saved),
---   6. clears the background of whatever the themes' native transparency
+--   7. clears the background of whatever the themes' native transparency
 --      options leave solid, so the terminal's glass shows through.
 local M = {}
 
@@ -40,6 +42,14 @@ M.statusline_filename = true
 -- What the tint colours: the cursor line (and its gutter), the Explorer's line
 -- and the selected completion item.
 local tinted = { "CursorLine", "CursorLineNr", "CursorLineSign", "NeoTreeCursorLine", "BlinkCmpMenuSelection" }
+
+-- The Rainbow brackets' groups, outermost first.
+M.rainbow = { "RainbowBracket1", "RainbowBracket2", "RainbowBracket3" }
+
+-- The Block guide's groups: the same colours, faded to `guide_fade` over the
+-- theme's background, so a block's guide is a faint shade of its brackets.
+M.guide = { "BlockGuide1", "BlockGuide2", "BlockGuide3" }
+local guide_fade = 0.3
 
 -- The reference highlights: other occurrences of the word under the cursor.
 local references = { "LspReferenceText", "LspReferenceRead", "LspReferenceWrite" }
@@ -173,18 +183,32 @@ end
 --- The curated themes' native transparency has already cleared Normal, so
 --- theirs come from their palette. Other themes get only a background, and
 --- modes.nvim's own colours.
----@return {bg?: string, insert?: string, visual?: string, delete?: string, copy?: string}
+---@return {bg?: string, insert?: string, visual?: string, delete?: string, copy?: string, rainbow?: string[]}
 local function theme_palette()
   local name = vim.g.colors_name or ""
   local style = name:match("^tokyonight%-(%a+)$")
   if style then
     local c = require("tokyonight.colors").setup({ style = style })
-    return { bg = c.bg, insert = c.green, visual = c.magenta, delete = c.red, copy = c.yellow }
+    return {
+      bg = c.bg,
+      insert = c.green,
+      visual = c.magenta,
+      delete = c.red,
+      copy = c.yellow,
+      rainbow = { c.yellow, c.magenta, c.blue },
+    }
   end
   local flavour = name:match("^catppuccin%-?(%a*)$")
   if flavour then
     local c = require("catppuccin.palettes").get_palette(flavour ~= "" and flavour or nil)
-    return { bg = c.base, insert = c.green, visual = c.mauve, delete = c.red, copy = c.yellow }
+    return {
+      bg = c.base,
+      insert = c.green,
+      visual = c.mauve,
+      delete = c.red,
+      copy = c.yellow,
+      rainbow = { c.yellow, c.mauve, c.blue },
+    }
   end
   local bg = vim.api.nvim_get_hl(0, { name = "Normal", link = false }).bg
   return { bg = bg and ("#%06x"):format(bg) }
@@ -221,6 +245,29 @@ local function apply_tint()
   end
 end
 
+-- Other themes' nearest yellow, purple and blue.
+local rainbow_fallback = { "DiagnosticWarn", "Keyword", "Function" }
+
+--- Colour the Rainbow brackets from `colors` (yellow, purple, blue), or from
+--- the theme's own groups when it has no palette here, and the Block guide
+--- with the same colours faded.
+---@param colors? string[]
+local function apply_rainbow(colors)
+  for i, name in ipairs(M.rainbow) do
+    vim.api.nvim_set_hl(0, name, colors and { fg = colors[i] } or { link = rainbow_fallback[i] })
+    local fg = colors and colors[i]
+    if not fg then
+      local own = vim.api.nvim_get_hl(0, { name = rainbow_fallback[i], link = false }).fg
+      fg = own and ("#%06x"):format(own)
+    end
+    vim.api.nvim_set_hl(
+      0,
+      M.guide[i],
+      fg and { fg = M.blend(fg, M.background or "#000000", guide_fade) } or { link = "NonText" }
+    )
+  end
+end
+
 --- Make every reference group an underline with no background.
 local function underline_references()
   for _, name in ipairs(references) do
@@ -242,6 +289,7 @@ local function on_change()
     end
   end
   apply_tint()
+  apply_rainbow(palette.rainbow)
   underline_references()
   if not (restoring or previewing()) then
     save_state({ theme = vim.g.colors_name })
