@@ -78,6 +78,26 @@ _Avoid_: File tree, sidebar, neo-tree (the plugin, not the concept)
 **Explorer position**:
 Where the Explorer appears: floating in the centre (the default), or docked left or right.
 
+**Buffer sticks**:
+The column of short marks at the right edge, one per open file, marking the current, the alternate
+and the unsaved ones in the theme's colours; the only open-files indicator, with no tabs along the top.
+Terminals, help and other non-file buffers get no stick.
+_Avoid_: Bufferline, tabs
+
+**Buffer list**:
+The **Buffer sticks** expanded into names with short labels; typing a label jumps to that file or
+closes it, and the file under the selection is previewed in the current window as you move.
+_Avoid_: Buffer picker (that's the fuzzy picker), jump list
+
+**Column order**:
+The order of the **Buffer sticks**, which previous/next file steps through: **Pinned** files first,
+then the rest, newly opened files at the end; files can be moved up and down it. Kept with the session.
+
+**Pinned**:
+A file held at the top of the **Column order** and skipped by every bulk close (others, left, right,
+unpinned). Closing it by choice closes it and drops the pin. No mark of its own.
+_Avoid_: Sticky, locked
+
 **Breadcrumbs**:
 The path to the symbol under the cursor, in italics at the top of the window, and echoed in the
 statusline in comment colour.
