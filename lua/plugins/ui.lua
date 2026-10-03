@@ -210,6 +210,9 @@ return {
       opts.diagnostics.signs = false
     end,
   },
+  -- No git icons in the gutter either, until <leader>uG shows them
+  -- (lua/persistent_toggles.lua); hunks and blame work without them.
+  { "lewis6991/gitsigns.nvim", opts = { signcolumn = false } },
   {
     "Bekaboo/dropbar.nvim",
     lazy = false,

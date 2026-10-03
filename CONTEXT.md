@@ -49,7 +49,8 @@ _Avoid_: Modicator (the plugin that inspired it), CursorLineNr
 **Line numbers**:
 The numbers down the left of a file's window, absolute or relative; shown only in windows holding a
 file, never on the **Dashboard**, terminals, help, the **Explorer** or other panels. Switching them off
-and on, from anywhere, sets the choice for files and is remembered across sessions.
+and on, from anywhere, sets the choice for files and is remembered across sessions. Beside them, no
+git or diagnostic icons unless switched on.
 _Avoid_: Gutter, number column
 
 **Icon set**:
