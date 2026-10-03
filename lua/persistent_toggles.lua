@@ -10,6 +10,14 @@ local function persist(key, toggle, mapping, opts)
   return toggle
 end
 
+--- Whether `win` is an ordinary window holding a file (or a new, unnamed one):
+--- not the Dashboard, a terminal, help, a panel or a float.
+---@param win integer
+local function file_window(win)
+  return vim.api.nvim_win_get_config(win).relative == ""
+    and vim.bo[vim.api.nvim_win_get_buf(win)].buftype == ""
+end
+
 local function local_option(key, option, mapping, opts)
   opts = opts or {}
   local on = opts.on
@@ -22,8 +30,12 @@ local function local_option(key, option, mapping, opts)
   end
   local default = vim.api.nvim_get_option_value(option, { scope = "global" }) == on
   local saved = state.get(key, default)
+  -- The global value reaches every file opened later, even in the Dashboard's
+  -- window; the local one only a file already open, never the Dashboard.
   vim.api.nvim_set_option_value(option, saved and on or off, { scope = "global" })
-  vim.api.nvim_set_option_value(option, saved and on or off, { scope = "local" })
+  if file_window(0) then
+    vim.api.nvim_set_option_value(option, saved and on or off, { scope = "local" })
+  end
   return persist(key, Snacks.toggle.option(option, opts), mapping, { default = default, restore = false })
 end
 
@@ -75,28 +87,83 @@ local function formats()
   persist("format.buffer", LazyVim.format.snacks_toggle(true), "<leader>uF", { restore = false })
 end
 
-local function local_options()
-  local_option("editor.spell", "spell", "<leader>us")
-  local_option("editor.wrap", "wrap", "<leader>uw")
-
+--- Line numbers: one choice for every file window, shown in no other window.
+--- Toggling works from anywhere; on the Dashboard it only sets the choice.
+local function line_numbers()
   local number_default = vim.o.number or vim.o.relativenumber
   local relative_default = vim.o.relativenumber
   local number = state.get("editor.line_numbers", number_default)
   local relative = state.get("editor.relative_number", relative_default)
-  vim.opt_global.number = number
-  vim.opt_global.relativenumber = number and relative
-  vim.opt_local.number = number
-  vim.opt_local.relativenumber = number and relative
-  persist("editor.line_numbers", Snacks.toggle.line_number(), "<leader>ul", {
-    default = number_default,
-    restore = false,
+
+  local function show(win)
+    local file = file_window(win)
+    vim.api.nvim_set_option_value("number", file and number, { scope = "local", win = win })
+    vim.api.nvim_set_option_value("relativenumber", file and number and relative, { scope = "local", win = win })
+  end
+
+  -- Floats keep their own (zen, previews), as their plugins set them.
+  local function apply()
+    vim.opt_global.number = number
+    vim.opt_global.relativenumber = number and relative
+    for _, win in ipairs(vim.api.nvim_list_wins()) do
+      if vim.api.nvim_win_get_config(win).relative == "" then
+        show(win)
+      end
+    end
+  end
+
+  -- Synchronous, so a plugin setting its own window options afterwards wins.
+  vim.api.nvim_create_autocmd({ "BufWinEnter", "FileType", "TermOpen" }, {
+    group = vim.api.nvim_create_augroup("line_numbers", { clear = true }),
+    callback = function(args)
+      for _, win in ipairs(vim.fn.win_findbuf(args.buf)) do
+        if vim.api.nvim_win_get_config(win).relative == "" then
+          show(win)
+        end
+      end
+    end,
   })
+  apply()
+
+  persist(
+    "editor.line_numbers",
+    Snacks.toggle({
+      id = "line_number",
+      name = "Line Numbers",
+      get = function()
+        return number
+      end,
+      set = function(enabled)
+        number = enabled
+        apply()
+      end,
+    }),
+    "<leader>ul",
+    { default = number_default, restore = false }
+  )
   persist(
     "editor.relative_number",
-    Snacks.toggle.option("relativenumber"),
+    Snacks.toggle({
+      id = "relativenumber",
+      name = "Relative Number",
+      get = function()
+        return relative
+      end,
+      set = function(enabled)
+        relative = enabled
+        apply()
+      end,
+    }),
     "<leader>uL",
     { default = relative_default, restore = false }
   )
+end
+
+local function local_options()
+  local_option("editor.spell", "spell", "<leader>us")
+  local_option("editor.wrap", "wrap", "<leader>uw")
+
+  line_numbers()
 
   local conceal = vim.o.conceallevel > 0 and vim.o.conceallevel or 2
   local_option("editor.conceal", "conceallevel", "<leader>uc", { off = 0, on = conceal })

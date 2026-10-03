@@ -46,6 +46,12 @@ The cursor's line number, drawn in the current mode's **Mode colour**, whether o
 line** shows; on its own it has no **Tint** behind it.
 _Avoid_: Modicator (the plugin that inspired it), CursorLineNr
 
+**Line numbers**:
+The numbers down the left of a file's window, absolute or relative; shown only in windows holding a
+file, never on the **Dashboard**, terminals, help, the **Explorer** or other panels. Switching them off
+and on, from anywhere, sets the choice for files and is remembered across sessions.
+_Avoid_: Gutter, number column
+
 **Icon set**:
 The single collection of glyphs every part of the editor draws from: kinds, diagnostics, gutter signs, file statuses, and extra UI and misc glyphs.
 _Avoid_: Icons file, symbols
