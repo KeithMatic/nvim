@@ -39,7 +39,8 @@ _Avoid_: Cursorline (the option), current-line highlight
 
 **Mode colours**:
 The theme's colours for normal, insert, visual, command, delete and copy, shared by the **Cursor
-line** (which is hidden in insert), the **Mode-coloured line number** and the statusline's mode icon.
+line** (which is hidden in insert), the **Mode-coloured line number** and the statusline's mode icon
+(which shows a **Layer**'s icon and colour instead while one is active in Normal mode).
 
 **Mode-coloured line number**:
 The cursor's line number, drawn in the current mode's **Mode colour**, whether or not the **Cursor
@@ -132,6 +133,17 @@ A `;` typed mid-line lands at the end of the code; typing it again straight away
 
 **Tabout**:
 Tab moves the cursor past a closing bracket or quote.
+
+**Layer**:
+A named set of one-key actions laid over the usual keys until it's left (<esc> or q), when the
+keys it covered come back exactly as they were; ? shows its keys, the statusline's mode icon becomes
+its icon, and switching to another file leaves it. One at a time, and never remembered across sessions.
+_Avoid_: Hydra, submode, mode (Vim's modes are something else)
+
+**Git layer**:
+The **Layer** for reviewing hunks (<leader>gH): it starts on the first hunk and shows the git signs
+until it's left, whatever they're switched to otherwise.
+_Avoid_: Hunk mode, review mode
 
 ### Tools
 

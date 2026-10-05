@@ -44,6 +44,14 @@ local function mode()
   return found[1] or icons.separators.honeycomb.right, found[2]
 end
 
+--- The active Layer (lua/layer.lua), while in Normal mode: it takes over the
+--- mode icon (not the filename's colour) there, and other modes show over it.
+---@return layer.Layer?
+local function layer()
+  local active = package.loaded.layer and package.loaded.layer.active()
+  return active and vim.fn.mode(1) == "n" and active or nil
+end
+
 --- The current mode's colour: the mode icon's and the filename's.
 local function mode_colour()
   local _, colour = mode()
@@ -76,9 +84,13 @@ end
 
 local mode_icon = {
   function()
-    return vim.trim((mode()))
+    local active = layer()
+    return vim.trim(active and active.icon or (mode()))
   end,
-  color = mode_colour,
+  color = function()
+    local active = layer()
+    return active and { fg = Snacks.util.color(active.colour) } or mode_colour()
+  end,
 }
 
 local function show_filename()
