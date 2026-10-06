@@ -14,8 +14,7 @@ end
 --- not the Dashboard, a terminal, help, a panel or a float.
 ---@param win integer
 local function file_window(win)
-  return vim.api.nvim_win_get_config(win).relative == ""
-    and vim.bo[vim.api.nvim_win_get_buf(win)].buftype == ""
+  return vim.api.nvim_win_get_config(win).relative == "" and vim.bo[vim.api.nvim_win_get_buf(win)].buftype == ""
 end
 
 local function local_option(key, option, mapping, opts)
@@ -35,6 +34,36 @@ local function local_option(key, option, mapping, opts)
   vim.api.nvim_set_option_value(option, saved and on or off, { scope = "global" })
   if file_window(0) then
     vim.api.nvim_set_option_value(option, saved and on or off, { scope = "local" })
+  end
+  -- Filetype defaults (notably prose wrap/spell and JSON conceal) run after
+  -- startup restoration. A saved preference wins once, without resetting a
+  -- later choice when the user returns to an already initialized buffer.
+  if state.has(key) then
+    local restored = {}
+    local function restore(buf)
+      if restored[buf] or not vim.api.nvim_buf_is_valid(buf) then
+        return
+      end
+      for _, win in ipairs(vim.fn.win_findbuf(buf)) do
+        if file_window(win) then
+          vim.api.nvim_set_option_value(option, saved and on or off, { scope = "local", win = win })
+          restored[buf] = true
+        end
+      end
+    end
+    vim.api.nvim_create_autocmd({ "FileType", "BufWinEnter" }, {
+      group = vim.api.nvim_create_augroup("persistent_option_" .. option, { clear = true }),
+      callback = function(args)
+        vim.schedule(function()
+          restore(args.buf)
+        end)
+      end,
+    })
+    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+      if vim.api.nvim_buf_get_name(buf) ~= "" then
+        restore(buf)
+      end
+    end
   end
   return persist(key, Snacks.toggle.option(option, opts), mapping, { default = default, restore = false })
 end
@@ -194,7 +223,7 @@ local function ordinary()
     "ui.tabline",
     Snacks.toggle.option("showtabline", {
       off = 0,
-      on = vim.o.showtabline > 0 and vim.o.showtabline or 2,
+      on = 2,
       global = true,
       name = "Tabline",
     }),

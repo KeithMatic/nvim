@@ -13,7 +13,7 @@ local sql_ft = require("database").sql_ft
 --- The URL of the database queries from `buf` run on in sqmeow, for vim-dadbod,
 --- or nil when there's none it can reach.
 local function sqmeow_db_url(buf)
-  local connection = require("sqmeow.api").target(buf)
+  local connection = require("sqmeow.api.connection").target(buf)
   -- A database behind an SSH tunnel is only reachable through sqmeow's engine.
   if not connection or connection.state ~= "connected" or connection.ssh then
     return nil
@@ -51,7 +51,7 @@ local function drawer_and_back()
   if vim.bo.filetype == "sqmeow-drawer" then
     return vim.cmd.wincmd("p")
   end
-  require("sqmeow.api").open_drawer()
+  require("sqmeow.api.view").open_drawer()
   focus_drawer()
 end
 
@@ -165,7 +165,7 @@ return {
       {
         "<leader>Dd",
         function()
-          require("sqmeow.api").toggle()
+          require("sqmeow.api.view").toggle()
           focus_drawer()
         end,
         desc = "Toggle Database",
@@ -186,7 +186,7 @@ return {
       {
         "<leader>Dr",
         function()
-          require("sqmeow.api").execute_statement()
+          require("sqmeow.api.query").execute_statement()
         end,
         ft = sql_ft,
         desc = "Run Statement",
@@ -196,7 +196,7 @@ return {
         function()
           -- Leave visual mode first, so the '< and '> marks hold the selection.
           vim.cmd("normal! \27")
-          require("sqmeow.api").execute_selection()
+          require("sqmeow.api.query").execute_selection()
         end,
         mode = "x",
         ft = sql_ft,
@@ -205,7 +205,7 @@ return {
       {
         "<leader>De",
         function()
-          require("sqmeow.api").execute_buffer()
+          require("sqmeow.api.query").execute_buffer()
         end,
         ft = sql_ft,
         desc = "Run File",

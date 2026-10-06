@@ -170,7 +170,7 @@ return {
         .persist(
           "ui.precognition",
           Snacks.toggle({
-            name = "Precognition",
+            name = "Motion hints",
             get = precognition.is_visible,
             set = function(state)
               if state then
@@ -421,7 +421,7 @@ return {
         function()
           require("theme").pick()
         end,
-        desc = "Colorschemes",
+        desc = "Curated themes",
       },
       {
         "<leader>uy",

@@ -44,10 +44,6 @@ local mode_groups = {
   command = "ModesCommand",
 }
 
--- Whether the statusline shows the filename. On unless turned off; set by
--- `load` from the saved state.
-M.statusline_filename = true
-
 -- What the tint colours: the cursor line (and its gutter), the Explorer's line
 -- and the selected completion item.
 local tinted = { "CursorLine", "CursorLineNr", "CursorLineSign", "NeoTreeCursorLine", "BlinkCmpMenuSelection" }
@@ -375,7 +371,6 @@ function M.load()
     state.statusline_filename = nil
     vim.fn.writefile({ vim.json.encode(state) }, state_file)
   end
-  M.statusline_filename = toggles.get("ui.statusline_filename", true)
   local tint = state.tint
   M.tint = type(tint) == "table" and valid_color(tint.color) and valid_fade(tint.fade) and tint or M.default_tint
   vim.api.nvim_create_user_command("Tint", function(cmd)
@@ -431,13 +426,6 @@ end
 function M.mode_color(mode)
   local bg = vim.api.nvim_get_hl(0, { name = mode_groups[mode], link = false }).bg
   return bg and ("#%06x"):format(bg)
-end
-
---- Show or hide the statusline's filename, and save the choice.
----@param shown boolean
-function M.set_statusline_filename(shown)
-  M.statusline_filename = shown
-  require("toggle_state").set("ui.statusline_filename", shown)
 end
 
 --- Run a plugin's `setup` so that it, and the ColorScheme hooks it creates, see

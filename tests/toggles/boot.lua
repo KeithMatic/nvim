@@ -4,7 +4,7 @@ local h = require("harness")
 h.test("restores ordinary toggles and leaves temporary modes off", function()
   local mode = vim.env.TOGGLE_BOOT_MODE
   if mode == "migration" then
-    h.eq(false, require("theme").statusline_filename, "legacy statusline filename")
+    h.eq(false, require("statusline").filename_toggle():get(), "legacy statusline filename")
     -- Moved, not copied: a later :ToggleStateReset can't bring the legacy value back.
     vim.cmd.ToggleStateReset()
     local theme = vim.json.decode(table.concat(vim.fn.readfile(vim.fn.stdpath("state") .. "/theme.json"), "\n"))
@@ -12,7 +12,7 @@ h.test("restores ordinary toggles and leaves temporary modes off", function()
     h.eq("tokyonight-moon", theme.theme, "theme kept")
     return
   elseif mode == "override" then
-    h.eq(true, require("theme").statusline_filename, "new toggle state overrides legacy theme state")
+    h.eq(true, require("statusline").filename_toggle():get(), "new toggle state overrides legacy theme state")
     return
   end
 

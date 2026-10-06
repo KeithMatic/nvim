@@ -11,6 +11,8 @@ local M = {}
 
 local icons = require("util.icons")
 local theme = require("theme")
+local toggle_state = require("toggle_state")
+local filename_shown = toggle_state.get("ui.statusline_filename", true)
 
 -- By the first letter of mode(): the icon, and its Mode colour. Anything
 -- else (normal, hit-enter) has the normal icon in the mode section's colour.
@@ -94,7 +96,7 @@ local mode_icon = {
 }
 
 local function show_filename()
-  return theme.statusline_filename and vim.fn.expand("%:t") ~= ""
+  return filename_shown and vim.fn.expand("%:t") ~= ""
 end
 
 -- Name and extension only (the path is the Breadcrumbs' job), bold italic.
@@ -317,10 +319,11 @@ function M.filename_toggle()
   return Snacks.toggle({
     name = "Statusline Filename",
     get = function()
-      return theme.statusline_filename
+      return filename_shown
     end,
     set = function(shown)
-      theme.set_statusline_filename(shown)
+      toggle_state.set("ui.statusline_filename", shown)
+      filename_shown = shown
       if package.loaded.lualine then
         require("lualine").refresh()
       end

@@ -71,7 +71,7 @@ end)
 
 --- Make `connection` sqmeow's only, current one, as if opened in the drawer.
 local function use_connection(connection)
-  local state = require("sqmeow.state")
+  local state = require("sqmeow.core.state")
   state.connections = { [connection.id] = connection }
   state.current = connection.id
 end
@@ -138,8 +138,8 @@ h.test("the first Breadcrumb in a .sql buffer names its database", function()
   h.eq(require("database").source, sources[1], "the database source first")
   h.eq("dvdrental", sources[1].get_symbols(0)[1].name, "the crumb's name")
 
-  require("sqmeow.state").connections = {}
-  require("sqmeow.state").current = nil
+  require("sqmeow.core.state").connections = {}
+  require("sqmeow.core.state").current = nil
   h.eq("no database", require("database").label(0), "with nothing connected")
 end)
 
@@ -150,7 +150,7 @@ h.test("the database Breadcrumb stays out of other buffers", function()
 end)
 
 h.test("switching database ties the buffer to it, and can untie it", function()
-  local state = require("sqmeow.state")
+  local state = require("sqmeow.core.state")
   state.connections = {
     [97] = { id = 97, name = "PostgreSQL@18", url = "postgres://localhost/", current_database = "postgres", state = "connected" },
     [98] = { id = 98, name = "PostgreSQL@18/dvdrental", parent = 97, database = "dvdrental", url = "postgres://localhost/", state = "connected" },
@@ -252,7 +252,7 @@ h.test("the Database drawer opened any other way leaves the cursor put", functio
   close_database()
   open("sql")
   local editor = vim.api.nvim_get_current_win()
-  require("sqmeow.api").open_drawer()
+  require("sqmeow.api.view").open_drawer()
   h.eq(true, drawer_win() ~= nil, "the drawer opens")
   h.eq(editor, vim.api.nvim_get_current_win(), "the cursor stays in the editor")
 end)

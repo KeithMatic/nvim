@@ -15,7 +15,7 @@ end
 
 --- The server a connection is on, for telling same-named databases apart.
 local function server_name(connection)
-  local parent = connection.parent and require("sqmeow.state").connections[connection.parent]
+  local parent = connection.parent and require("sqmeow.core.state").connections[connection.parent]
   return parent and parent.name or connection.name
 end
 
@@ -23,7 +23,7 @@ end
 ---@return string name
 ---@return string|nil hl Nil once it is connected.
 function M.label(buf)
-  local connection = require("sqmeow.api").target(buf)
+  local connection = require("sqmeow.api.connection").target(buf)
   if not connection then
     return "no database", "DiagnosticWarn"
   end
@@ -35,14 +35,17 @@ end
 
 --- Ask which open database `buf` runs its queries on.
 function M.pick(buf)
-  local state = require("sqmeow.state")
-  local current = require("sqmeow.api").target(buf)
+  local state = require("sqmeow.core.state")
+  local current = require("sqmeow.api.connection").target(buf)
 
   local items = {}
   -- Once tied to one database, the buffer can go back to following the drawer's.
   if vim.b[buf].sqmeow_connection then
     local active = state.current_connection()
-    table.insert(items, { follow = true, text = "Follow the drawer (" .. (active and db_name(active) or "none") .. ")" })
+    table.insert(
+      items,
+      { follow = true, text = "Follow the drawer (" .. (active and db_name(active) or "none") .. ")" }
+    )
   end
   for _, connection in ipairs(state.connection_list()) do
     if connection.state == "connected" then
