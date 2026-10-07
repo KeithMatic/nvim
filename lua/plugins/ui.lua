@@ -1,6 +1,6 @@
 -- UI: the themes and their transparency, the statusline (lua/statusline.lua),
 -- mode colours, float borders the 'winborder' option doesn't reach, the curated
--- theme picker, the Buffer sticks, the motion hints, the Rainbow brackets and
+-- theme picker, the Buffer sticks, the motion hints, the Habit tips, the Rainbow brackets and
 -- the Block guide, Dropbar's Breadcrumbs,
 -- lspsaga's rename and outline, and noice's cmdline popup (centred, with the Icon set's glyphs)
 -- and its menu, the Dashboard's header and sections (lua/dashboard.lua), and
@@ -264,6 +264,23 @@ return {
     end,
   },
   {
+    -- Habit tips: the better command for something just done the long way,
+    -- quietened with <leader>ut and never shown in a Layer (lua/habit_tips.lua).
+    "kamegoro/tobira.nvim",
+    event = "VeryLazy",
+    keys = {
+      { "<leader>mm", "<cmd>Tobira<cr>", desc = "Next Tip" },
+      { "<leader>mg", "<cmd>TobiraGuide<cr>", desc = "Tip Guide" },
+      { "<leader>mp", "<cmd>TobiraProgress<cr>", desc = "Progress" },
+      { "<leader>ms", "<cmd>TobiraStats<cr>", desc = "Stats" },
+      -- No key for :TobiraReset: it wipes every count without asking.
+    },
+    opts = {},
+    config = function(_, opts)
+      require("habit_tips").setup(opts)
+    end,
+  },
+  {
     -- Rename and outline only: LazyVim already gives the rest (code actions,
     -- hover, diagnostics, references), and Dropbar owns the Breadcrumbs.
     "nvimdev/lspsaga.nvim",
@@ -378,6 +395,11 @@ return {
     opts = function(_, opts)
       -- Appended: a list in opts would replace LazyVim's groups, not add to them.
       table.insert(opts.spec, { "<leader>k", group = "navigation" })
+      table.insert(opts.spec, {
+        "<leader>m",
+        group = "habit tips",
+        icon = { icon = vim.trim(require("util.icons").misc.lightbulb), color = "yellow" },
+      })
     end,
   },
   {

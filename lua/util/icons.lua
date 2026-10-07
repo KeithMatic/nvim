@@ -274,6 +274,7 @@ return {
     error = " ",
     hint = " ",
     info = " ",
+    lightbulb = "󰌵 ", -- Habit tips
     loaded = "󰽢",
     location_point = "",
     lua = "󰢱", -- as mini.icons draws Lua files

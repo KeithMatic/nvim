@@ -119,6 +119,13 @@ _Avoid_: Start page, splash
 The keys that reach each spot on the cursor line (w, b, e, ^, $, ...), drawn beneath it; hidden until toggled, for practising motions.
 _Avoid_: Precognition (the plugin, not the concept)
 
+**Habit tips**:
+The better command for something just done the long way (`cw` after `dw` then `i`), shown in a small
+float once the editor goes idle, with the Tip guide, Progress and Stats panels behind them. Motion hints
+show the options before a move; Habit tips point at a habit after it. On unless quietened, which
+silences the tips but keeps counting; never while a **Layer** is active.
+_Avoid_: Suggestions (that's completion), hints (those are **Motion hints**), tobira (the plugin, not the concept)
+
 **Animations**:
 The editor's motion effects: the **Cursor trail**, smooth scrolling and window resizing, switched
 off and on together and remembered across sessions; left to the GUI in Neovide.
