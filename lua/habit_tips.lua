@@ -7,7 +7,9 @@
 --      counted: they're the Layer's actions, not Vim commands;
 --   3. its colours, which it sets again every time it draws, get the theme's
 --      accent for headings, bold keys, an italic reason line, and the theme's
---      green when a tip is taken up.
+--      green when a tip is taken up;
+--   4. its notice for each key it leaves out of the tips, because the key is
+--      mapped to something else, goes to the notification history only.
 local M = {}
 
 local theme = require("theme")
@@ -34,6 +36,22 @@ local function polish()
   end
   restyle("TobiraSuggestReason", "Comment", { italic = true })
   restyle("TobiraCelebrate", "DiagnosticOk", { fg = green })
+end
+
+--- Whether Snacks' notifier should show `notif`: anything but tobira's notice
+--- that a key is mapped to something else, so it's left out of the tips. The
+--- notice is matched against tobira's own wording, in whichever language it
+--- speaks.
+---@param notif snacks.notifier.Notif
+---@return boolean
+function M.show_notice(notif)
+  -- Not loaded means no notice yet, and nothing to load tobira for.
+  if notif.level ~= "debug" or not package.loaded["tobira.core.config"] then
+    return true
+  end
+  local wording = require("tobira.i18n").load().notifications.remap_detected
+  local notice = "^" .. vim.pesc(wording):gsub("%%%%s", ".-")
+  return not notif.msg:find(notice)
 end
 
 --- Wrap tobira's setup, before it runs and before anything draws.

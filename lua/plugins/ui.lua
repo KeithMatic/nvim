@@ -511,11 +511,11 @@ return {
         prompt = require("picker").prompt,
         win = { list = { wo = { statuscolumn = "%!v:lua.require'picker'.statuscolumn()" } } },
       },
-      -- Habit tips leave out every key that's mapped to something else, and
-      -- say so for each one at startup. Those stay in the history only.
+      -- Habit tips' notice for each key they leave out stays in the history
+      -- only (lua/habit_tips.lua). Loaded on the first notification, not here.
       notifier = {
         filter = function(notif)
-          return not (notif.msg:find("^tobira: ") and notif.msg:find(" is remapped "))
+          return require("habit_tips").show_notice(notif)
         end,
       },
     },
