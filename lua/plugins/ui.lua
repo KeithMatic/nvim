@@ -511,6 +511,13 @@ return {
         prompt = require("picker").prompt,
         win = { list = { wo = { statuscolumn = "%!v:lua.require'picker'.statuscolumn()" } } },
       },
+      -- Habit tips leave out every key that's mapped to something else, and
+      -- say so for each one at startup. Those stay in the history only.
+      notifier = {
+        filter = function(notif)
+          return not (notif.msg:find("^tobira: ") and notif.msg:find(" is remapped "))
+        end,
+      },
     },
     keys = {
       -- The only change to an existing LazyVim key: same picker, curated themes.
