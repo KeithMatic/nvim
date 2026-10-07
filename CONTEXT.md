@@ -119,6 +119,16 @@ _Avoid_: Start page, splash
 The keys that reach each spot on the cursor line (w, b, e, ^, $, ...), drawn beneath it; hidden until toggled, for practising motions.
 _Avoid_: Precognition (the plugin, not the concept)
 
+**Animations**:
+The editor's motion effects: the **Cursor trail**, smooth scrolling and window resizing, switched
+off and on together and remembered across sessions; left to the GUI in Neovide.
+_Avoid_: Mini Animate (the plugin, not the concept)
+
+**Cursor trail**:
+The path the cursor is drawn along when it jumps to a far spot; one of the **Animations**. A
+one-line step isn't a jump.
+_Avoid_: Smoothcursor, smear
+
 ### Editing
 
 **Menu keys**:

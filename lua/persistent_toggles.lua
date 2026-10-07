@@ -265,7 +265,7 @@ local function animation()
     persist(
       "ui.animation",
       Snacks.toggle({
-        name = "Mini Animate",
+        name = "Animations",
         get = function()
           return not vim.g.minianimate_disable
         end,

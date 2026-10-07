@@ -51,6 +51,27 @@ h.test("<leader>uP shows the hints, and pressing it again hides them", function(
   h.eq(false, hints_shown_after_waiting(false), "hints after the second <leader>uP")
 end)
 
+--- The line precognition's hint line sits under, or nil when it's not drawn.
+local function hint_line()
+  local ns = vim.api.nvim_get_namespaces().precognition
+  for _, mark in ipairs(ns and vim.api.nvim_buf_get_extmarks(0, ns, 0, -1, { details = true }) or {}) do
+    if mark[4].virt_lines then
+      return mark[2] + 1
+    end
+  end
+end
+
+h.test("the hint line follows the cursor to its new line straight away", function()
+  open_text()
+  press_toggle()
+  h.eq(true, hints_shown_after_waiting(true), "hints before moving")
+  h.eq(1, hint_line(), "hint line before moving")
+  vim.api.nvim_win_set_cursor(0, { 2, 0 })
+  vim.api.nvim_exec_autocmds("CursorMoved", {})
+  h.eq(2, hint_line(), "hint line straight after changing line")
+  press_toggle()
+end)
+
 h.test("hints keep their highlight after being hidden and switching theme", function()
   open_text()
   press_toggle()

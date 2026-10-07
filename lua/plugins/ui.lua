@@ -1,6 +1,6 @@
 -- UI: the themes and their transparency, the statusline (lua/statusline.lua),
 -- mode colours, float borders the 'winborder' option doesn't reach, the curated
--- theme picker, the Buffer sticks, the cursor trail, the motion hints, the Rainbow brackets and
+-- theme picker, the Buffer sticks, the motion hints, the Rainbow brackets and
 -- the Block guide, Dropbar's Breadcrumbs,
 -- lspsaga's rename and outline, and noice's cmdline popup (centred, with the Icon set's glyphs)
 -- and its menu, the Dashboard's header and sections (lua/dashboard.lua), and
@@ -77,21 +77,105 @@ return {
     keys = function()
       local order = require("column_order")
       return {
-        { "<leader>bj", function() BufferSticks.jump() end, desc = "Jump to File" },
-        { "<leader>bx", function() order.pick("close") end, desc = "Close a File" },
-        { "<leader>bv", function() order.pick("vsplit") end, desc = "Open a File in a Vertical Split" },
-        { "<leader>bs", function() order.pick("split") end, desc = "Open a File in a Split" },
+        {
+          "<leader>bj",
+          function()
+            BufferSticks.jump()
+          end,
+          desc = "Jump to File",
+        },
+        {
+          "<leader>bx",
+          function()
+            order.pick("close")
+          end,
+          desc = "Close a File",
+        },
+        {
+          "<leader>bv",
+          function()
+            order.pick("vsplit")
+          end,
+          desc = "Open a File in a Vertical Split",
+        },
+        {
+          "<leader>bs",
+          function()
+            order.pick("split")
+          end,
+          desc = "Open a File in a Split",
+        },
         { "<leader>bp", order.toggle_pin, desc = "Toggle Pin" },
-        { "<leader>bP", function() order.close("unpinned") end, desc = "Close Unpinned Files" },
-        { "<leader>bo", function() order.close("others") end, desc = "Close Other Files" },
-        { "<leader>bl", function() order.close("left") end, desc = "Close Files Above" },
-        { "<leader>br", function() order.close("right") end, desc = "Close Files Below" },
-        { "[B", function() order.move(-1) end, desc = "Move File Up" },
-        { "]B", function() order.move(1) end, desc = "Move File Down" },
-        { "<S-h>", function() order.cycle(-1) end, desc = "Prev File" },
-        { "<S-l>", function() order.cycle(1) end, desc = "Next File" },
-        { "[b", function() order.cycle(-1) end, desc = "Prev File" },
-        { "]b", function() order.cycle(1) end, desc = "Next File" },
+        {
+          "<leader>bP",
+          function()
+            order.close("unpinned")
+          end,
+          desc = "Close Unpinned Files",
+        },
+        {
+          "<leader>bo",
+          function()
+            order.close("others")
+          end,
+          desc = "Close Other Files",
+        },
+        {
+          "<leader>bl",
+          function()
+            order.close("left")
+          end,
+          desc = "Close Files Above",
+        },
+        {
+          "<leader>br",
+          function()
+            order.close("right")
+          end,
+          desc = "Close Files Below",
+        },
+        {
+          "[B",
+          function()
+            order.move(-1)
+          end,
+          desc = "Move File Up",
+        },
+        {
+          "]B",
+          function()
+            order.move(1)
+          end,
+          desc = "Move File Down",
+        },
+        {
+          "<S-h>",
+          function()
+            order.cycle(-1)
+          end,
+          desc = "Prev File",
+        },
+        {
+          "<S-l>",
+          function()
+            order.cycle(1)
+          end,
+          desc = "Next File",
+        },
+        {
+          "[b",
+          function()
+            order.cycle(-1)
+          end,
+          desc = "Prev File",
+        },
+        {
+          "]b",
+          function()
+            order.cycle(1)
+          end,
+          desc = "Next File",
+        },
       }
     end,
     opts = {
@@ -135,16 +219,6 @@ return {
     end,
   },
   {
-    -- An animated cursor trail. Neovide animates its own cursor.
-    "gen740/smoothcursor.nvim",
-    cond = vim.g.neovide == nil,
-    lazy = false,
-    opts = {
-      autostart = true,
-      fancy = { enable = true },
-    },
-  },
-  {
     -- Rainbow brackets: pairs found from the syntax tree, so `<<` and
     -- comparisons are never coloured. Its colours come from the theme
     -- (lua/theme.lua). Not lazy: it attaches when a buffer's filetype is set,
@@ -157,7 +231,9 @@ return {
   },
   {
     -- Motion hints (w, b, e, ^, $, ...) under the cursor line: hidden until
-    -- toggled with <leader>uP, for practising motions.
+    -- toggled with <leader>uP, for practising motions. No debounce: their
+    -- virtual line follows the cursor a row at a time, whereas a debounce
+    -- removes it on every line change and the text below jumps up and back.
     "tris203/precognition.nvim",
     event = "VeryLazy",
     opts = function()
