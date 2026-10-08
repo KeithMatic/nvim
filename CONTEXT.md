@@ -187,3 +187,15 @@ _Avoid_: DBUI, sqmeow, dadbod (the plugins, not the concept)
 **Database drawer**:
 The Database client's tree of connections and their schemas, docked on the left; opening it from the Database client's keys puts the cursor in it, and one key (<leader>0) jumps to it and back.
 _Avoid_: sqmeow drawer, database explorer, Explorer (that's the file tree)
+
+**Markdown preview**:
+The current Markdown buffer rendered in a browser tab, updated as you type and scrolled with the cursor; one tab, which the newest Neovim to start it takes over.
+_Avoid_: live preview, mdkite, markdown-preview (the plugins, not the concept)
+
+**Live server**:
+A local server for a file or folder (HTML, CSS, JS) that reloads the browser on save; started only on request.
+_Avoid_: dev server, kitehost, live-server (the plugins, not the concept)
+
+**Browser group**:
+The <leader>v keys that show things in the browser: the **Markdown preview** and the **Live server**.
+_Avoid_: kitehost keys, <leader>l (that's Lazy)

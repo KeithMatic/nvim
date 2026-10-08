@@ -256,6 +256,7 @@ return {
     Docker = " ",
     Folder = " ",
     Function = "󰊕 ",
+    Globe = "󰖟 ",
     Markdown = " ",
     Neovim = " ",
     Number = "󰎠 ",
