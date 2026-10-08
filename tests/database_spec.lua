@@ -152,8 +152,21 @@ end)
 h.test("switching database ties the buffer to it, and can untie it", function()
   local state = require("sqmeow.core.state")
   state.connections = {
-    [97] = { id = 97, name = "PostgreSQL@18", url = "postgres://localhost/", current_database = "postgres", state = "connected" },
-    [98] = { id = 98, name = "PostgreSQL@18/dvdrental", parent = 97, database = "dvdrental", url = "postgres://localhost/", state = "connected" },
+    [97] = {
+      id = 97,
+      name = "PostgreSQL@18",
+      url = "postgres://localhost/",
+      current_database = "postgres",
+      state = "connected",
+    },
+    [98] = {
+      id = 98,
+      name = "PostgreSQL@18/dvdrental",
+      parent = 97,
+      database = "dvdrental",
+      url = "postgres://localhost/",
+      state = "connected",
+    },
   }
   state.current = 97
   open("sql")
