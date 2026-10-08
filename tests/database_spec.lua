@@ -231,7 +231,7 @@ end
 local function close_database()
   require("sqmeow.ui.drawer").close()
   require("sqmeow.ui.result").close()
-  vim.cmd.only({ bang = true })
+  h.close_splits()
 end
 
 h.test("<leader>0 jumps to the Database drawer and back", function()
