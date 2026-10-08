@@ -29,14 +29,15 @@ h.test("every language extra shows as enabled, from config rather than the extra
   end
 end)
 
-h.test("no AI extras are enabled", function()
+-- claudecode is chat in a terminal, not completion, so nothing competes for <Tab>.
+h.test("claudecode is the only AI extra enabled", function()
   local enabled = {}
   for _, extra in ipairs(LazyVim.extras.get()) do
     if extra.enabled and extra.name:match("^ai%.") then
       table.insert(enabled, extra.name)
     end
   end
-  h.eq({}, enabled)
+  h.eq({ "ai.claudecode" }, enabled)
 end)
 
 -- A throwaway project, so root-seeking servers (gopls, rust-analyzer, tailwind) have a root.
