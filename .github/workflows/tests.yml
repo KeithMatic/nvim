@@ -1,0 +1,39 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+
+      # tree-sitter-cli builds the Treesitter parsers; without it LazyVim
+      # fetches it through Mason first.
+      - name: Install Neovim and stylua
+        run: brew install neovim stylua tree-sitter-cli
+
+      - name: Check formatting
+        run: stylua --check lua tests
+
+      # tests/run.sh sets the sandbox up only when lazy-lock.json changes, so
+      # an exact hit skips the setup. A partial hit drops the marker run.sh
+      # compares against, so the setup runs again on top of what was restored.
+      - name: Restore the test sandbox
+        id: sandbox
+        uses: actions/cache@v6
+        with:
+          path: .tests
+          key: tests-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lazy-lock.json', 'tests/setup.lua') }}
+          restore-keys: tests-${{ runner.os }}-${{ runner.arch }}-
+
+      - name: Rerun the sandbox setup on a partial hit
+        if: steps.sandbox.outputs.cache-hit != 'true'
+        run: rm -f .tests/lazy-lock.restored.json
+
+      - name: Run the suite
+        run: tests/run.sh

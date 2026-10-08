@@ -18,9 +18,18 @@ local function server_packages()
   return packages
 end
 
+-- Every Mason package the sandbox needs: LazyVim's tools plus the servers, deduplicated.
+-- LazyVim installs its own list, but the rust and clangd extras both add codelldb, and
+-- its loop stops at the second install() of a package already installing, so the
+-- tools after it would never install on a fresh sandbox.
+local function wanted_packages()
+  local tools = vim.list_extend(vim.deepcopy(LazyVim.opts("mason.nvim").ensure_installed or {}), server_packages())
+  return LazyVim.dedup(tools)
+end
+
 local registry = require("mason-registry")
 registry.refresh(function()
-  for _, name in ipairs(server_packages()) do
+  for _, name in ipairs(wanted_packages()) do
     local pkg = registry.get_package(name)
     if not pkg:is_installed() and not pkg:is_installing() then
       pkg:install()
@@ -44,8 +53,7 @@ local function missing()
       table.insert(todo, "mason " .. pkg.name .. " (installing)")
     end
   end
-  local wanted = vim.list_extend(vim.deepcopy(LazyVim.opts("mason.nvim").ensure_installed or {}), server_packages())
-  for _, name in ipairs(wanted) do
+  for _, name in ipairs(wanted_packages()) do
     if not registry.is_installed(name) then
       table.insert(todo, "mason " .. name)
     end

@@ -32,6 +32,14 @@ tests/run.sh tests/boot_spec.lua  # one spec
 
 Each spec boots the real config headlessly inside an isolated XDG sandbox in `.tests/` (separate config, data, state and cache), so a test run never touches my real Neovim state, saved theme or plugins. The first run, and any run after `lazy-lock.json` changes, installs plugins at their locked versions plus LazyVim's Mason tools and Treesitter parsers into the sandbox.
 
+CI (`.github/workflows/tests.yml`) runs `stylua --check lua tests` and then the full suite on macOS, on every pull request and every push to main. It caches `.tests/` by `lazy-lock.json` and `tests/setup.lua`.
+
+A pre-commit hook rejects a commit whose staged Lua files aren't formatted with stylua. It leaves the suite to CI. Turn it on once per clone:
+
+```sh
+git config core.hooksPath .githooks
+```
+
 ## Roadmap
 
 - **html-end-tag-labels:** Treesitter virtual-text labels after closing HTML/JSX tags.
