@@ -151,7 +151,14 @@ local extras = {
   {
     "builtins",
     "built-ins (self, this)",
-    { "@variable.builtin", "@function.builtin", "@type.builtin", "@constant.builtin", "@module.builtin" },
+    {
+      "@variable.builtin",
+      "@function.builtin",
+      "@type.builtin",
+      "@constant.builtin",
+      "@module.builtin",
+      "@namespace.builtin",
+    },
   },
   { "types", "types", { "Type", "@type", "@type.definition" } },
   { "constants", "constants", { "Constant", "@constant", "@constant.macro" } },

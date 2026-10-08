@@ -76,7 +76,7 @@ These are all the Extra italics, in the order the picker shows them. Every one s
 | variables | Names that hold values | `local count = 0` | `count` |
 | parameters | The inputs a function takes | `function greet(name, age)` | `name`, `age` |
 | properties | Fields of an object | `user.name` | `name` |
-| built-ins (self, this) | Names the language provides | `self.name`, `print(x)` | `self`, `this`, `print`, `nil` |
+| built-ins (self, this) | Names the language provides | `self.name`, `print(x)`, `vim.api` | `self`, `this`, `print`, `nil`, `vim` |
 | types | Type names | `let u: User` | `User` |
 | constants | Values that never change | `MAX_SIZE = 10` | `MAX_SIZE` |
 | modules | Module and namespace names | `import os` | `os` |

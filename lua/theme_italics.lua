@@ -74,7 +74,14 @@ local extras = {
   {
     name = "builtins",
     label = "built-ins (self, this)",
-    groups = { "@variable.builtin", "@function.builtin", "@type.builtin", "@constant.builtin", "@module.builtin" },
+    groups = {
+      "@variable.builtin",
+      "@function.builtin",
+      "@type.builtin",
+      "@constant.builtin",
+      "@module.builtin",
+      "@namespace.builtin",
+    },
   },
   { name = "types", groups = { "Type", "@type", "@type.definition" } },
   { name = "constants", groups = { "Constant", "@constant", "@constant.macro" } },

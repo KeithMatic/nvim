@@ -87,7 +87,7 @@ Each option covers the listed highlight names and every more specific name under
 | variables | `Identifier`, `@variable` | tokyonight, catppuccin |
 | parameters | `@variable.parameter`, `@variable.parameter.builtin` | none |
 | properties | `@property`, `@variable.member` | catppuccin |
-| built-ins (self/this) | `@variable.builtin`, `@function.builtin`, `@type.builtin`, `@constant.builtin`, `@module.builtin` | none |
+| built-ins (self/this) | `@variable.builtin`, `@function.builtin`, `@type.builtin`, `@constant.builtin`, `@module.builtin`, `@namespace.builtin` (Lua's `vim`) | none |
 | types | `Type`, `@type`, `@type.definition` | catppuccin |
 | constants | `Constant`, `@constant`, `@constant.macro` | none |
 | modules | `@module` | none |
