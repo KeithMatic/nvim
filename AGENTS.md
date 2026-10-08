@@ -14,4 +14,4 @@ Single-context: one `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/age
 
 ## Tests
 
-Every feature has a `tests/<area>_spec.lua`; check a change with `tests/run.sh tests/<area>_spec.lua`. It boots the config in the `.tests/` sandbox with its own plugins, so the real install stays as it is. See README.md › Tests.
+Check a change with `tests/run.sh tests/<area>_spec.lua`: it runs in its own sandbox and never syncs or cleans the real plugin install. See README.md › Tests.
