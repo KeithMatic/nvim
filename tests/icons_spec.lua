@@ -104,3 +104,25 @@ h.test("TOML files get the Icon set's TOML glyph", function()
     h.eq(toml, (require("nvim-web-devicons").get_icon(vim.fs.basename(file), "toml")), file .. " (devicons)")
   end
 end)
+
+-- Nerd Font glyphs live in the private-use areas: the BMP's, and plane 15's.
+local function private_use(codepoint)
+  return (codepoint >= 0xE000 and codepoint <= 0xF8FF) or (codepoint >= 0xF0000 and codepoint <= 0xFFFFD)
+end
+
+h.test("no Lua file outside the Icon set holds a glyph of its own", function()
+  local found = {}
+  for _, path in ipairs(vim.fn.globpath(root .. "/lua", "**/*.lua", false, true)) do
+    local file = path:sub(#root + 2)
+    if file ~= "lua/util/icons.lua" then
+      for lnum, line in ipairs(vim.fn.readfile(path)) do
+        for _, codepoint in ipairs(vim.fn.str2list(line)) do
+          if private_use(codepoint) then
+            table.insert(found, ("%s:%d: U+%X"):format(file, lnum, codepoint))
+          end
+        end
+      end
+    end
+  end
+  h.eq({}, found, "glyphs outside lua/util/icons.lua (take them from the Icon set)")
+end)
