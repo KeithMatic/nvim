@@ -1,6 +1,6 @@
 # Extra italics: design
 
-Extend the Theme italics picker (`<leader>uy`, `lua/theme_italics.lua`) so you can make far more Syntax types italic than a theme offers. Today only tokyonight's 4 options and catppuccin's 12 are available. The new **Extra italics** are an extensive list, chosen once and shared by every theme. They sit in their own section of the same picker, below the theme's own options. The second-font idea (Fira Code for strings) is dropped: Operator Mono SSm Lig stays the only font. The work ships with a beginner-friendly guide, `docs/theme-italics-guide.md`, that walks through the real changes.
+Extend the Theme italics picker (`<leader>uy`, `lua/theme_italics.lua`) so you can make far more Syntax types italic than a theme offers. Today only tokyonight's 4 options and catppuccin's 12 are available. The new **Extra italics** are an extensive list, chosen once and shared by every theme. They sit in their own section of the same picker, below the theme's own options. The second-font idea (Fira Code for strings) is dropped: Operator Mono SSm Lig stays the only font. The work ships with a beginner-friendly guide, [`docs/theme-italics-guide.md`](theme-italics-guide.md), that walks through the real changes.
 
 ## Terms
 
