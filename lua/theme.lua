@@ -12,8 +12,9 @@
 --   6. saves the theme so the next start restores it (live previews in the
 --      picker and the theme applied at startup aren't saved),
 --   7. clears the background of whatever the themes' native transparency
---      options leave solid, so the terminal's glass shows through, and makes
---      the line diagnostics and the Breadcrumbs italic.
+--      options leave solid, so the terminal's glass shows through, makes
+--      the line diagnostics and the Breadcrumbs italic, and applies the Extra
+--      italics (lua/theme_italics.lua).
 local M = {}
 
 -- The only themes the picker offers.
@@ -68,7 +69,7 @@ local references = { "LspReferenceText", "LspReferenceRead", "LspReferenceWrite"
 local state_file = vim.fn.stdpath("state") .. "/theme.json"
 
 --- The saved state, or an empty table when it's missing or unreadable.
----@return {theme?: string, tint?: {color: string, fade: number}, italics?: table<string, table<string, boolean>>, statusline_filename?: boolean} (the last only until migrated)
+---@return {theme?: string, tint?: {color: string, fade: number}, italics?: table<string, table<string, boolean>>, extra_italics?: table<string, boolean>, statusline_filename?: boolean} (the last only until migrated)
 local function read_state()
   local ok, state = pcall(function()
     return vim.json.decode(table.concat(vim.fn.readfile(state_file), "\n"))
@@ -84,7 +85,7 @@ local function save_state(changes)
   vim.fn.writefile({ vim.json.encode(state) }, state_file)
 end
 
---- The saved state (theme, tint, Theme italics), for other theme modules.
+--- The saved state (theme, tint, Theme italics, Extra italics), for other theme modules.
 M.saved = read_state
 
 --- Merge `changes` into the saved state.
@@ -214,10 +215,12 @@ local function italicise()
   end
 end
 
---- Restyle what plugins define for the new theme: transparency, then italics.
+--- Restyle what plugins define for the new theme: transparency, then italics,
+--- then the Extra italics (lua/theme_italics.lua).
 local function restyle()
   make_transparent()
   italicise()
+  require("theme_italics").apply_extras()
 end
 
 --- The current theme's own editor background and mode colours, as "#rrggbb".

@@ -1,7 +1,9 @@
 -- Theme italics: which syntax each theme family draws in italics, chosen per
--- family from a picker (<leader>uy) that re-applies the theme on each change.
--- Saved in theme.json beside the theme and tint (lua/theme.lua). The line
--- diagnostics and Breadcrumbs are italic whatever the theme, so they're not here.
+-- family from a picker (<leader>uy) that re-applies the theme on each change,
+-- and the Extra italics: syntax made italic on every theme, chosen once in the
+-- same picker. Saved in theme.json beside the theme and tint (lua/theme.lua).
+-- The line diagnostics and Breadcrumbs are italic whatever the theme, so
+-- they're not here.
 local M = {}
 
 local icons = require("util.icons")
@@ -42,6 +44,14 @@ local families = {
   },
 }
 
+-- Extra italics: Syntax types made italic by this config rather than the
+-- theme, chosen once for every theme. Each covers its highlight names and
+-- their deeper ones (`@variable.parameter.lua`), unless another lists a
+-- deeper one itself (`@function.builtin` is a built-in, not a function).
+local extras = {
+  { name = "parameters", groups = { "@variable.parameter", "@variable.parameter.builtin" } },
+}
+
 --- The family of the current theme, if it has italic options.
 local function current_family()
   local family = (vim.g.colors_name or ""):match("^(%a+)")
@@ -73,35 +83,84 @@ function M.styles(family)
   return ret
 end
 
---- Set up `family` again with its chosen italics, and re-apply the theme.
+--- Which Extra italics are on: the saved choice, else off.
+---@return table<string, boolean>
+local function chosen_extras()
+  local saved = require("theme").saved().extra_italics
+  return type(saved) == "table" and saved or {}
+end
+
+--- The highlight name in `extras` that `name` is, or is the deepest under.
+---@return {name: string, groups: string[]}?
+local function owner(name)
+  local best, depth
+  for _, extra in ipairs(extras) do
+    for _, group in ipairs(extra.groups) do
+      if (name == group or vim.startswith(name, group .. ".")) and #group > (depth or 0) then
+        best, depth = extra, #group
+      end
+    end
+  end
+  return best
+end
+
+--- Make every highlight an Extra italic that's on covers italic, keeping the
+--- rest of its style. Run after every theme change (lua/theme.lua).
+function M.apply_extras()
+  local on = chosen_extras()
+  for name in pairs(vim.api.nvim_get_hl(0, {})) do
+    local extra = owner(name)
+    if extra and on[extra.name] == true then
+      local hl = vim.api.nvim_get_hl(0, { name = name, link = false })
+      -- A `default` definition never replaces an existing one, so drop the flag.
+      hl.italic, hl.default = true, nil
+      vim.api.nvim_set_hl(0, name, hl)
+    end
+  end
+end
+
+--- Set up `family` again with its chosen italics (if the theme has a family),
+--- and re-apply the theme.
 local function reload(family)
-  local opts = LazyVim.opts(families[family].plugin)
-  opts.styles = vim.tbl_extend("force", opts.styles or {}, M.styles(family))
-  require(family).setup(opts)
+  if family then
+    local opts = LazyVim.opts(families[family].plugin)
+    opts.styles = vim.tbl_extend("force", opts.styles or {}, M.styles(family))
+    require(family).setup(opts)
+  end
   vim.cmd.colorscheme(vim.g.colors_name)
 end
 
 --- Pick an option to flip; the list reopens after each, until closed.
 function M.pick()
   local family = current_family()
-  if not family then
-    Snacks.notify.warn("No italic options for " .. (vim.g.colors_name or "this theme"), { title = "Theme italics" })
-    return
+  local choice = family and chosen(family) or {}
+  local on = chosen_extras()
+  local rows = {}
+  for _, option in ipairs(family and families[family].options or {}) do
+    table.insert(rows, { option = option })
   end
-  local choice = chosen(family)
-  vim.ui.select(families[family].options, {
-    prompt = "Italics: " .. family,
-    format_item = function(option)
-      return (choice[option] and icons.ui.Check or icons.ui.Close) .. "  " .. option
+  for _, extra in ipairs(extras) do
+    table.insert(rows, { extra = extra.name })
+  end
+  vim.ui.select(rows, {
+    prompt = "Italics: " .. (family or "extra"),
+    format_item = function(row)
+      local is_on = row.extra and on[row.extra] or choice[row.option]
+      return (is_on and icons.ui.Check or icons.ui.Close) .. "  " .. (row.extra or row.option)
     end,
-  }, function(option)
-    if not option then
+  }, function(row)
+    if not row then
       return
     end
-    choice[option] = not choice[option]
-    local italics = require("theme").saved().italics or {}
-    italics[family] = choice
-    require("theme").save({ italics = italics })
+    if row.extra then
+      on[row.extra] = not on[row.extra]
+      require("theme").save({ extra_italics = on })
+    else
+      choice[row.option] = not choice[row.option]
+      local italics = require("theme").saved().italics or {}
+      italics[assert(family)] = choice -- theme rows only exist for a family
+      require("theme").save({ italics = italics })
+    end
     reload(family)
     vim.schedule(M.pick)
   end)

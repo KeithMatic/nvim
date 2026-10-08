@@ -15,3 +15,10 @@ for group, expected in pairs(vim.json.decode(vim.env.EXPECT_BG or "{}")) do
     h.eq(expected, bg and ("#%06x"):format(bg))
   end)
 end
+
+-- Optionally, whether some groups should boot italic: JSON, group name to boolean.
+for group, expected in pairs(vim.json.decode(vim.env.EXPECT_ITALIC or "{}")) do
+  h.test(("boots with %s %s"):format(group, expected and "italic" or "upright"), function()
+    h.eq(expected, vim.api.nvim_get_hl(0, { name = group, link = false }).italic == true)
+  end)
+end

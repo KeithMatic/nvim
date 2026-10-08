@@ -22,10 +22,17 @@ Markdown heading bars, inline code and code blocks.
 _Avoid_: Chips (those are accents that keep their background)
 
 **Theme italics**:
-Which kinds of code (comments, keywords, functions, ...) a theme draws in italics, chosen separately
-for each theme family from the options that family offers. The line diagnostics and **Breadcrumbs**
-are italic whatever the theme, and aren't among them.
+Which kinds of code (comments, keywords, functions, ...) are drawn in italics, chosen in one picker
+with two sections: the options the current theme family offers, chosen separately for each family,
+then the **Extra italics**. The line diagnostics and **Breadcrumbs** are italic whatever the theme,
+and aren't among them.
 _Avoid_: Font style, italic toggles
+
+**Extra italics**:
+Kinds of code this config makes italic after any theme loads (parameters, built-ins, decorators,
+...), chosen once and shared by every theme. One the current theme family already offers is hidden,
+and left to the theme.
+_Avoid_: Custom italics, italic overrides
 
 **Tint**:
 The colour faded over the theme's background that marks "where am I" lines: the cursor line, the explorer's line and the selected menu item.
