@@ -3,6 +3,7 @@
 # (.tests/), so real Neovim config, data, state and cache are never touched.
 #
 # Usage: tests/run.sh [spec...]   (default: every tests/*_spec.lua)
+# Ends with a recap of every failure; the whole run is also saved to .tests/last.log.
 set -euo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
@@ -33,15 +34,44 @@ if [ $# -eq 0 ]; then
   set -- "$root"/tests/*_spec.lua
 fi
 
-failed=0
+# Neovim's messages (headless, they go to stderr) are kept out of the results,
+# in one file per spec: interleaved, they'd break up the result lines.
+log="$sandbox/last.log"
+messages="$sandbox/messages"
+failures="$sandbox/failures.txt"
+rm -rf "$messages"
+mkdir -p "$messages"
+: >"$log"
+: >"$failures"
+
+failed=""
 for spec in "$@"; do
   spec="$(cd "$(dirname "$spec")" && pwd)/$(basename "$spec")"
-  echo "${spec#"$root"/}"
-  TEST_SPEC="$spec" nvim --headless --cmd "luafile $root/tests/harness.lua" || failed=$((failed + 1))
+  name="${spec#"$root"/}"
+  msgs="$messages/$(basename "$spec" .lua).log"
+  out="$sandbox/spec.out"
+  echo "$name" | tee -a "$log"
+  if ! TEST_SPEC="$spec" nvim --headless --cmd "luafile $root/tests/harness.lua" 2>"$msgs" | tee "$out"; then
+    failed="$failed $name"
+    {
+      echo "$name"
+      grep -v '^  ok ' "$out" || { echo "  (no result: Neovim exited early; its last messages)"; tail -n 20 "$msgs"; }
+      echo "  messages: ${msgs#"$root"/}"
+    } >>"$failures"
+  fi
+  cat "$out" >>"$log"
 done
 
-if [ "$failed" -ne 0 ]; then
-  echo "$failed spec file(s) failed"
+# The recap repeats every failure at the end, so `| tail` is all it takes to read a run.
+if [ -n "$failed" ]; then
+  {
+    echo
+    echo "Failures:"
+    cat "$failures"
+    echo
+    echo "$(echo "$failed" | wc -w | tr -d ' ') spec file(s) failed:$failed"
+    echo "Full log: ${log#"$root"/}"
+  } | tee -a "$log"
   exit 1
 fi
-echo "All specs passed"
+echo "All specs passed" | tee -a "$log"
