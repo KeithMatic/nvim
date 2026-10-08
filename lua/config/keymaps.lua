@@ -23,6 +23,17 @@ vim.keymap.set(
 -- The code runner (:RunFile, set up in autocmds.lua). <leader>cx is free in LazyVim's "code" group.
 vim.keymap.set("n", "<leader>cx", "<Cmd>RunFile<CR>", { desc = "Run File" })
 
+-- The Terminal manager (lua/terminal.lua) takes over LazyVim's Snacks terminal keys.
+local terminal = require("terminal")
+vim.keymap.set({ "n", "t" }, "<C-/>", terminal.toggle, { desc = "Terminal Manager" })
+vim.keymap.set({ "n", "t" }, "<C-_>", terminal.toggle, { desc = "which_key_ignore" })
+vim.keymap.set("n", "<leader>ft", function()
+  terminal.new_at(LazyVim.root())
+end, { desc = "Terminal (Root Dir)" })
+vim.keymap.set("n", "<leader>fT", function()
+  terminal.new_at(vim.fn.expand("%:p:h"))
+end, { desc = "Terminal (File Dir)" })
+
 -- Show or hide the statusline's filename (lua/statusline.lua). <leader>uN is free in LazyVim's "ui" group.
 require("statusline").filename_toggle():map("<leader>uN")
 

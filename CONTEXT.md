@@ -199,3 +199,18 @@ _Avoid_: dev server, kitehost, live-server (the plugins, not the concept)
 **Browser group**:
 The <leader>v keys that show things in the browser: the **Markdown preview** and the **Live server**.
 _Avoid_: kitehost keys, <leader>l (that's Lazy)
+
+**Terminal manager**:
+The one home for interactive shells: a float on <C-/> of named terminals beside the **Terminal list**,
+looking like every other float. Its keys only ever **Hide** it. The **Runner** keeps its own bottom
+terminal.
+_Avoid_: floaterm (the plugin, not the concept), terminal pane
+
+**Terminal list**:
+The sidebar inside the **Terminal manager** listing each terminal by name: a adds one, e renames,
+d deletes, a number switches.
+_Avoid_: tabs, drawer
+
+**Hide**:
+Closing the **Terminal manager**'s windows while every terminal keeps running, to show again as it was.
+_Avoid_: close (volt's close forgets the terminals), minimise
