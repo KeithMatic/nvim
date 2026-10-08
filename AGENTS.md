@@ -11,3 +11,7 @@ The five default triage roles, each label string equal to its role name. See `do
 ### Domain docs
 
 Single-context: one `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+
+## Tests
+
+Check a change with `tests/run.sh tests/<area>_spec.lua`: it runs in its own sandbox and never syncs or cleans the real plugin install. See README.md › Tests.

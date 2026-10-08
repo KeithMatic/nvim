@@ -169,7 +169,7 @@ h.test("d opens the diff and stays in the layer", function()
   h.eq(true, layer() ~= nil, "still in the layer")
   h.eq(win, vim.api.nvim_get_current_win(), "back in the file's window")
   press("q")
-  vim.cmd.only({ bang = true })
+  h.close_splits()
   vim.cmd.diffoff({ bang = true })
 end)
 

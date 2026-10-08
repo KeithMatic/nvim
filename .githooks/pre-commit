@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Reject a commit whose staged Lua files aren't formatted to stylua.toml.
+# Checks the staged content, not the working tree, so a file fixed but not
+# re-added still fails. README.md › Tests says how to turn it on.
+set -euo pipefail
+
+files=()
+while IFS= read -r -d '' file; do
+  files+=("$file")
+done < <(git diff --cached --name-only --diff-filter=ACMR -z -- '*.lua')
+
+[ ${#files[@]} -eq 0 ] && exit 0
+
+if ! command -v stylua >/dev/null; then
+  echo "pre-commit: stylua not found; install it (brew install stylua) to commit Lua files" >&2
+  exit 1
+fi
+
+bad=()
+for file in "${files[@]}"; do
+  if ! git show ":$file" | stylua --check --stdin-filepath "$file" - >&2; then
+    bad+=("$file")
+  fi
+done
+
+if [ ${#bad[@]} -ne 0 ]; then
+  echo "pre-commit: not formatted with stylua: ${bad[*]}" >&2
+  echo "Fix with: stylua ${bad[*]} && git add ${bad[*]}" >&2
+  exit 1
+fi

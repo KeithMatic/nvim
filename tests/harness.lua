@@ -49,6 +49,19 @@ function M.focus_explorer()
   end, 50)
 end
 
+--- Close every split but the current window, leaving floats open.
+--- Not :only, which also closes floats and fails (E445) whenever a float's
+--- WinClosed closes the window it would close next: noice's message popup
+--- closes its border, ending :only's pass before the Buffer sticks' float.
+function M.close_splits()
+  local current = vim.api.nvim_get_current_win()
+  for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+    if win ~= current and vim.api.nvim_win_is_valid(win) and vim.api.nvim_win_get_config(win).relative == "" then
+      vim.api.nvim_win_close(win, false)
+    end
+  end
+end
+
 ---@param keys string
 ---@param mode string
 function M.feed(keys, mode)

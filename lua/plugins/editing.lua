@@ -43,7 +43,8 @@ return {
         ["<C-l>"] = { "select_and_accept", insert_move("<C-g>U<Right>"), "fallback" },
         -- The only insert-mode <Tab>: accept → snippet forward → tabout → indent.
         -- Setting it here also stops LazyVim adding its own <Tab> chain, which
-        -- would accept AI suggestions (no AI extras are enabled).
+        -- would accept AI suggestions (no AI completion extra is enabled;
+        -- ai.claudecode is chat only).
         ["<Tab>"] = {
           "select_and_accept",
           "snippet_forward",

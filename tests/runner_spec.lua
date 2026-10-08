@@ -1,9 +1,5 @@
 local h = require("harness")
 
--- mini.animate draws a closing window's animation in a float, and :only
--- can't close that float (E445): the next test's :only would race it.
-vim.g.minianimate_disable = true
-
 local function write(path, lines)
   vim.fn.mkdir(vim.fs.dirname(path), "p")
   vim.fn.writefile(lines, path)
@@ -95,7 +91,7 @@ local function terminal_shows(win, want)
 end
 
 h.test(":RunFile saves the buffer, then shows its output in a bottom split terminal", function()
-  vim.cmd.only()
+  h.close_splits()
   local path = open("hello.lua", { 'print("first")' })
   vim.api.nvim_buf_set_lines(0, 0, -1, false, { 'print("second")' })
   local code_win = vim.api.nvim_get_current_win()
@@ -114,7 +110,7 @@ h.test(":RunFile saves the buffer, then shows its output in a bottom split termi
 end)
 
 h.test("running again reuses the one terminal split", function()
-  vim.cmd.only()
+  h.close_splits()
   open("again.lua", { 'print("second")' })
   vim.cmd.RunFile()
   vim.api.nvim_buf_set_lines(0, 0, -1, false, { 'print("third")' })
@@ -130,7 +126,7 @@ h.test("running again reuses the one terminal split", function()
 end)
 
 h.test("an unsupported filetype reports no runner and runs nothing", function()
-  vim.cmd.only()
+  h.close_splits()
   open("notes.md")
   local messages = {}
   local notify = vim.notify
@@ -146,7 +142,7 @@ h.test("an unsupported filetype reports no runner and runs nothing", function()
 end)
 
 h.test(":RunFile writes a new file that was never saved", function()
-  vim.cmd.only()
+  h.close_splits()
   local path = project .. "/new.lua"
   vim.cmd.edit(vim.fn.fnameescape(path))
   vim.cmd.RunFile()
@@ -161,7 +157,7 @@ h.test("<leader>cx runs the file, and is LazyVim's only <leader>cx mapping", fun
   h.eq(1, #maps, "one global normal mapping under <leader>cx: " .. vim.inspect(maps))
   h.eq("Run File", maps[1].desc, "which-key description")
 
-  vim.cmd.only()
+  h.close_splits()
   open("keyed.lua", { 'print("keyed")' })
   vim.api.nvim_feedkeys(lhs, "mx", false)
   local wins = terminal_windows()
