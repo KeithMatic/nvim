@@ -142,6 +142,12 @@ function M.setup(opts)
 
   local open = floaterm.open
   floaterm.open = function()
+    -- floaterm centres `size.w` columns, but draws the Terminal list's
+    -- border, a one-column gap and the terminal's border on top: w + 5 in
+    -- all, the extra on the right. Centre all of it, worked out again on
+    -- each open so a resized editor gets it right too.
+    local width = math.floor(vim.o.columns * state.config.size.w / 100) + 5
+    state.config.position = { col = math.floor((vim.o.columns - width) / 2) }
     open()
     as_float(state.barwin)
     as_float(state.sidewin, state.ns) -- the Terminal list

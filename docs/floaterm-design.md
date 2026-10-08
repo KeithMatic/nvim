@@ -110,7 +110,10 @@ out of the list and shows the next one.
   does, since a one-shot timer can still read as active after its time is up until the event loop
   turns. better-escape is left untouched in terminal mode (lazygit keeps `jj`).
 - **Size (Q9 → B).** `size = { w = 85, h = 80 }` (percent of the editor), centred; the Terminal
-  list keeps floaterm's fixed 20 columns.
+  list keeps floaterm's fixed 20 columns. floaterm centres only `w` columns, but the Terminal
+  list's border, a one-column gap and the terminal's border add 5 more, all on the right, so the
+  `floaterm.open` wrap sets `position.col` to centre all `w + 5`, on each open (it follows a
+  resized editor). Vertically floaterm's own placement is already centred.
 
 ## Implementation
 

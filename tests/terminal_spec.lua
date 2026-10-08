@@ -114,6 +114,15 @@ h.test("it takes 85% of the editor's width and 80% of its height", function()
   h.eq(math.floor(vim.o.columns * 0.85), state().w, "width")
 end)
 
+h.test("it sits in the middle of the editor, borders and all", function()
+  local floaterm = state()
+  -- A bordered float's position is its border's top-left corner.
+  local left = vim.api.nvim_win_get_position(floaterm.sidewin)[2]
+  local right = vim.api.nvim_win_get_position(floaterm.win)[2] + vim.api.nvim_win_get_width(floaterm.win) + 1
+  local left_gap, right_gap = left, vim.o.columns - 1 - right
+  h.eq(true, math.abs(left_gap - right_gap) <= 1, ("gaps: %d left, %d right"):format(left_gap, right_gap))
+end)
+
 h.test("<Esc><Esc> in a terminal goes to normal mode; one <Esc> stays in the shell", function()
   -- Fed keys can't stay in terminal mode headless, so call the mapping as a key press would.
   local esc = vim.api.nvim_buf_call(state().buf, function()
