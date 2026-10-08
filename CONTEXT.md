@@ -21,17 +21,26 @@ Highlights drawn inside the text as a solid block: diagnostics at the end of a l
 Markdown heading bars, inline code and code blocks.
 _Avoid_: Chips (those are accents that keep their background)
 
+**Theme family**:
+Curated themes that share one setup and one set of options: tokyonight (night, storm, moon) and
+catppuccin (frappe, macchiato, mocha).
+_Avoid_: Colorscheme family, theme pack
+
+**Syntax type**:
+A kind of code text the editor colours on its own: comments, keywords, strings, function names,
+parameters, ...
+_Avoid_: Token, scope, capture (fine in code comments about highlight names)
+
 **Theme italics**:
-Which kinds of code (comments, keywords, functions, ...) are drawn in italics, chosen in one picker
-with two sections: the options the current theme family offers, chosen separately for each family,
-then the **Extra italics**. The line diagnostics and **Breadcrumbs** are italic whatever the theme,
-and aren't among them.
+Which **Syntax types** are drawn in italics, chosen in one picker with two sections: the options the
+current **Theme family** offers, chosen separately for each family, then the **Extra italics**. The
+line diagnostics and **Breadcrumbs** are italic whatever the theme, and aren't among them.
 _Avoid_: Font style, italic toggles
 
 **Extra italics**:
-Kinds of code this config makes italic after any theme loads (parameters, built-ins, decorators,
-...), chosen once and shared by every theme. One the current theme family already offers is hidden,
-and left to the theme.
+**Syntax types** this config makes italic after any theme loads (parameters, built-ins, decorators,
+...), chosen once and shared by every theme. One the current **Theme family** already offers is
+hidden, and left to the theme.
 _Avoid_: Custom italics, italic overrides
 
 **Tint**:

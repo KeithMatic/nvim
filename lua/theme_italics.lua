@@ -130,7 +130,8 @@ local function chosen_extras()
   return type(saved) == "table" and saved or {}
 end
 
---- The highlight name in `extras` that `name` is, or is the deepest under.
+--- The extra that owns highlight `name`: the one listing it, or listing the
+--- deepest name it's under.
 ---@return {name: string, groups: string[]}?
 local function owner(name)
   local best, depth

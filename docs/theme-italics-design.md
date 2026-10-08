@@ -4,11 +4,12 @@ Extend the Theme italics picker (`<leader>uy`, `lua/theme_italics.lua`) so you c
 
 ## Terms
 
-- **Theme italics**: the existing picker (`<leader>uy`) that switches italics on or off per Syntax type for the current Theme family. Saved in `theme.json`. *Avoid:* italic settings, italics menu.
-- **Syntax type**: a kind of code text the editor colours on its own, such as comments, keywords, strings, function names or parameters. *Avoid:* token, scope, capture (in the guide; fine in code comments).
-- **Theme family**: a group of themes that share one setup, such as tokyonight (night, storm, moon) or catppuccin (frappe, macchiato, mocha). *Avoid:* colorscheme family, theme pack.
-- **Extra italic**: a Syntax type that this config adds to the Theme italics picker. The theme does not offer it, and it is applied after any theme loads. *Avoid:* custom italic, override.
-- **Font slot**: one of the four faces a terminal holds at once (regular, italic, bold, bold italic). Neovim can only ask for a style, and the terminal picks the font. Kept only to explain why fonts were dropped. *Avoid:* font face, font variant.
+These follow the glossary in `CONTEXT.md`.
+
+- **Theme family**: curated themes that share one setup and one set of options: tokyonight (night, storm, moon) and catppuccin (frappe, macchiato, mocha). *Avoid:* colorscheme family, theme pack.
+- **Syntax type**: a kind of code text the editor colours on its own, such as comments, keywords, strings, function names or parameters. *Avoid:* token, scope, capture (fine in code comments about highlight names).
+- **Theme italics**: which Syntax types are drawn in italics, chosen in one picker (`<leader>uy`) with two sections: the options the current Theme family offers, chosen separately for each family, then the Extra italics. Saved in `theme.json`. *Avoid:* font style, italic toggles.
+- **Extra italics**: Syntax types this config makes italic after any theme loads, chosen once and shared by every theme. One the current Theme family already offers is hidden, and left to the theme. *Avoid:* custom italics, italic overrides.
 
 ## Why
 
@@ -25,12 +26,12 @@ The guide names real files and shows each change before and after. Its testing s
 
 ### 2. No second font (Q2 → "drop second font completely", Q4 → drop fonts from the guide entirely)
 
-Neovim runs inside WezTerm, and a terminal draws text in only four Font slots. Fira Code for strings would have meant lending one slot (bold italic was the recommendation) to Fira Code and drawing strings in that style. The user dropped this. Operator Mono SSm Lig stays the only font in WezTerm (and Ghostty). Function names and variables are already in Operator Mono, and italic text uses its cursive italic face automatically. No terminal config changes. The guide has no fonts section and no unapplied recipe.
+Neovim runs inside WezTerm, and a terminal holds only four fonts at once, one for each style it draws (regular, italic, bold, bold italic); Neovim can only ask for a style. Fira Code for strings would have meant lending one slot (bold italic was the recommendation) to Fira Code and drawing strings in that style. The user dropped this. Operator Mono SSm Lig stays the only font in WezTerm (and Ghostty). Function names and variables are already in Operator Mono, and italic text uses its cursive italic face automatically. No terminal config changes. The guide has no fonts section and no unapplied recipe.
 
 - *Rejected: lend bold italic to Fira Code.* It works, but the user decided the second font isn't wanted.
 - *Rejected: lend bold to Fira Code.* Bold is used widely (headings, statusline, matched brackets), so all of it would switch font.
 - *Rejected: switch to Neovide.* It has the same four font slots, so it gains nothing.
-- *Rejected (Q4): explain Font slots plus an optional recipe, or pin WezTerm's italic face with `font_rules`.* The user asked to discard the fonts content completely.
+- *Rejected (Q4): explain the four-font limit plus an optional recipe, or pin WezTerm's italic face with `font_rules`.* The user asked to discard the fonts content completely.
 
 ### 3. Extra italics are new options in the Theme italics picker, working on every theme (Q3 → A)
 
@@ -64,11 +65,13 @@ The theme's own options come first (saved per family, unchanged). Extra italics 
 - **Design doc path:** this file is `docs/theme-italics-design.md`, not the `docs/theme-italics-and-fonts-guide.md` proposed at the start. Fonts were dropped, and the guide gets its own file.
 - **Saving:** `theme.json` (`stdpath("state")`) gains a top-level `extra_italics` map, `{ [option] = boolean }`, beside `theme`, `tint` and the per-family `italics`.
 - **Applying:** extras are applied in the same ColorScheme hook as `italicise()` (`theme.lua`'s `restyle()`), after the theme. Each matching highlight is read with `link = false`, `italic = true` is set, the `default` flag is dropped (as `italicise()` already does), and the highlight is written back. Flipping an extra re-applies the theme, as flipping a theme option already does (`reload`). That way, turning an extra **off** restores the theme's own style rather than leaving a stale italic.
+- **Names a theme leaves undefined:** a listed name the theme doesn't define (Neovim draws it as the shallower name it falls back to, `@string.documentation` as `@string`) is defined from that fallback's style, with italic added, so the option still works on that theme.
+- **Neighbours stay put:** an option that's off keeps its look even where its names link or fall back to an option that's on (on habamax, `@function.method` falls back to `@function`). Such a name is redefined with its previous style, which breaks the link until the next theme change.
 - **Picker rendering:** the picker still uses `vim.ui.select` and reopens after each flip. Rows carry a section label (the family name for theme options, "extra" for Extra italics) and the existing check/close icon, with the theme's rows first.
 
 ### The Extra italics list (proposed highlight names)
 
-Each option covers the listed highlight names and their language-specific variants (e.g. `@variable.parameter.lua`). It does not cover deeper sub-types that belong to another option: `@function` does not include `@function.builtin` (built-ins) or `@function.method` (methods). The hidden-when-offered column says which family already offers the option.
+Each option covers the listed highlight names and every more specific name under them: language variants (`@variable.parameter.lua`) and sub-types (`@string.regexp`, `@comment.todo`, `@tag.delimiter`). A more specific name listed by another option belongs to that option instead: `@function` does not include `@function.builtin` (built-ins) or `@function.method` (methods). The hidden-when-offered column says which family already offers the option.
 
 | Extra italic | Highlight names | Hidden on |
 |---|---|---|
@@ -127,7 +130,7 @@ Confirm the exact names against Neovim 0.12's treesitter captures (`:help treesi
 
 ## Deferred
 
-None. Fonts were dropped outright rather than deferred. A request for a different font on a Syntax type would reopen Q2: the Font slot workaround (lend bold italic to the second font) is recorded under Locked decision 2.
+None. Fonts were dropped outright rather than deferred. A request for a different font on a Syntax type would reopen Q2: the workaround (lend the bold italic font to the second font) is recorded under Locked decision 2.
 
 ## Open threads
 

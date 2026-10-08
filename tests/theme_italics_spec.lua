@@ -73,6 +73,7 @@ h.test("turning parameters off gives them back the theme's own look, and saves i
     h.eq(true, italic("@variable.parameter"), "parameters before")
     pick("parameters")
     h.eq(false, italic("@variable.parameter"), "parameters after")
+    h.eq(false, italic("@variable.parameter.builtin"), "built-in parameters after")
     h.eq({ parameters = false }, saved().extra_italics)
   end)
 end)
@@ -132,35 +133,36 @@ h.test("with Extra italics on, line diagnostics and Breadcrumbs stay italic and 
   end)
 end)
 
--- Every Extra italic, as the picker shows it, and the highlight names it makes
--- italic (from the spec, #4).
+-- Every Extra italic: its saved name, how the picker shows it, and the
+-- highlight names it makes italic (from the spec, #4).
 local extras = {
-  { "comments", { "Comment", "@comment" } },
-  { "documentation comments", { "@comment.documentation", "@string.documentation" } },
-  { "keywords", { "Keyword", "Statement", "@keyword", "@keyword.function" } },
-  { "conditionals", { "Conditional", "@keyword.conditional", "@keyword.conditional.ternary" } },
-  { "loops", { "Repeat", "@keyword.repeat" } },
-  { "return and exception keywords", { "@keyword.return", "@keyword.exception", "Exception" } },
-  { "imports", { "Include", "@keyword.import" } },
-  { "functions", { "Function", "@function", "@function.call" } },
-  { "methods", { "@function.method", "@function.method.call" } },
-  { "variables", { "Identifier", "@variable" } },
-  { "parameters", { "@variable.parameter", "@variable.parameter.builtin" } },
-  { "properties", { "@property", "@variable.member" } },
+  { "comments", "comments", { "Comment", "@comment" } },
+  { "documentation", "documentation comments", { "@comment.documentation", "@string.documentation" } },
+  { "keywords", "keywords", { "Keyword", "Statement", "@keyword", "@keyword.function" } },
+  { "conditionals", "conditionals", { "Conditional", "@keyword.conditional", "@keyword.conditional.ternary" } },
+  { "loops", "loops", { "Repeat", "@keyword.repeat" } },
+  { "returns", "return and exception keywords", { "@keyword.return", "@keyword.exception", "Exception" } },
+  { "imports", "imports", { "Include", "@keyword.import" } },
+  { "functions", "functions", { "Function", "@function", "@function.call" } },
+  { "methods", "methods", { "@function.method", "@function.method.call" } },
+  { "variables", "variables", { "Identifier", "@variable" } },
+  { "parameters", "parameters", { "@variable.parameter", "@variable.parameter.builtin" } },
+  { "properties", "properties", { "@property", "@variable.member" } },
   {
+    "builtins",
     "built-ins (self, this)",
     { "@variable.builtin", "@function.builtin", "@type.builtin", "@constant.builtin", "@module.builtin" },
   },
-  { "types", { "Type", "@type", "@type.definition" } },
-  { "constants", { "Constant", "@constant", "@constant.macro" } },
-  { "modules", { "@module" } },
-  { "decorators", { "@attribute", "@attribute.builtin" } },
-  { "strings", { "String", "@string" } },
-  { "characters and escapes", { "Character", "@character", "@string.escape", "SpecialChar" } },
-  { "numbers", { "Number", "Float", "@number", "@number.float" } },
-  { "booleans", { "Boolean", "@boolean" } },
-  { "operators", { "Operator", "@operator", "@keyword.operator" } },
-  { "markup tags and attributes", { "@tag", "@tag.attribute" } },
+  { "types", "types", { "Type", "@type", "@type.definition" } },
+  { "constants", "constants", { "Constant", "@constant", "@constant.macro" } },
+  { "modules", "modules", { "@module" } },
+  { "decorators", "decorators", { "@attribute", "@attribute.builtin" } },
+  { "strings", "strings", { "String", "@string" } },
+  { "characters", "characters and escapes", { "Character", "@character", "@string.escape", "SpecialChar" } },
+  { "numbers", "numbers", { "Number", "Float", "@number", "@number.float" } },
+  { "booleans", "booleans", { "Boolean", "@boolean" } },
+  { "operators", "operators", { "Operator", "@operator", "@keyword.operator" } },
+  { "tags", "markup tags and attributes", { "@tag", "@tag.attribute" } },
 }
 
 -- The options each curated family offers itself, so its extras are hidden.
@@ -182,87 +184,124 @@ local offered = {
   },
 }
 
+-- The curated families' themes tested, and one outside them.
+local themes = {
+  { theme = "tokyonight-moon", family = "tokyonight" },
+  { theme = "catppuccin-mocha", family = "catppuccin" },
+  { theme = "habamax" },
+}
+
 --- A picker row without its on/off icon, spaces collapsed.
 local function text(row)
   return (row:match("^%S+%s+(.*)$"):gsub("%s+", " "))
 end
 
---- The extras' labels, without those `hidden`.
-local function visible_extras(hidden)
+--- The extras shown alongside `family`'s own options (none: every extra).
+local function visible_extras(family)
+  return vim.tbl_filter(function(extra)
+    return not vim.list_contains(offered[family] or {}, extra[1])
+  end, extras)
+end
+
+--- How Neovim draws `group`: its definition, links followed, or, when the
+--- theme leaves it undefined, the shallower name it falls back to.
+local function drawn(group)
+  local def = hl(group)
+  local parent = group:match("^(@.+)%.[^.]+$")
+  if vim.tbl_isempty(def) and parent then
+    return drawn(parent)
+  end
+  return def
+end
+
+--- Every extra's highlight names, drawn: group name to { fg, italic }.
+local function snapshot()
   local ret = {}
   for _, extra in ipairs(extras) do
-    if not vim.list_contains(hidden or {}, extra[1]) then
-      table.insert(ret, extra[1])
+    for _, group in ipairs(extra[3]) do
+      local def = drawn(group)
+      ret[group] = { fg = def.fg, italic = def.italic == true }
     end
   end
   return ret
 end
 
---- A state with every Extra italic on (as saved, by name).
-local function all_on(theme)
-  return vim.json.encode({
-    theme = theme,
-    extra_italics = {
-      comments = true,
-      documentation = true,
-      keywords = true,
-      conditionals = true,
-      loops = true,
-      returns = true,
-      imports = true,
-      functions = true,
-      methods = true,
-      variables = true,
-      parameters = true,
-      properties = true,
-      builtins = true,
-      types = true,
-      constants = true,
-      modules = true,
-      decorators = true,
-      strings = true,
-      characters = true,
-      numbers = true,
-      booleans = true,
-      operators = true,
-      tags = true,
-    },
-  })
+--- A saved state with `theme` and the Extra italics named in `on`.
+local function state(theme, on)
+  local chosen = {}
+  for _, name in ipairs(on) do
+    chosen[name] = true
+  end
+  return vim.json.encode({ theme = theme, extra_italics = chosen })
 end
 
-for _, case in ipairs({
-  { theme = "tokyonight-moon", family = "tokyonight" },
-  { theme = "catppuccin-mocha", family = "catppuccin" },
-  { theme = "habamax" },
-}) do
-  h.test(case.theme .. ": every Extra italic it doesn't offer makes its highlight names italic", function()
-    h.with_state(all_on(case.theme), function()
+for _, case in ipairs(themes) do
+  h.test(case.theme .. ": with nothing saved, every Extra italic shows as off", function()
+    h.with_state(vim.json.encode({ theme = case.theme }), function()
       h.apply_theme(case.theme)
-      local hidden = offered[case.family] or {}
-      for _, extra in ipairs(extras) do
-        if not vim.list_contains(hidden, extra[1]) then
-          for _, group in ipairs(extra[2]) do
-            h.eq(true, italic(group), extra[1] .. ": " .. group)
-          end
-        end
+      local close = require("util.icons").ui.Close
+      local extra_rows = vim.tbl_filter(function(row)
+        return vim.startswith(text(row), "extra ")
+      end, pick())
+      h.eq(#visible_extras(case.family), #extra_rows, "extra rows")
+      for _, row in ipairs(extra_rows) do
+        h.eq(true, vim.startswith(row, close), "off: " .. row)
       end
+    end)
+  end)
+
+  h.test(case.theme .. ": each Extra italic on its own makes only its names italic, in their own colours", function()
+    h.with_state(vim.json.encode({ theme = case.theme }), function()
+      h.apply_theme(case.theme)
+      local before = snapshot()
+      for _, extra in ipairs(visible_extras(case.family)) do
+        h.with_state(state(case.theme, { extra[1] }), function()
+          h.apply_theme(case.theme)
+          local after = snapshot()
+          for group, was in pairs(before) do
+            local mine = vim.list_contains(extra[3], group)
+            local what = ("%s on, %s"):format(extra[1], group)
+            h.eq(mine or was.italic, after[group].italic, what .. " italic")
+            h.eq(was.fg, after[group].fg, what .. " colour")
+          end
+        end)
+      end
+    end)
+  end)
+
+  h.test(case.theme .. ": its own options first, then the extras it doesn't offer", function()
+    h.with_state(vim.json.encode({ theme = case.theme }), function()
+      h.apply_theme(case.theme)
+      local expected = {}
+      for _, option in ipairs(offered[case.family] or {}) do
+        table.insert(expected, case.family .. " " .. option)
+      end
+      for _, extra in ipairs(visible_extras(case.family)) do
+        table.insert(expected, "extra " .. extra[2])
+      end
+      h.eq(expected, vim.tbl_map(text, pick()))
     end)
   end)
 end
 
-h.test("each Extra italic keeps to its own highlight names", function()
-  h.with_state('{"theme":"habamax","extra_italics":{"functions":true,"variables":true}}', function()
-    h.apply_theme("habamax")
-    h.eq(true, italic("@function"), "functions")
-    h.eq(true, italic("@variable"), "variables")
-    for _, group in ipairs({ "@function.builtin", "@function.method", "@variable.parameter", "@variable.builtin" }) do
-      h.eq(false, italic(group), group)
-    end
-  end)
+h.test("every Extra italic at once, on every theme, still keeps to its own names", function()
+  local all = vim.tbl_map(function(extra)
+    return extra[1]
+  end, extras)
+  for _, case in ipairs(themes) do
+    h.with_state(state(case.theme, all), function()
+      h.apply_theme(case.theme)
+      for _, extra in ipairs(visible_extras(case.family)) do
+        for _, group in ipairs(extra[3]) do
+          h.eq(true, italic(group), case.theme .. ": " .. extra[1] .. ": " .. group)
+        end
+      end
+    end)
+  end
 end)
 
 h.test("an extra the theme offers itself is left to the theme", function()
-  h.with_state('{"theme":"tokyonight-moon","extra_italics":{"comments":true}}', function()
+  h.with_state(state("tokyonight-moon", { "comments" }), function()
     h.apply_theme("tokyonight-moon")
     -- tokyonight's own comments option is on by default; turn it off.
     pick("tokyonight comments")
@@ -272,80 +311,51 @@ h.test("an extra the theme offers itself is left to the theme", function()
   end)
 end)
 
-h.test("tokyonight: its own options first, then the extras it doesn't offer", function()
-  h.with_state('{"theme":"tokyonight-moon"}', function()
-    h.apply_theme("tokyonight-moon")
-    local expected = {}
-    for _, option in ipairs(offered.tokyonight) do
-      table.insert(expected, "tokyonight " .. option)
-    end
-    for _, label in ipairs(visible_extras(offered.tokyonight)) do
-      table.insert(expected, "extra " .. label)
-    end
-    h.eq(expected, vim.tbl_map(text, pick()))
-  end)
-end)
-
-h.test("catppuccin: its own options first, then the extras it doesn't offer", function()
-  h.with_state('{"theme":"catppuccin-mocha"}', function()
-    h.apply_theme("catppuccin-mocha")
-    local expected = {}
-    for _, option in ipairs(offered.catppuccin) do
-      table.insert(expected, "catppuccin " .. option)
-    end
-    for _, label in ipairs(visible_extras(offered.catppuccin)) do
-      table.insert(expected, "extra " .. label)
-    end
-    h.eq(expected, vim.tbl_map(text, pick()))
-  end)
-end)
-
-h.test("a theme outside the curated families offers only the extras, with no warning", function()
-  h.with_state('{"theme":"habamax"}', function()
+h.test("a theme outside the curated families can flip extras, with no warning", function()
+  h.with_state(vim.json.encode({ theme = "habamax" }), function()
     h.apply_theme("habamax")
-    local expected = vim.tbl_map(function(label)
-      return "extra " .. label
-    end, visible_extras())
-    h.eq(expected, vim.tbl_map(text, pick("types")))
+    pick("types")
     h.eq(true, italic("@type"), "types after flipping on habamax")
     h.eq({}, h.errors())
   end)
 end)
 
-h.test("an italic parameter stays italic once a language server colours it", function()
-  h.with_state('{"theme":"tokyonight-moon","extra_italics":{"parameters":true}}', function()
-    h.apply_theme("tokyonight-moon")
-    local file = vim.fn.tempname() .. ".lua"
-    vim.fn.writefile({ "local function greet(name)", "  return name", "end", "return greet" }, file)
-    vim.cmd.edit(file)
-    local buf = vim.api.nvim_get_current_buf()
-    local col = assert(vim.api.nvim_buf_get_lines(buf, 0, 1, false)[1]:find("name")) - 1
-    local pos
-    local coloured = vim.wait(20000, function()
-      pos = vim.inspect_pos(buf, 0, col)
-      return #pos.semantic_tokens > 0
-    end, 100)
-    local ok, err = pcall(function()
-      h.eq(true, coloured, "lua_ls coloured the parameter")
-      local syntax = vim.tbl_map(function(item)
-        return item.hl_group_link or item.hl_group
-      end, pos.treesitter)
-      h.eq(
-        true,
-        vim.iter(pos.treesitter):any(function(item)
-          return italic(item.hl_group)
-        end),
-        "an italic syntax highlight under it: " .. vim.inspect(syntax)
-      )
-      -- The language server's highlights combine with it, unless one says not to.
-      for _, token in ipairs(pos.semantic_tokens) do
-        h.eq(nil, hl(token.opts.hl_group).nocombine, token.opts.hl_group .. " combines")
+for _, theme in ipairs({ "tokyonight-moon", "catppuccin-mocha" }) do
+  h.test(theme .. ": an italic parameter stays italic once a language server colours it", function()
+    h.with_state(state(theme, { "parameters" }), function()
+      h.apply_theme(theme)
+      local file = vim.fn.tempname() .. ".lua"
+      vim.fn.writefile({ "local function greet(name)", "  return name", "end", "return greet" }, file)
+      vim.cmd.edit(file)
+      local buf = vim.api.nvim_get_current_buf()
+      local col = assert(vim.api.nvim_buf_get_lines(buf, 0, 1, false)[1]:find("name")) - 1
+      local pos
+      local coloured = vim.wait(20000, function()
+        pos = vim.inspect_pos(buf, 0, col)
+        return #pos.semantic_tokens > 0
+      end, 100)
+      local ok, err = pcall(function()
+        h.eq(true, coloured, "lua_ls coloured the parameter")
+        local syntax = vim.tbl_map(function(item)
+          return item.hl_group_link or item.hl_group
+        end, pos.treesitter)
+        h.eq(
+          true,
+          vim.iter(pos.treesitter):any(function(item)
+            return italic(item.hl_group)
+          end),
+          "an italic syntax highlight under it: " .. vim.inspect(syntax)
+        )
+        -- The language server's highlights combine with it, unless one says not to.
+        for _, token in ipairs(pos.semantic_tokens) do
+          h.eq(nil, hl(token.opts.hl_group).nocombine, token.opts.hl_group .. " combines")
+        end
+      end)
+      for _, client in ipairs(vim.lsp.get_clients({ bufnr = buf })) do
+        client:stop(true)
       end
+      vim.cmd("bwipeout!")
+      assert(ok, err)
     end)
-    for _, client in ipairs(vim.lsp.get_clients({ bufnr = buf })) do
-      client:stop(true)
-    end
-    vim.cmd("bwipeout!")
-    assert(ok, err)
   end)
-end)
+end

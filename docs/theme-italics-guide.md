@@ -8,7 +8,7 @@ A few words used throughout:
 
 - **Syntax type**: a kind of code text the editor colours on its own, such as comments, keywords, strings, function names or parameters.
 - **Theme family**: a group of themes that share one setup. tokyonight (night, storm, moon) is one family, and catppuccin (frappe, macchiato, mocha) is another.
-- **Theme italics**: the picker you open with `<leader>uy`. It has two sections:
+- **Theme italics**: which Syntax types are drawn in italics, chosen in the picker you open with `<leader>uy`. It has two sections:
   - **the theme's own options**: what your Theme family offers, remembered separately for each family;
   - **Extra italics**: Syntax types this config adds on top of any theme, chosen once and kept on every theme.
 
@@ -77,9 +77,9 @@ These are all the Extra italics, in the order the picker shows them. Every one s
 | parameters | The inputs a function takes | `function greet(name, age)` | `name`, `age` |
 | properties | Fields of an object | `user.name` | `name` |
 | built-ins (self, this) | Names the language provides | `self.name`, `print(x)` | `self`, `this`, `print`, `nil` |
-| types | Type names | `let x: number` | `number` |
+| types | Type names | `let u: User` | `User` |
 | constants | Values that never change | `MAX_SIZE = 10` | `MAX_SIZE` |
-| modules | Module and namespace names | `vim.api.nvim_get_hl` | `vim` |
+| modules | Module and namespace names | `import os` | `os` |
 | decorators | Annotations above code | `@property` | `@property` |
 | strings | Text in quotes | `"hello"` | `"hello"` |
 | characters and escapes | Single characters and special sequences | `"line\n"` | `\n` |
