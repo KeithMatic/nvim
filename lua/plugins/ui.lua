@@ -501,7 +501,8 @@ return {
             and not vim.list_contains(prose_and_panels, vim.bo[buf].filetype)
         end,
       },
-      -- Only the header and sections: LazyVim's keys and pick stay.
+      -- The header and sections; LazyVim's keys and pick stay, plus the
+      -- cheat sheet's key (below).
       dashboard = {
         preset = { header = require("dashboard").header },
         sections = require("dashboard").sections,
@@ -536,5 +537,14 @@ return {
         desc = "Theme Italics",
       },
     },
+  },
+  {
+    -- The cheat sheet's key on the Dashboard, before Quit (lua/dashboard.lua). A
+    -- function, so it adds to LazyVim's list: a list in opts would be merged
+    -- into it item by item, replacing Find File.
+    "folke/snacks.nvim",
+    opts = function(_, opts)
+      require("dashboard").add_keys(opts.dashboard.preset.keys)
+    end,
   },
 }

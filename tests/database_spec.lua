@@ -17,16 +17,9 @@ h.test("<leader>D keys drive the Database client", function()
   end
 end)
 
---- Open a fresh, empty file with extension `ext`.
-local function open(ext)
-  local path = vim.fn.tempname() .. "." .. ext
-  vim.fn.writefile({}, path)
-  vim.cmd.edit(vim.fn.fnameescape(path))
-end
-
 h.test("<leader>Dr and <leader>De run queries in a .sql buffer", function()
   local leader = vim.g.mapleader
-  open("sql")
+  h.open("sql")
   for _, map in ipairs({
     { lhs = "Dr", mode = "n", desc = "Run Statement" },
     { lhs = "Dr", mode = "x", desc = "Run Selection" },
@@ -41,7 +34,7 @@ end)
 
 h.test("<leader>Dr and <leader>De aren't set outside SQL", function()
   local leader = vim.g.mapleader
-  open("lua")
+  h.open("lua")
   for _, lhs in ipairs({ "Dr", "De" }) do
     h.eq("", vim.fn.maparg(leader .. lhs, "n"), "<leader>" .. lhs .. " in a Lua buffer")
   end
@@ -49,7 +42,7 @@ end)
 
 h.test("a .sql buffer gets sqmeow's scratchpad keys", function()
   local leader = vim.g.mapleader
-  open("sql")
+  h.open("sql")
   for _, map in ipairs({
     { lhs = "<CR>", mode = "n", desc = "sqmeow: Run the statement under the cursor" },
     { lhs = "<CR>", mode = "x", desc = "sqmeow: Run the selection" },
@@ -65,7 +58,7 @@ h.test("a .sql buffer gets sqmeow's scratchpad keys", function()
 end)
 
 h.test("sqmeow's scratchpad keys stay out of other buffers", function()
-  open("lua")
+  h.open("lua")
   h.eq("", vim.fn.maparg("<CR>", "n"), "<CR> in a Lua buffer")
 end)
 
@@ -78,7 +71,7 @@ end
 
 --- Open a .sql buffer and enter insert mode's autocmds, where completion reads b:db.
 local function insert_in_sql()
-  open("sql")
+  h.open("sql")
   vim.api.nvim_exec_autocmds("InsertEnter", { buffer = 0 })
 end
 
@@ -104,7 +97,7 @@ end)
 
 h.test("a b:db set by hand is left alone", function()
   use_connection({ id = 94, name = "store", url = "postgres://localhost/store", state = "connected" })
-  open("sql")
+  h.open("sql")
   vim.b.db = "postgres://localhost/mine"
   vim.api.nvim_exec_autocmds("InsertEnter", { buffer = 0 })
   h.eq("postgres://localhost/mine", vim.b.db)
@@ -117,9 +110,7 @@ h.test("database completions rank above snippets", function()
 end)
 
 h.test("blink offers dadbod completion in a .sql buffer", function()
-  local path = vim.fn.tempname() .. ".sql"
-  vim.fn.writefile({}, path)
-  vim.cmd.edit(vim.fn.fnameescape(path))
+  h.open("sql")
   h.eq("sql", vim.bo.filetype, "filetype")
   local providers = require("blink.cmp.sources.lib").get_enabled_providers("default")
   h.eq(true, providers.dadbod ~= nil, ("dadbod among %s"):format(vim.inspect(vim.tbl_keys(providers))))
@@ -133,7 +124,7 @@ h.test("the first Breadcrumb in a .sql buffer names its database", function()
     database = "dvdrental",
     state = "connected",
   })
-  open("sql")
+  h.open("sql")
   local sources = require("dropbar.configs").eval(require("dropbar.configs").opts.bar.sources, 0, 0)
   h.eq(require("database").source, sources[1], "the database source first")
   h.eq("dvdrental", sources[1].get_symbols(0)[1].name, "the crumb's name")
@@ -144,7 +135,7 @@ h.test("the first Breadcrumb in a .sql buffer names its database", function()
 end)
 
 h.test("the database Breadcrumb stays out of other buffers", function()
-  open("lua")
+  h.open("lua")
   local sources = require("dropbar.configs").eval(require("dropbar.configs").opts.bar.sources, 0, 0)
   h.eq(false, vim.list_contains(sources, require("database").source), "database source in a Lua buffer")
 end)
@@ -169,7 +160,7 @@ h.test("switching database ties the buffer to it, and can untie it", function()
     },
   }
   state.current = 97
-  open("sql")
+  h.open("sql")
 
   local select = vim.ui.select
   local offered
@@ -194,7 +185,7 @@ h.test("switching database ties the buffer to it, and can untie it", function()
 end)
 
 h.test("<leader>Db switches a .sql buffer's database", function()
-  open("sql")
+  h.open("sql")
   h.eq("Switch Database", vim.fn.maparg(vim.g.mapleader .. "Db", "n", false, true).desc)
 end)
 
@@ -236,7 +227,7 @@ end
 
 h.test("<leader>0 jumps to the Database drawer and back", function()
   close_database()
-  open("sql")
+  h.open("sql")
   local editor = vim.api.nvim_get_current_win()
   h.eq("Database Drawer", vim.fn.maparg(vim.g.mapleader .. "0", "n", false, true).desc, "<leader>0's desc")
 
@@ -252,7 +243,7 @@ end)
 
 h.test("<leader>Dd puts the cursor in the Database drawer", function()
   close_database()
-  open("sql")
+  h.open("sql")
   press(vim.g.mapleader .. "Dd")
   h.eq(true, drawer_win() ~= nil, "the drawer opens")
   h.eq(drawer_win(), vim.api.nvim_get_current_win(), "the cursor is in the drawer")
@@ -263,7 +254,7 @@ end)
 
 h.test("the Database drawer opened any other way leaves the cursor put", function()
   close_database()
-  open("sql")
+  h.open("sql")
   local editor = vim.api.nvim_get_current_win()
   require("sqmeow.api.view").open_drawer()
   h.eq(true, drawer_win() ~= nil, "the drawer opens")

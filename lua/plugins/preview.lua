@@ -15,7 +15,11 @@ return {
       { "<leader>cp", "<cmd>MdKite toggle<cr>", ft = "markdown", desc = "Toggle Markdown Preview" },
       { "<leader>vm", "<cmd>MdKite toggle<cr>", ft = "markdown", desc = "Toggle Markdown Preview" },
     },
-    opts = {},
+    -- Both are mdkite's defaults, pinned so an upstream change can't move them.
+    opts = {
+      mermaid_renderer = "js", -- mermaid.js in the browser: no mmdr binary
+      instance_mode = "takeover", -- one tab; the newest Neovim to start it takes over
+    },
   },
   {
     -- Its pickers fall back to vim.ui.select/input, which Snacks draws: no telescope.
@@ -27,7 +31,7 @@ return {
       { "<leader>vX", "<cmd>KiteHost stop-all<cr>", desc = "Stop All Live Servers" },
       { "<leader>vi", "<cmd>KiteHost status<cr>", desc = "Live Server Status" },
     },
-    opts = {},
+    opts = { auto_start = false }, -- the Live server starts only when asked
   },
   {
     "folke/which-key.nvim",

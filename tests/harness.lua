@@ -62,6 +62,15 @@ function M.close_splits()
   end
 end
 
+--- Open a fresh, empty file with extension `ext`, so filetype and
+--- file-triggered plugins load as they would for the user.
+---@param ext string
+function M.open(ext)
+  local path = vim.fn.tempname() .. "." .. ext
+  vim.fn.writefile({}, path)
+  vim.cmd.edit(vim.fn.fnameescape(path))
+end
+
 ---@param keys string
 ---@param mode string
 function M.feed(keys, mode)

@@ -1,6 +1,7 @@
 -- The Dashboard: the South Park header and a second pane (colour strip, recent
--- files, projects, git status). LazyVim's keys stay as they are. While the
--- Dashboard is current there is no cursor and no statusline.
+-- files, projects, git status). LazyVim's keys stay as they are, with one more
+-- before Quit: the cheat sheet, every keymap and feature. While the Dashboard is
+-- current there is no cursor and no statusline.
 local icons = require("util.icons")
 
 local M = {}
@@ -77,6 +78,28 @@ local function colour_strip(dashboard)
     height = colour_strip_height,
     padding = 1,
   }
+end
+
+-- The Dashboard's one key of its own: the cheat sheet (lua/cheat_sheet.lua).
+M.cheat_sheet_key = {
+  icon = icons.ui.Keyboard,
+  key = "k",
+  desc = "Keymaps & Features",
+  action = function()
+    require("cheat_sheet").open()
+  end,
+}
+
+--- Put the cheat sheet's key into LazyVim's Dashboard `keys`, just before Quit.
+---@param keys snacks.dashboard.Item[]
+function M.add_keys(keys)
+  local at = #keys + 1
+  for i, key in ipairs(keys) do
+    if key.key == "q" then
+      at = i
+    end
+  end
+  table.insert(keys, at, M.cheat_sheet_key)
 end
 
 ---@type snacks.dashboard.Section[]
