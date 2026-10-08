@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 # Reject a commit whose staged Lua files aren't formatted to stylua.toml.
 # Checks the staged content, not the working tree, so a file fixed but not
-# re-added still fails. The test suite is left to CI: it takes minutes.
-#
-# Turn on (once per clone): git config core.hooksPath .githooks
+# re-added still fails. README.md › Tests says how to turn it on.
 set -euo pipefail
 
 files=()
