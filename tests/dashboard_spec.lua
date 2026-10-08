@@ -133,8 +133,31 @@ local function lazyvim_keys()
   return opts.dashboard.preset.keys
 end
 
-h.test("the Dashboard's keys are LazyVim's own", function()
-  h.eq(lazyvim_keys(), Snacks.config.dashboard.preset.keys, "Dashboard keys")
+--- A Dashboard key's letter and description.
+local function key_desc(key)
+  return key.key .. " " .. key.desc
+end
+
+h.test("the Dashboard's keys are LazyVim's own, with Keymaps & Features before Quit", function()
+  local expected = vim.tbl_map(key_desc, lazyvim_keys())
+  table.insert(expected, #expected, "k Keymaps & Features")
+  h.eq(expected, vim.tbl_map(key_desc, Snacks.config.dashboard.preset.keys), "Dashboard keys")
+end)
+
+h.test("k on the Dashboard opens the README, read-only", function()
+  vim.env.PATH = path_without_colorscript()
+  open_dashboard(plain)
+  h.feed("k", "mx")
+  h.eq(
+    true,
+    vim.wait(2000, function()
+      return vim.api.nvim_buf_get_name(0) == vim.fn.stdpath("config") .. "/README.md"
+    end, 20),
+    "the README is current: " .. vim.api.nvim_buf_get_name(0)
+  )
+  h.eq(true, vim.bo.readonly, "read-only")
+  h.eq("markdown", vim.bo.filetype, "filetype")
+  vim.cmd.bdelete()
 end)
 
 h.test("the second pane has recent files and projects, and git status only in a git repo", function()

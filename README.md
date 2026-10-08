@@ -50,7 +50,8 @@ own. The words used below (Tint, Layer, Buffer sticks, ...) are defined in [CONT
 - **Statusline**: a mode icon, the Breadcrumbs echoed in comment colour, and a filename you can hide
   (`<leader>uN`).
 - **Breadcrumbs**: the path to the symbol under the cursor at the top of the window, in italics.
-- **Dashboard**: the start screen when Neovim opens with no file.
+- **Dashboard**: the start screen when Neovim opens with no file. `k` on it opens this README inside
+  Neovim, read-only, for every keymap and feature at hand.
 - **Animations**: a cursor trail, smooth scrolling and window resizing, switched together
   (`<leader>ua`) and left to the GUI in Neovide.
 - **One icon set** for every kind, diagnostic, gutter sign and file status.
@@ -151,6 +152,17 @@ LazyVim's, its extras' or Neovim's own. `<leader>?` shows the keys for the curre
 | `s` / `S` | Flash jump / Flash Treesitter select |
 | `<C-Space>` | Treesitter incremental selection |
 | `H` / `L` ★ | Previous / next file in the Column order |
+
+### Dashboard
+
+| Key | Action |
+| --- | --- |
+| `f` / `g` / `r` | Find a file / find text / recent files |
+| `n` / `c` / `p` | New file / config files / projects |
+| `s` | Restore the session |
+| `x` / `l` | Lazy extras / Lazy |
+| `k` ★ | Keymaps & Features: this README, read-only |
+| `q` | Quit |
 
 ### Files and buffers: `<leader>b`, `<leader>f`
 
