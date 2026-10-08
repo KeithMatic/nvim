@@ -20,6 +20,21 @@ jobs:
       - name: Check formatting
         run: stylua --check lua tests
 
+      # Toolchains for the Mason packages tests/setup.lua installs from source:
+      # Go for gopls, delve, gofumpt and goimports (`go install`), Node for the
+      # npm language servers and tools, Python for sqlfluff (pip in a venv).
+      # No caching here: .tests/ is the cache, and there's no go.sum to key on.
+      - uses: actions/setup-go@v7
+        with:
+          go-version: stable
+          cache: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+      - uses: actions/setup-python@v7
+        with:
+          python-version: 3.x
+
       # tests/run.sh sets the sandbox up only when lazy-lock.json changes, so
       # an exact hit skips the setup. A partial hit drops the marker run.sh
       # compares against, so the setup runs again on top of what was restored.

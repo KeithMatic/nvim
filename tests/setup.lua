@@ -80,8 +80,11 @@ local function failed()
 end
 
 -- Installs are queued asynchronously, so only trust "nothing missing" once it has held for a few seconds.
+-- 20 minutes, since a cold CI runner builds gopls and delve from source with
+-- `go install` alongside every other install. A failure stops the wait early,
+-- so only a slow but working setup ever uses it all.
 local idle_since
-local done = vim.wait(10 * 60 * 1000, function()
+local done = vim.wait(20 * 60 * 1000, function()
   if #failed() > 0 then
     return true
   end
