@@ -50,8 +50,9 @@ own. The words used below (Tint, Layer, Buffer sticks, ...) are defined in [CONT
 - **Statusline**: a mode icon, the Breadcrumbs echoed in comment colour, and a filename you can hide
   (`<leader>uN`).
 - **Breadcrumbs**: the path to the symbol under the cursor at the top of the window, in italics.
-- **Dashboard**: the start screen when Neovim opens with no file. `k` on it opens this README inside
-  Neovim, read-only, for every keymap and feature at hand.
+- **Dashboard**: the start screen when Neovim opens with no file.
+- **Cheat sheet**: this README in a float over whatever is open, read-only, from anywhere with
+  `<leader>sK` (or `k` on the Dashboard). `q` closes it.
 - **Animations**: a cursor trail, smooth scrolling and window resizing, switched together
   (`<leader>ua`) and left to the GUI in Neovide.
 - **One icon set** for every kind, diagnostic, gutter sign and file status.
@@ -120,13 +121,15 @@ through Prettier and linting through ESLint where they apply.
 ## Keymaps
 
 `<leader>` is `Space`. Keys marked ★ are added or changed by this config; the rest are
-LazyVim's, its extras' or Neovim's own. `<leader>?` shows the keys for the current buffer,
-`<leader>sk` searches them all, and which-key pops up after any prefix.
+LazyVim's, its extras' or Neovim's own. `<leader>sK` opens this list inside Neovim, `<leader>?`
+shows the keys for the current buffer, `<leader>sk` searches them all, and which-key pops up after
+any prefix.
 
 ### Everyday
 
 | Key | Action |
 | --- | --- |
+| `<leader>sK` ★ | Cheat sheet: this README in a float |
 | `<leader><Space>` | Find files (root dir) |
 | `<leader>/` ★ | Toggle comment (line, or the selection) |
 | `<leader>,` | Buffers |
@@ -161,7 +164,7 @@ LazyVim's, its extras' or Neovim's own. `<leader>?` shows the keys for the curre
 | `n` / `c` / `p` | New file / config files / projects |
 | `s` | Restore the session |
 | `x` / `l` | Lazy extras / Lazy |
-| `k` ★ | Keymaps & Features: this README, read-only |
+| `k` ★ | Keymaps & Features: the cheat sheet (this README) |
 | `q` | Quit |
 
 ### Files and buffers: `<leader>b`, `<leader>f`
@@ -203,7 +206,8 @@ LazyVim's, its extras' or Neovim's own. `<leader>?` shows the keys for the curre
 | `<leader>sR` | Resume the last search |
 | `<leader>sd` / `<leader>sD` | Diagnostics (all / buffer) |
 | `<leader>sh` / `<leader>sM` | Help pages / man pages |
-| `<leader>sk` | Keymaps |
+| `<leader>sk` | Keymaps (search them all) |
+| `<leader>sK` ★ | Cheat sheet: this README in a float |
 | `<leader>sC` / `<leader>sc` | Commands / command history |
 | `<leader>s/` | Search history |
 | `<leader>s"` | Registers |

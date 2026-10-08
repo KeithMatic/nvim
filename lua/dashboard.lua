@@ -1,6 +1,6 @@
 -- The Dashboard: the South Park header and a second pane (colour strip, recent
 -- files, projects, git status). LazyVim's keys stay as they are, with one more
--- before Quit: the README, every keymap and feature. While the Dashboard is
+-- before Quit: the cheat sheet, every keymap and feature. While the Dashboard is
 -- current there is no cursor and no statusline.
 local icons = require("util.icons")
 
@@ -80,20 +80,17 @@ local function colour_strip(dashboard)
   }
 end
 
--- The README: every feature and keymap of this config.
-M.readme = vim.fn.stdpath("config") .. "/README.md"
-
--- The Dashboard's one key of its own, opening the README read-only.
-M.readme_key = {
+-- The Dashboard's one key of its own: the cheat sheet (lua/cheat_sheet.lua).
+M.cheat_sheet_key = {
   icon = icons.ui.Keyboard,
   key = "k",
   desc = "Keymaps & Features",
   action = function()
-    vim.cmd.view(vim.fn.fnameescape(M.readme))
+    require("cheat_sheet").open()
   end,
 }
 
---- Put the README's key into LazyVim's Dashboard `keys`, just before Quit.
+--- Put the cheat sheet's key into LazyVim's Dashboard `keys`, just before Quit.
 ---@param keys snacks.dashboard.Item[]
 function M.add_keys(keys)
   local at = #keys + 1
@@ -102,7 +99,7 @@ function M.add_keys(keys)
       at = i
     end
   end
-  table.insert(keys, at, M.readme_key)
+  table.insert(keys, at, M.cheat_sheet_key)
 end
 
 ---@type snacks.dashboard.Section[]

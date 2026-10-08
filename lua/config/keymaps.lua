@@ -34,6 +34,12 @@ vim.keymap.set("n", "<leader>fT", function()
   terminal.new_at(vim.fn.expand("%:p:h"))
 end, { desc = "Terminal (File Dir)" })
 
+-- The cheat sheet: every keymap and feature (the README), from anywhere.
+-- <leader>sK is free beside LazyVim's <leader>sk, which searches the keymaps.
+vim.keymap.set("n", "<leader>sK", function()
+  require("cheat_sheet").open()
+end, { desc = "Keymaps & Features" })
+
 -- Show or hide the statusline's filename (lua/statusline.lua). <leader>uN is free in LazyVim's "ui" group.
 require("statusline").filename_toggle():map("<leader>uN")
 
