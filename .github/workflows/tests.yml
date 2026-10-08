@@ -25,7 +25,7 @@ jobs:
       # compares against, so the setup runs again on top of what was restored.
       - name: Restore the test sandbox
         id: sandbox
-        uses: actions/cache@v6
+        uses: actions/cache/restore@v6
         with:
           path: .tests
           key: tests-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lazy-lock.json', 'tests/setup.lua') }}
@@ -37,3 +37,12 @@ jobs:
 
       - name: Run the suite
         run: tests/run.sh
+
+      # Saved even when a spec fails, so the next run skips the setup. run.sh
+      # writes the marker only once the setup has finished.
+      - name: Save the test sandbox
+        if: always() && steps.sandbox.outputs.cache-hit != 'true' && hashFiles('.tests/lazy-lock.restored.json') != ''
+        uses: actions/cache/save@v6
+        with:
+          path: .tests
+          key: ${{ steps.sandbox.outputs.cache-primary-key }}
