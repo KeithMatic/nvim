@@ -74,7 +74,10 @@ hook, which runs right after that call, must re-apply the overrides to `buf`, `s
 - **C, keep volt's behaviour**, lost: one stray key kills a running dev server.
 
 Consequence: there is no "close everything" key. A terminal is removed with `d` in the Terminal
-list or by exiting its shell.
+list or by exiting its shell. Neovim's own TermClose handler only deletes a terminal started as
+exactly `$SHELL`, so `lua/terminal.lua` adds one for every Terminal manager terminal (exit status
+0, as Neovim's): deleting the buffer closes its window, and floaterm's WinClosed handler takes it
+out of the list and shows the next one.
 
 ## Routine choices
 
@@ -96,7 +99,9 @@ list or by exiting its shell.
 - **`<leader>ft` / `<leader>fT` (Q7 → A).** `<leader>ft` adds a terminal at the project root
   (`LazyVim.root()`), `<leader>fT` adds one at the current file's folder. Both use
   `require("floaterm.api").new_term({ name = <folder name>, cmd = "cd " .. shellescape(dir) })`
-  (opening the manager first if it is hidden: `send_cmd` shows the pattern). This works because
+  (opening the manager first if it is hidden). If floaterm has no terminals yet, the new one
+  becomes the starting set instead, so the first use doesn't start the project's shell as well
+  (floaterm's own `send_cmd` has that flaw). This works because
   floaterm runs `shell -c '<cmd>; shell'`. `new_term` is not documented as public API.
 - **Leaving terminal mode (Q8 → A).** A quick `<Esc><Esc>` in terminal mode goes to normal mode
   (the Snacks convention); a single `<Esc>` still reaches the shell. A buffer-local expression
@@ -146,6 +151,9 @@ From reading floaterm (last commit 2025-09-23, "feat(api): send_cmd()") and volt
 - **`<Esc>` in normal mode Hides.** A nervous triple `<Esc>` from terminal mode lands in normal
   mode and then Hides the manager. Harmless (terminals survive), but surprising.
 - **`<C-w>q` deletes a terminal** via floaterm's `WinClosed` handler. Not addressed here.
+- **floaterm's `WinClosed` handler is scheduled**, and checks only whether the manager is shown
+  when it runs. Hiding and showing it again before the event loop turns (a mapping doing both, or
+  a test whose `vim.wait` returns at once) deletes the terminals whose windows were closed.
 - **`<C-t>` is taken by volt** in floaterm buffers; any shell binding on `<C-t>` (fzf's file
   widget) only works in terminal mode, which is where it's used anyway.
 - **Colours set at open.** The Terminal list's namespace copies NormalFloat/FloatBorder when the

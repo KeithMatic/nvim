@@ -7,6 +7,10 @@ local terminal = require("terminal")
 
 h.attach_ui(160, 40)
 
+-- A plain shell, not the login one with its rc files: quick to start, and
+-- ready for input at once. floaterm reads it when it loads.
+vim.o.shell = "/bin/sh"
+
 -- A project with a nested folder holding a file, started in its root.
 local project = vim.fn.tempname()
 vim.fn.mkdir(project .. "/src", "p")
@@ -48,6 +52,13 @@ local function hide()
   end
   vim.cmd.stopinsert()
   wait_hidden()
+  -- floaterm handles a closed window in a scheduled callback, which deletes
+  -- the terminal if the manager is shown by then. vim.wait returns at once
+  -- when its condition already holds, running nothing, so let the loop turn
+  -- while it's hidden, as it does between key presses.
+  vim.wait(50, function()
+    return false
+  end)
 end
 
 local rounded = { "╭", "─", "╮", "│", "╯", "─", "╰", "│" }
@@ -162,6 +173,23 @@ for _, case in ipairs({
     h.eq(added and added.buf, state().buf, "the new terminal shown")
   end)
 end
+
+h.test("exiting a <leader>fT terminal's shell takes it out of the Terminal list", function()
+  -- The <leader>fT test left its terminal shown.
+  local exiting = state().buf
+  local before = #names()
+  vim.fn.chansend(vim.b[exiting].terminal_job_id, "exit\r")
+  h.eq(
+    true,
+    vim.wait(10000, function()
+      return #names() == before - 1
+    end, 20),
+    "the terminal taken out of the list"
+  )
+  h.eq(false, vim.api.nvim_buf_is_valid(exiting), "its buffer deleted")
+  h.eq(true, terminal.shown(), "the Terminal manager still shown")
+  h.eq(state().buf, vim.api.nvim_win_get_buf(state().win), "another terminal shown")
+end)
 
 h.test("nothing errored", function()
   hide()

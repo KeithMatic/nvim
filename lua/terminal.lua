@@ -22,11 +22,19 @@ end
 --- manager first if it's hidden.
 ---@param dir string
 function M.new_at(dir)
+  -- floaterm runs `shell -c '<cmd>; shell'`, leaving an interactive shell in `dir`.
+  local term = { name = vim.fs.basename(dir), cmd = "cd " .. vim.fn.shellescape(dir) }
+  local state = require("floaterm.state")
+  if not state.terminals then
+    -- No terminals yet: this one is the starting set, so opening doesn't
+    -- start the project's shell as well.
+    state.terminals = { term }
+    return require("floaterm").open()
+  end
   if not M.shown() then
     require("floaterm").open()
   end
-  -- floaterm runs `shell -c '<cmd>; shell'`, leaving an interactive shell in `dir`.
-  require("floaterm.api").new_term({ name = vim.fs.basename(dir), cmd = "cd " .. vim.fn.shellescape(dir) })
+  require("floaterm.api").new_term(term)
 end
 
 --- q and <Esc> in normal mode Hide the Terminal manager in `buf`.
@@ -114,6 +122,23 @@ function M.setup(opts)
     set_termwin_hl()
     as_float(state.win)
   end
+
+  -- A terminal whose shell exits goes, as Neovim's own TermClose does for a
+  -- plain shell: but these run `shell -c '<cmd>; shell'`, which it leaves be.
+  -- Deleting the buffer closes its window, and floaterm then takes it out of
+  -- the Terminal list and shows the next one.
+  vim.api.nvim_create_autocmd("TermClose", {
+    group = vim.api.nvim_create_augroup("terminal_manager", { clear = true }),
+    callback = function(ev)
+      if vim.v.event.status == 0 and utils.get_term_by_key(ev.buf) then
+        vim.schedule(function()
+          if vim.api.nvim_buf_is_valid(ev.buf) then
+            vim.api.nvim_buf_delete(ev.buf, { force = true })
+          end
+        end)
+      end
+    end,
+  })
 
   local open = floaterm.open
   floaterm.open = function()
