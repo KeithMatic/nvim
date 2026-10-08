@@ -9,6 +9,22 @@ set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 sandbox="$root/.tests"
 
+# One run at a time: runs share the sandbox, so a second one would re-sync the
+# config and rewrite the state files and logs under the first one's specs. The
+# lock is a symlink to the holder's pid, so taking it and naming it is one step.
+lock="$sandbox/lock"
+mkdir -p "$sandbox"
+if ! ln -s "$$" "$lock" 2>/dev/null; then
+  holder="$(readlink "$lock" || true)"
+  if kill -0 "$holder" 2>/dev/null; then
+    echo "tests/run.sh is already running (pid $holder) and the sandbox is shared: wait for it to finish." >&2
+    exit 2
+  fi
+  rm -f "$lock" # left by a run that was killed
+  ln -s "$$" "$lock"
+fi
+trap 'rm -f "$lock"' EXIT
+
 unset NVIM_APPNAME VIMINIT
 export XDG_CONFIG_HOME="$sandbox/config"
 export XDG_DATA_HOME="$sandbox/data"
