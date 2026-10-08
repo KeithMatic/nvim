@@ -48,8 +48,48 @@ local families = {
 -- theme, chosen once for every theme. Each covers its highlight names and
 -- their deeper ones (`@variable.parameter.lua`), unless another lists a
 -- deeper one itself (`@function.builtin` is a built-in, not a function).
+-- One named like an option the current family offers is hidden, and left to
+-- the theme.
 local extras = {
+  { name = "comments", groups = { "Comment", "@comment" } },
+  {
+    name = "documentation",
+    label = "documentation comments",
+    groups = { "@comment.documentation", "@string.documentation" },
+  },
+  { name = "keywords", groups = { "Keyword", "Statement", "@keyword", "@keyword.function" } },
+  { name = "conditionals", groups = { "Conditional", "@keyword.conditional", "@keyword.conditional.ternary" } },
+  { name = "loops", groups = { "Repeat", "@keyword.repeat" } },
+  {
+    name = "returns",
+    label = "return and exception keywords",
+    groups = { "@keyword.return", "@keyword.exception", "Exception" },
+  },
+  { name = "imports", groups = { "Include", "@keyword.import" } },
+  { name = "functions", groups = { "Function", "@function", "@function.call" } },
+  { name = "methods", groups = { "@function.method", "@function.method.call" } },
+  { name = "variables", groups = { "Identifier", "@variable" } },
   { name = "parameters", groups = { "@variable.parameter", "@variable.parameter.builtin" } },
+  { name = "properties", groups = { "@property", "@variable.member" } },
+  {
+    name = "builtins",
+    label = "built-ins (self, this)",
+    groups = { "@variable.builtin", "@function.builtin", "@type.builtin", "@constant.builtin", "@module.builtin" },
+  },
+  { name = "types", groups = { "Type", "@type", "@type.definition" } },
+  { name = "constants", groups = { "Constant", "@constant", "@constant.macro" } },
+  { name = "modules", groups = { "@module" } },
+  { name = "decorators", groups = { "@attribute", "@attribute.builtin" } },
+  { name = "strings", groups = { "String", "@string" } },
+  {
+    name = "characters",
+    label = "characters and escapes",
+    groups = { "Character", "@character", "@string.escape", "SpecialChar" },
+  },
+  { name = "numbers", groups = { "Number", "Float", "@number", "@number.float" } },
+  { name = "booleans", groups = { "Boolean", "@boolean" } },
+  { name = "operators", groups = { "Operator", "@operator", "@keyword.operator" } },
+  { name = "tags", label = "markup tags and attributes", groups = { "@tag", "@tag.attribute" } },
 }
 
 --- The family of the current theme, if it has italic options.
@@ -104,16 +144,63 @@ local function owner(name)
   return best
 end
 
+--- The Extra italics shown for the current theme: those its family doesn't offer.
+local function visible_extras()
+  local family = current_family()
+  local offered = family and families[family].options or {}
+  return vim.tbl_filter(function(extra)
+    return not vim.list_contains(offered, extra.name)
+  end, extras)
+end
+
+--- `name`'s style, links followed. One the theme leaves undefined is drawn as
+--- the shallower highlight Neovim falls back to (`@string.documentation` as
+--- `@string`), so take that one's.
+local function style_of(name)
+  local hl = vim.api.nvim_get_hl(0, { name = name, link = false })
+  local parent = name:match("^(@.+)%.[^.]+$")
+  if vim.tbl_isempty(hl) and parent then
+    return style_of(parent)
+  end
+  return hl
+end
+
 --- Make every highlight an Extra italic that's on covers italic, keeping the
 --- rest of its style. Run after every theme change (lua/theme.lua).
 function M.apply_extras()
   local on = chosen_extras()
-  for name in pairs(vim.api.nvim_get_hl(0, {})) do
+  local wanted = {}
+  for _, extra in ipairs(visible_extras()) do
+    wanted[extra] = on[extra.name] == true
+  end
+  -- Every extra's names, even those the theme leaves undefined.
+  local names = vim.tbl_keys(vim.api.nvim_get_hl(0, {}))
+  for _, extra in ipairs(extras) do
+    vim.list_extend(names, extra.groups)
+  end
+  -- The rest of the extras' names as they look now: one that links or falls
+  -- back to a name made italic (methods to functions, in some themes) would
+  -- turn italic with it.
+  local before = {}
+  for _, name in ipairs(names) do
     local extra = owner(name)
-    if extra and on[extra.name] == true then
-      local hl = vim.api.nvim_get_hl(0, { name = name, link = false })
+    if extra and not wanted[extra] then
+      before[name] = style_of(name)
+    end
+  end
+  for _, name in ipairs(names) do
+    local extra = owner(name)
+    if extra and wanted[extra] then
+      local hl = style_of(name)
       -- A `default` definition never replaces an existing one, so drop the flag.
       hl.italic, hl.default = true, nil
+      vim.api.nvim_set_hl(0, name, hl)
+    end
+  end
+  -- Keep each of the rest as it was, if it turned italic.
+  for name, hl in pairs(before) do
+    if style_of(name).italic ~= hl.italic then
+      hl.default = nil
       vim.api.nvim_set_hl(0, name, hl)
     end
   end
@@ -135,18 +222,24 @@ function M.pick()
   local family = current_family()
   local choice = family and chosen(family) or {}
   local on = chosen_extras()
+  -- The family's own options, then the Extra italics, each labelled with its
+  -- section: the family, or "extra".
   local rows = {}
   for _, option in ipairs(family and families[family].options or {}) do
-    table.insert(rows, { option = option })
+    table.insert(rows, { option = option, section = family, label = option })
   end
-  for _, extra in ipairs(extras) do
-    table.insert(rows, { extra = extra.name })
+  for _, extra in ipairs(visible_extras()) do
+    table.insert(rows, { extra = extra.name, section = "extra", label = extra.label or extra.name })
   end
+  local width = math.max(unpack(vim.tbl_map(function(row)
+    return #row.section
+  end, rows)))
   vim.ui.select(rows, {
     prompt = "Italics: " .. (family or "extra"),
     format_item = function(row)
-      local is_on = row.extra and on[row.extra] or choice[row.option]
-      return (is_on and icons.ui.Check or icons.ui.Close) .. "  " .. (row.extra or row.option)
+      local is_on = row.extra and on[row.extra] or not row.extra and choice[row.option]
+      local icon = is_on and icons.ui.Check or icons.ui.Close
+      return ("%s  %-" .. width .. "s  %s"):format(icon, row.section, row.label)
     end,
   }, function(row)
     if not row then
