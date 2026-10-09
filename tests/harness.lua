@@ -21,7 +21,8 @@ M.config_keymaps = {}
 local config_lua = vim.fn.stdpath("config") .. "/lua/"
 local orig_keymap_set = vim.keymap.set
 vim.keymap.set = function(mode, lhs, rhs, opts)
-  local source = debug.getinfo(2, "S").source:gsub("^@", "")
+  local caller = debug.getinfo(2, "S") -- nil when called straight from C
+  local source = caller and caller.source:gsub("^@", "") or ""
   if vim.startswith(source, config_lua) then
     table.insert(M.config_keymaps, { lhs = lhs, desc = opts and opts.desc, file = source:sub(#config_lua + 1) })
   end
