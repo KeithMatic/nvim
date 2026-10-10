@@ -8,17 +8,8 @@ neither starts on its own.
 
 ## Terms
 
-These follow the glossary in `CONTEXT.md`.
-
-- **Markdown preview**: the current Markdown buffer rendered in a browser tab, updated as you type
-  and scrolled with the cursor; one tab, which the newest Neovim to start it takes over (mdkite.nvim).
-  _Avoid_: live preview, mdkite, markdown-preview (the plugins, not the concept)
-- **Live server**: a local server for a file or folder (HTML, CSS, JS) that reloads the browser on
-  save; started only on request (kitehost.nvim).
-  _Avoid_: dev server, kitehost, live-server (the plugins, not the concept)
-- **Browser group**: the `<leader>v` keys that show things in the browser: the Markdown preview and
-  the Live server.
-  _Avoid_: kitehost keys, `<leader>l` (that's Lazy)
+**Markdown preview**, **Live server** and **Browser group** are defined in the glossary in
+`CONTEXT.md` (under Tools), with the words to avoid for each.
 
 ## Why
 
@@ -61,11 +52,11 @@ the habit-tips group. `<leader>v` is free here and no LazyVim extra claims it.
 - **Q3 → B**: four Live server commands get keys: start, stop (pick port), stop-all and status.
   open, reload and toggle-live are left to `:KiteHost <Tab>`.
 - **Q4 → A**: Mermaid renders with mermaid.js in the browser (`mermaid_renderer = "js"`, the
-  default). No mermaid-rs-renderer binary is needed. Revisit if large diagrams lag.
-- **Q5 → A**: `instance_mode = "takeover"` (default): one browser tab on port 8421, and the newest
-  Neovim to start a preview takes it over.
-- **Q6 → A**: the Live server never auto-starts (no `auto_start`). Start it by key or with
-  `:KiteHost start`.
+  default, set explicitly). No mermaid-rs-renderer binary is needed. Revisit if large diagrams lag.
+- **Q5 → A**: `instance_mode = "takeover"` (default, set explicitly): one browser tab on port
+  8421, and the newest Neovim to start a preview takes it over.
+- **Q6 → A**: the Live server never auto-starts (`auto_start = false`; unset is the default).
+  Start it by key or with `:KiteHost start`.
 - **Q7 → A**: the Markdown preview is reachable from both `<leader>vm` and `<leader>cp`, each
   scoped to Markdown buffers.
 - **Q8 → B**: Live server keys are `<leader>vs` start, `<leader>vx` stop, `<leader>vX` stop all and
@@ -76,7 +67,7 @@ Resulting keymap:
 
 | Key | Action | Scope |
 | --- | --- | --- |
-| `<leader>v` | which-key group "browser" | all buffers |
+| `<leader>v` | which-key group "browser" (globe icon, blue) | all buffers |
 | `<leader>vm` | Toggle Markdown Preview (`:MdKite toggle`) | Markdown buffers |
 | `<leader>cp` | Toggle Markdown Preview (`:MdKite toggle`) | Markdown buffers |
 | `<leader>vs` | `:KiteHost start` (pick path & port) | all buffers |

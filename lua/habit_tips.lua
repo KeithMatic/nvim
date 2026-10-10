@@ -6,8 +6,8 @@
 --   2. while a Layer is active there are no tips at all, and its keys aren't
 --      counted: they're the Layer's actions, not Vim commands;
 --   3. its colours, which it sets again every time it draws, get the theme's
---      accent for headings, bold keys, an italic reason line, and the theme's
---      green when a tip is taken up;
+--      accent for headings, bold keys, an italic reason line, the theme's
+--      green when a tip is taken up, and borders with no background;
 --   4. its notice for each key it leaves out of the tips, because the key is
 --      mapped to something else, goes to the notification history only.
 local M = {}
@@ -17,6 +17,22 @@ local layer = require("layer")
 
 -- Whether tobira shows tips on its own: the Habit tips toggle.
 M.enabled = true
+
+-- The tip borders' groups, one per category (tobira's ui/float.lua). The diff
+-- one links to DiffChange, a solid block that would paint a band round the
+-- glass, so it takes the changed-text colour instead.
+local borders = {
+  TobiraSuggestMotion = "TobiraSuggestMotion",
+  TobiraSuggestEdit = "TobiraSuggestEdit",
+  TobiraSuggestSearch = "TobiraSuggestSearch",
+  TobiraSuggestWindow = "TobiraSuggestWindow",
+  TobiraSuggestFold = "TobiraSuggestFold",
+  TobiraSuggestMark = "TobiraSuggestMark",
+  TobiraSuggestMacro = "TobiraSuggestMacro",
+  TobiraSuggestDiff = "Changed",
+  TobiraSuggestEx = "TobiraSuggestEx",
+  TobiraSuggestTerminal = "TobiraSuggestTerminal",
+}
 
 --- `name`'s colours with `changes` on top, links followed.
 local function restyle(name, from, changes)
@@ -36,6 +52,9 @@ local function polish()
   end
   restyle("TobiraSuggestReason", "Comment", { italic = true })
   restyle("TobiraCelebrate", "DiagnosticOk", { fg = green })
+  for name, from in pairs(borders) do
+    restyle(name, from, { bg = "NONE" })
+  end
 end
 
 --- Whether Snacks' notifier should show `notif`: anything but tobira's notice
