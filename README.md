@@ -152,6 +152,9 @@ any prefix.
 | `<C-Up/Down/Left/Right>` | Resize the window |
 | `<M-j>` / `<M-k>` | Move the line or selection down / up |
 | `<Esc>` | Escape and clear the search highlight |
+| `<C-a>` ★ | Select all (normal; increment stays on visual `g<C-a>`) |
+| `<C-c>` ★ | Copy the whole file to the system clipboard |
+| `U` ★ | Redo |
 | `s` / `S` | Flash jump / Flash Treesitter select |
 | `<C-Space>` | Treesitter incremental selection |
 | `H` / `L` ★ | Previous / next file in the Column order |
@@ -192,6 +195,7 @@ any prefix.
 | `<leader>fn` | New file |
 | `<leader>fe` / `<leader>fE` | Explorer (root dir / cwd) |
 | `<leader>fm` / `<leader>fM` | mini.files (file's folder / cwd) |
+| `-` ★ | mini.files on the current file's folder (the cwd for an unsaved buffer) |
 | `<leader>ft` ★ | New terminal at the project root, in the Terminal manager |
 | `<leader>fT` ★ | New terminal at the current file's folder, in the Terminal manager |
 
@@ -200,6 +204,9 @@ any prefix.
 | Key | Action |
 | --- | --- |
 | `<leader>sg` / `<leader>sG` | Grep (root dir / cwd) |
+| `n` / `N` ★ | Next / previous match (always down / up), centred and unfolded |
+| `*` / `#` ★ | Search the word under the cursor forward / backward, centred |
+| `g*` / `g#` ★ | The same, matching inside longer words too |
 | `<leader>sw` / `<leader>sW` | Word under cursor or selection (root dir / cwd) |
 | `<leader>sb` / `<leader>sB` | Lines in this buffer / grep open buffers |
 | `<leader>sr` | Search and replace (grug-far) |
@@ -266,6 +273,15 @@ any prefix.
 | `p` / `P`, `[y` / `]y` | Put, then cycle through the yank history |
 | `[p` / `]p`, `>p` / `<p`, `=p` | Put linewise, indented, or through a filter |
 | `[<Space>` / `]<Space>` | Add an empty line above / below |
+| `<CR>` / `<BS>` ★ | Change the word / change inside a text object (editable files only; elsewhere Enter and Backspace are Neovim's own) |
+| `yrw` / `yrW` ★ | Substitute on the line, prefilled with the word / WORD under the cursor |
+| `yre` / `yrE` ★ | Substitute on the line, prefilled up to the end of the word / WORD |
+| `r` ★ | Substitute every copy of the selection across the file, matched literally (visual) |
+| `YY` ★ | Yank the enclosing `{ }` block, linewise |
+| `d.` ★ | Shrink the run of spaces under the cursor to one |
+| `<M-o>` / `<M-O>` ★ | Open a line below / above (insert) |
+| `<M-h>` / `<M-l>` ★ | Outdent / indent the line (insert) |
+| `<C-a>` / `<C-e>` ★ | Go to the start / end of the line (insert) |
 
 ### Git and GitHub: `<leader>g`, `<leader>G`
 

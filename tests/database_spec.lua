@@ -59,7 +59,8 @@ end)
 
 h.test("sqmeow's scratchpad keys stay out of other buffers", function()
   h.open("lua")
-  h.eq("", vim.fn.maparg("<CR>", "n"), "<CR> in a Lua buffer")
+  -- Only sqmeow's buffer-local <CR>: keymaps.lua has a global one (Change Word).
+  h.eq(false, vim.fn.maparg("<CR>", "n", false, true).buffer == 1, "a buffer-local <CR> in a Lua buffer")
 end)
 
 --- Make `connection` sqmeow's only, current one, as if opened in the drawer.
