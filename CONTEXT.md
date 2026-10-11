@@ -27,6 +27,12 @@ What **Transparency** leaves solid on tokyonight-moon: the accents (folds, the c
 quickfix line, the wildmenu, the completion scrollbar, float shadows), which every theme keeps solid too.
 _Avoid_: Reference theme, default look
 
+**Late plugin**:
+A plugin loaded after the startup theme (lualine and noice at VeryLazy, the notifier on the first
+notification, blink on the first insert), which defines its highlights then and is restyled as it
+loads, so a fresh start looks as applying the theme does.
+_Avoid_: lazy plugin, deferred plugin
+
 **Theme family**:
 Curated themes that share one setup and one set of options this config knows: tokyonight (night,
 storm, moon) and catppuccin (frappe, macchiato, mocha). Other Curated themes belong to no family.

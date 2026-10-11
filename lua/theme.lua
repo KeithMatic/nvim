@@ -83,16 +83,16 @@ local function added_names(added)
   return names
 end
 
---- Whether converge's read of theme `name` found it dark: nil when it hasn't
---- read it yet, false when it's light or wouldn't load. Light is a light
---- 'background', or a light editor background: some light themes
---- (kanagawa-lotus, onelight) leave 'background' as it was.
----@return boolean?
 --- The red, green and blue of "#rrggbb", 0 to 255 each.
 local function channels(hex)
   return tonumber(hex:sub(2, 3), 16), tonumber(hex:sub(4, 5), 16), tonumber(hex:sub(6, 7), 16)
 end
 
+--- Whether converge's read of theme `name` found it dark: nil when it hasn't
+--- read it yet, false when it's light or wouldn't load. Light is a light
+--- 'background', or a light editor background: some light themes
+--- (kanagawa-lotus, onelight) leave 'background' as it was.
+---@return boolean?
 local function is_dark(name)
   local snap = require("converge.snapshots").get(name, "dark", { capture = false })
   if snap == nil then
@@ -592,9 +592,12 @@ local function on_change(args)
   if require("mix").reading then
     return
   end
-  -- A theme that doesn't name itself (palenight): name it, so its palette is
-  -- read and it's saved.
-  if not vim.g.colors_name and args.match ~= "" then
+  -- Name the theme as it was chosen, so it's read, saved and restored as
+  -- itself: palenight doesn't name itself, and kanagawa-dragon and
+  -- evergarden-spring name themselves after their family. Not the Mix, which
+  -- names itself once converge has read its themes, a tick later.
+  local name = vim.g.colors_name
+  if args.match ~= "" and (not name or vim.startswith(args.match, name .. "-")) then
     vim.g.colors_name = args.match
   end
   local palette = theme_palette()
@@ -620,6 +623,22 @@ local function on_change(args)
   vim.schedule(restyle)
 end
 
+-- True while a restyle for plugins that just loaded waits for the next tick.
+local restyle_pending = false
+
+--- `restyle` once on the next tick, however many plugins load before it
+--- (some 70 at startup).
+local function restyle_late()
+  if restyle_pending then
+    return
+  end
+  restyle_pending = true
+  vim.schedule(function()
+    restyle_pending = false
+    restyle()
+  end)
+end
+
 --- LazyVim's `colorscheme` option: set up the change hook, then apply the
 --- saved theme, falling back to the default.
 function M.load()
@@ -642,13 +661,13 @@ function M.load()
 
   local group = vim.api.nvim_create_augroup("theme", { clear = true })
   vim.api.nvim_create_autocmd("ColorScheme", { group = group, callback = on_change })
-  -- Plugins that load later define their highlights then; restyle those too.
+  -- Plugins that load after the theme (lualine and noice at VeryLazy, the
+  -- notifier on the first notification, blink on the first insert) define
+  -- their highlights then: restyle those too.
   vim.api.nvim_create_autocmd("User", {
     group = group,
     pattern = { "LazyLoad", "VeryLazy" },
-    callback = function()
-      vim.schedule(restyle)
-    end,
+    callback = restyle_late,
   })
   -- Scheduled, so it also covers LazyVim's own fallback (habamax) should the default fail too.
   restoring = true
