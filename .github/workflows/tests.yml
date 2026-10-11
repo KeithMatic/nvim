@@ -13,9 +13,10 @@ jobs:
       - uses: actions/checkout@v7
 
       # tree-sitter-cli builds the Treesitter parsers; without it LazyVim
-      # fetches it through Mason first.
+      # fetches it through Mason first. venv-selector errors when it finds no
+      # fd, which a spec opening a Python file then reports.
       - name: Install Neovim and stylua
-        run: brew install neovim stylua tree-sitter-cli
+        run: brew install neovim stylua tree-sitter-cli fd
 
       - name: Check formatting
         run: stylua --check lua tests
