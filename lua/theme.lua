@@ -1,9 +1,9 @@
 -- Themes: the Curated themes (built in, added in lua/config/themes.lua, and
--- the Mix), persistence, transparency and the tint. Every theme change,
+-- the Mix), persistence, Transparency and the Tint. Every theme change,
 -- however it happens (the picker, `:colorscheme`), goes through one
 -- ColorScheme hook (but for converge's reads of themes, lua/mix.lua), which:
 --   1. records the theme's own editor background (`M.background`; on the Mix,
---      its UI theme's, as are the mode colours, while the brackets are its
+--      its UI theme's, as are the Mode colours, while the brackets are its
 --      syntax theme's),
 --   2. gives modes.nvim the theme's mode colours, and the background to fade
 --      them over,
@@ -35,16 +35,25 @@ M.themes = {
 -- Used when nothing is saved, or the saved theme won't load.
 M.default = "tokyonight-moon"
 
+--- Each entry of `added` (lua/config/themes.lua's, by default) as a table:
+--- a pasted repo string becomes `{ repo }`. Copies, so callers may change them.
+---@param added? (string|table)[]
+---@return table[]
+local function as_specs(added)
+  return vim.tbl_map(function(entry)
+    return type(entry) == "string" and { entry } or vim.deepcopy(entry)
+  end, added or require("config.themes").added)
+end
+
 --- Each entry of `added` (lua/config/themes.lua's, by default) as a lazy.nvim
 --- spec: lazy-loaded, which `:colorscheme` does, with `variants` left out.
 ---@param added? (string|table)[]
 ---@return table[]
 function M.added_specs(added)
-  return vim.tbl_map(function(entry)
-    local spec = type(entry) == "string" and { entry } or vim.deepcopy(entry)
+  return vim.tbl_map(function(spec)
     spec.lazy, spec.variants = true, nil
     return spec
-  end, added or require("config.themes").added)
+  end, as_specs(added))
 end
 
 --- The themes `added` ships: every one in each plugin's colors/ folder, or
@@ -53,8 +62,7 @@ end
 ---@return string[]
 local function added_names(added)
   local names = {}
-  for _, entry in ipairs(added or require("config.themes").added) do
-    local spec = type(entry) == "string" and { entry } or entry
+  for _, spec in ipairs(as_specs(added)) do
     local dir = spec.dir and vim.fs.normalize(spec.dir)
     if not dir then
       for _, plugin in pairs(require("lazy.core.config").plugins) do
@@ -102,9 +110,10 @@ end
 --- Whether `name` is a Curated theme other than the Mix, counting an added one
 --- not read yet.
 ---@param name any
+---@param added? (string|table)[] default: lua/config/themes.lua's
 ---@return boolean
-function M.is_curated(name)
-  return vim.list_contains(M.themes, name) or (vim.list_contains(added_names(), name) and is_dark(name) ~= false)
+function M.is_curated(name, added)
+  return vim.list_contains(M.themes, name) or (vim.list_contains(added_names(added), name) and is_dark(name) ~= false)
 end
 
 -- True while startup applies the saved theme (or a fallback), which is never saved.

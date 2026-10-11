@@ -54,9 +54,12 @@ local function assert_boots_with(theme)
   h.eq(0, result.code, "second instance:\n" .. (result.stdout or "") .. (result.stderr or ""))
 end
 
---- A local theme plugin: fixture-dark and fixture-dim (dark), fixture-light
---- (light), on the runtimepath as lazy.nvim would put it once loaded.
-local function fixture_plugin()
+--- A local theme plugin: <prefix>-dark and <prefix>-dim (dark), <prefix>-light
+--- (light), on the runtimepath as lazy.nvim would put it once loaded. A new
+--- `prefix` gives themes converge hasn't read this session.
+---@param prefix? string default: "fixture"
+local function fixture_plugin(prefix)
+  prefix = prefix or "fixture"
   local dir = vim.fn.tempname()
   vim.fn.mkdir(dir .. "/colors", "p")
   local function theme(name, background, normal)
@@ -74,9 +77,9 @@ local function fixture_plugin()
       'hl("Constant", { fg = "#e08000" })',
     }, ("%s/colors/%s.lua"):format(dir, name))
   end
-  theme("fixture-dark", "dark", "#101820")
-  theme("fixture-dim", "dark", "#202020")
-  theme("fixture-light", "light", "#f0f0f0")
+  theme(prefix .. "-dark", "dark", "#101820")
+  theme(prefix .. "-dim", "dark", "#202020")
+  theme(prefix .. "-light", "light", "#f0f0f0")
   vim.opt.rtp:append(dir)
   return dir
 end
@@ -226,6 +229,46 @@ h.test("Theme italics on the Mix offer its syntax theme's family, and rebuild it
   end)
 end)
 
+h.test("a Theme italics change on a family's theme reaches the Mix, even when it isn't applied", function()
+  h.with_state(nil, function()
+    -- Loops on (nothing saved: off, so the flip turns them on, whatever an
+    -- earlier test left catppuccin set up with), and the Mix read with them.
+    h.apply_theme("catppuccin-mocha")
+    pick_italic("loops")
+    h.apply_theme("tokyonight-night")
+    apply_mix()
+    h.eq(true, hl("Repeat").italic == true, "loops on the Mix before")
+    -- Loops off on catppuccin-mocha itself, the Mix not applied.
+    h.apply_theme("catppuccin-mocha")
+    pick_italic("loops")
+    h.eq(false, hl("Repeat").italic == true, "loops on catppuccin-mocha")
+    h.apply_theme("tokyonight-night")
+    apply_mix()
+    vim.wait(10000, function()
+      return hl("Repeat").italic ~= true
+    end, 50)
+    h.eq(false, hl("Repeat").italic == true, "loops on the Mix after")
+  end)
+end)
+
+h.test("the Mix's label counts its overrides", function()
+  local mix = require("mix")
+  local pair = { ui = "tokyonight-moon", syntax = "catppuccin-mocha" }
+  h.eq("tokyonight-moon + catppuccin-mocha", mix.label(pair), "none")
+  h.eq(
+    "tokyonight-moon + catppuccin-mocha · 1 override",
+    mix.label(vim.tbl_extend("force", pair, { overrides = { set = { Comment = { fg = "#ff0000" } } } })),
+    "one"
+  )
+  h.eq(
+    "tokyonight-moon + catppuccin-mocha · 3 overrides",
+    mix.label(vim.tbl_extend("force", pair, {
+      overrides = { from = { ["tokyonight-night"] = { "Comment", "String" } }, set = { Title = { bold = true } } },
+    })),
+    "from and set"
+  )
+end)
+
 h.test("the configured Mix names only Curated themes and overrides nothing the config sets", function()
   h.eq({}, require("mix").problems())
 end)
@@ -279,6 +322,50 @@ h.test(
       h.eq("tokyonight-night", vim.g.colors_name, "the theme is back")
       h.eq("dark", vim.o.background, "the background is back")
       h.eq("tokyonight-night", saved_theme(), "nothing saved")
+    end)
+  end
+)
+
+h.test("a `from` override, or a `set` link, on something the config sets is reported", function()
+  local problems = require("mix").problems({
+    ui = "tokyonight-moon",
+    syntax = "catppuccin-mocha",
+    overrides = {
+      from = { ["tokyonight-night"] = { "CursorLine", "Comment" } }, -- the Tint; nothing
+      set = { NormalFloat = { link = "Normal" } }, -- Transparency
+    },
+  })
+  local text = table.concat(problems, "\n")
+  h.eq(2, #problems, "two reported:\n" .. text)
+  for _, group in ipairs({ "CursorLine", "NormalFloat" }) do
+    h.eq(true, text:find(group, 1, true) ~= nil, group .. " reported:\n" .. text)
+  end
+end)
+
+h.test("a `from` theme that isn't a Curated theme is reported", function()
+  local problems = require("mix").problems({
+    ui = "tokyonight-moon",
+    syntax = "catppuccin-mocha",
+    overrides = { from = { ["no-such-theme"] = { "Comment" } } },
+  })
+  local text = table.concat(problems, "\n")
+  h.eq(1, #problems, "one reported:\n" .. text)
+  h.eq(true, text:find("no-such-theme", 1, true) ~= nil, "it's named:\n" .. text)
+end)
+
+h.test(
+  "an added theme can be half of the Mix before it's read and once it's found dark, never once found light",
+  function()
+    h.with_state(nil, function()
+      h.apply_theme("tokyonight-night")
+      local added = { { dir = fixture_plugin("unread") } }
+      local theme = require("theme")
+      h.eq(true, theme.is_curated("unread-light", added), "a theme not read yet")
+      theme.detect(added)
+      h.eq(true, theme.is_curated("unread-dark", added), "a dark one")
+      h.eq(false, theme.is_curated("unread-light", added), "a light one")
+      h.eq(false, theme.is_curated("converge", added), "the Mix itself")
+      h.eq(true, theme.is_curated("catppuccin-mocha", added), "a built-in one")
     end)
   end
 )

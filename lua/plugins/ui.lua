@@ -1,6 +1,6 @@
 -- UI: the themes (built in, the Mix, and those added in lua/config/themes.lua)
--- and their transparency, the statusline (lua/statusline.lua), mode colours,
--- float borders the 'winborder' option doesn't reach, the curated theme picker,
+-- and their Transparency, the statusline (lua/statusline.lua), Mode colours,
+-- float borders the 'winborder' option doesn't reach, the Curated themes picker,
 -- the Buffer sticks, the motion hints, the Habit tips, the Rainbow brackets and
 -- the Block guide, Dropbar's Breadcrumbs,
 -- lspsaga's rename and outline, and noice's cmdline popup (centred, with the Icon set's glyphs)

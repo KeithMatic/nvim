@@ -30,7 +30,19 @@ _Avoid_: Colorscheme family, theme pack
 **Mix**:
 A Curated theme made from two others: the editor's UI from one, the code's colours from another, as
 the config names them. Offered in the theme picker beside the rest.
-_Avoid_: Converge (the plugin, not the concept), blend, hybrid, recipe
+_Avoid_: Converge (the plugin, not the concept), blend, hybrid, recipe (converge's word for its
+settings, fine in code about them)
+
+**Override**:
+A single highlight group of the **Mix** taken from another theme or given its own colours, as the
+config names it. What this config's own look sets (the **Tint**, **Transparency**, the **Mode
+colours**, ...) wins over it.
+_Avoid_: Tweak, customisation
+
+**Added theme**:
+A Curated theme from a plugin named in the config rather than built in; only the dark themes it
+ships count.
+_Avoid_: Extra theme (Extra italics are something else), installed theme
 
 **Syntax type**:
 A kind of code text the editor colours on its own: comments, keywords, strings, function names,

@@ -16,9 +16,29 @@ These follow the glossary in `CONTEXT.md`.
   family, theme pack.
 - **Mix**: a Curated theme made from two others: the editor's UI from one, the code's colours from another, as the
   config names them. Offered in the theme picker beside the rest. *Avoid:* converge (the plugin, not the concept),
-  blend, hybrid, recipe.
-- **Mode colours**, **Tint**, **Rainbow brackets**, **Block guide**, **Transparency**, **Theme italics**, **Extra
-  italics**: as in the glossary.
+  blend, hybrid, recipe (converge's word for its settings, fine in code about them).
+- **Override**: a single highlight group of the Mix taken from another theme or given its own colours, as the config
+  names it. What this config's own look sets (the Tint, Transparency, the Mode colours, ...) wins over it. *Avoid:*
+  tweak, customisation.
+- **Added theme**: a Curated theme from a plugin named in the config rather than built in; only the dark themes it
+  ships count. *Avoid:* extra theme (Extra italics are something else), installed theme.
+- **Mode colours**: the theme's colours for normal, insert, visual, command, delete and copy, shared by the Cursor
+  line, the Mode-coloured line number and the statusline's mode icon.
+- **Tint**: the colour faded over the theme's background that marks "where am I" lines: the cursor line, the
+  explorer's line and the selected menu item. *Avoid:* cursorline colour, highlight.
+- **Transparency**: panel and float backgrounds cleared so the terminal's glass shows through, whatever the theme;
+  also the In-text blocks, which keep only their colour. *Avoid:* glass, no-background.
+- **Rainbow brackets**: bracket pairs coloured by how deeply they nest, cycling the theme's yellow, purple and blue.
+  *Avoid:* bracket pair colourisation, rainbow-delimiters (the plugin, not the concept).
+- **Block guide**: the single dotted line drawn down the block the cursor is in, in a faint shade of that block's
+  Rainbow brackets. *Avoid:* indent guides, scope.
+- **Reference highlights**: the marks on other occurrences of the word under the cursor; an underline, never a
+  background block. *Avoid:* links, word highlights, LSP references.
+- **Theme italics**: which Syntax types are drawn in italics, chosen in one picker with two sections: the options the
+  current Theme family offers, chosen separately for each family, then the Extra italics. *Avoid:* font style, italic
+  toggles.
+- **Extra italics**: Syntax types this config makes italic after any theme loads, chosen once and shared by every
+  theme. *Avoid:* custom italics, italic overrides.
 
 ## Why
 
@@ -83,9 +103,11 @@ a family's options drops converge's copies of that family's themes, so the Mix i
 ### 5. Overrides: only on the Mix, and the config's look wins
 
 An override on something the config sets (the Tint, Transparency, Mode colours, Rainbow brackets, Block guide,
-Reference highlights, the always-italic groups) is replaced by it, and reported in a warning at startup. A tweaked
-single theme is a Mix of that theme with itself. *Rejected:* overrides winning over the config's look (the same colour
-set in two places); overrides on any Curated theme (two override systems).
+Reference highlights, the always-italic groups) is replaced by it, and reported in a warning at startup, naming
+what it replaces. A `from` override or a `set` link brings the whole group, so every attribute the config sets
+counts. A `from` theme that isn't a Curated theme is reported too. A tweaked single theme is a Mix of that theme with
+itself. *Rejected:* overrides winning over the config's look (the same colour set in two places); overrides on any
+Curated theme (two override systems).
 
 ### 6. Added themes: paste a repo
 
