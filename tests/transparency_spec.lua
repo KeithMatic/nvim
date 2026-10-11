@@ -111,6 +111,10 @@ local transparent = {
   "GitSignsTopdelete",
   "GitSignsChangedelete",
   "GitSignsUntracked",
+  "DiagnosticSignError",
+  "DiagnosticSignWarn",
+  "DiagnosticSignInfo",
+  "DiagnosticSignHint",
   "PmenuKind",
   "PmenuExtra",
   "PmenuBorder",
@@ -365,4 +369,21 @@ end)
 h.test("the update checker runs without notifying", function()
   local checker = require("lazy.core.config").options.checker
   h.eq({ true, false }, { checker.enabled, checker.notify })
+end)
+
+-- A theme or plugin may link a float's Frame part to a group that keeps its
+-- background (an accent): the part shows none, while a part that isn't the
+-- Frame keeps the accent, as links do.
+h.test("a Frame part linked to a solid group shows no background, other links keep it", function()
+  local id = vim.api.nvim_create_autocmd("ColorScheme", {
+    callback = function()
+      vim.api.nvim_set_hl(0, "NoiceCmdlinePopupBorderFixture", { link = "Folded" })
+      vim.api.nvim_set_hl(0, "NoiceCmdlinePopupFixture", { link = "Folded" })
+    end,
+  })
+  h.apply_theme("tokyonight-moon")
+  vim.api.nvim_del_autocmd(id)
+  h.eq(true, bg("Folded") ~= nil, "Folded keeps its background (the Baseline)")
+  h.eq(nil, bg("NoiceCmdlinePopupBorderFixture"), "the Frame part")
+  h.eq(bg("Folded"), bg("NoiceCmdlinePopupFixture"), "the other link")
 end)

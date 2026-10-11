@@ -303,6 +303,7 @@ local transparency = {
   prefixes = {
     "BlinkCmp",
     "BufferLine",
+    "DiagnosticSign", -- the gutter's diagnostic signs
     "NeoTree",
     "NoiceCmdline",
     "NoiceConfirm",
@@ -324,6 +325,11 @@ local transparency = {
   -- loads after the theme, links its groups to ones that keep a background
   -- (DiffAdd, ColorColumn).
   in_text = { "@markup.heading", "@markup.raw", "DiagnosticVirtualText", "LspInlayHint", "RenderMarkdown" },
+  -- A float's Frame, by name: its border, title, footer and prompt, with the
+  -- prompt's icon (not other icons: dropbar's, which-key's). Cleared even when
+  -- they're links: noice links its cmdline popup's to the gutter's diagnostic
+  -- signs, which some themes (kanagawa) give a background.
+  frame = { "Border", "Title", "Footer", "Prompt", "CmdlineIcon", "InputIcon" },
   keep = { "Cursor", "Sel", "Visual", "Search", "Diff", "Thumb", "ScrollBar", "Scrollbar", "PickWin" },
 }
 
@@ -334,26 +340,48 @@ local function has_prefix(name, prefixes)
   end)
 end
 
-local function should_clear(name)
-  local listed = vim.list_contains(transparency.groups, name)
-    or has_prefix(name, transparency.prefixes)
-    or has_prefix(name, transparency.in_text)
-  return listed and not vim.iter(transparency.keep):any(function(word)
+--- Whether `name` contains one of `words`.
+local function has_word(name, words)
+  return vim.iter(words):any(function(word)
     return name:find(word, 1, true) ~= nil
   end)
 end
 
+local function should_clear(name)
+  local listed = vim.list_contains(transparency.groups, name)
+    or has_prefix(name, transparency.prefixes)
+    or has_prefix(name, transparency.in_text)
+  return listed and not has_word(name, transparency.keep)
+end
+
+--- The group `name`'s links end at.
+---@param name string
+---@return string
+local function link_target(name)
+  for _ = 1, 20 do -- a theme could link in a loop
+    local link = vim.api.nvim_get_hl(0, { name = name }).link
+    if not link then
+      break
+    end
+    name = link
+  end
+  return name
+end
+
 --- Clear the background of every group transparency covers. Linked groups are
---- left alone, to follow their target, except in-text ones (see `in_text`) and
---- panel backgrounds linked to a theme's own sidebar group that keeps one
+--- left alone, to follow their target, except in-text ones (see `in_text`), and
+--- panel backgrounds and Frame parts linked to a group that keeps one
 --- (NeoTreeNormal to evergarden's Panel), which take their target's colours
---- instead. Other links (NeoTreePreview to Search) keep their accent.
+--- instead. Other links (NeoTreePreview to Search) keep their accent, and links
+--- to a group cleared here (noice's cmdline border to DiagnosticSignInfo) stay,
+--- to follow what's done to it next (the italics).
 local function make_transparent()
   for name, hl in pairs(vim.api.nvim_get_hl(0, {})) do
     if hl.link and should_clear(name) then
       local target = vim.api.nvim_get_hl(0, { name = name, link = false })
-      local panel = name:find("Normal", 1, true) and (target.bg or target.ctermbg)
-      if panel or has_prefix(name, transparency.in_text) then
+      local keeps_bg = (target.bg or target.ctermbg) and not should_clear(link_target(name))
+      local panel_or_frame = keeps_bg and (name:find("Normal", 1, true) or has_word(name, transparency.frame))
+      if panel_or_frame or has_prefix(name, transparency.in_text) then
         hl = target
       end
     end

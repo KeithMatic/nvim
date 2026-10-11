@@ -13,9 +13,21 @@ The dark themes the theme picker offers: some built in, any others added by nami
 _Avoid_: Colorschemes (for the curated list), theme list
 
 **Transparency**:
-Panel and float backgrounds cleared so the terminal's glass shows through, whatever the theme; also
-the **In-text blocks**, which keep only their colour.
+Panel and float backgrounds cleared so the terminal's glass shows through, whatever the theme, a
+float's **Frame** included; also the **In-text blocks**, which keep only their colour.
 _Avoid_: Glass, no-background
+
+**Frame**:
+A float's border, title, footer and prompt, with the prompt's icon (noice's cmdline icon): what
+surrounds a float's text, shown in its colour only, even when a theme or plugin links it to a group
+with a background.
+_Avoid_: chrome, decoration, border items
+
+**Float sweep**:
+The test that opens every float the config shows after a fresh start, on every **Curated theme**,
+and checks nothing it draws has a background but the accents that keep one (the selected item, the
+cursor, search matches, scrollbar thumbs, confirm buttons, progress bars, the picker's window labels).
+_Avoid_: float audit, popup test
 
 **In-text blocks**:
 Highlights drawn inside the text as a solid block: diagnostics at the end of a line, inlay hints, and

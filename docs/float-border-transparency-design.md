@@ -206,3 +206,14 @@ None.
   - the `default` flag;
   - the cursors, which modes.nvim colours per mode;
   - which-key's icons, linked to mini.icons' colours only as which-key loads.
+- **The Frame's words are narrower than Q5's list.** "Icon" matched dropbar's breadcrumb icons and
+  which-key's icons. Breaking dropbar's links (to WinBarNC) dropped their italics. The Frame's icon
+  is the prompt's, so the words are Border, Title, Footer, Prompt, CmdlineIcon and InputIcon.
+- **A Frame or panel link is broken only when its final target keeps its background.** A target that
+  is cleared too (the gutter's diagnostic signs, WinBar) ends up transparent anyway, and the link
+  keeps following what's done to it next. Copying it early froze a stale copy: neo-tree's title bar
+  lost WinBar's italics, depending on the order the groups were walked. With the diagnostic signs
+  cleared, kanagawa's cmdline popup is fixed through the link. No Curated theme needs the Frame rule
+  today, so a test with fixture groups covers it.
+- **nordic's solid search icon is never drawn:** search uses noice's bottom cmdline, not the popup.
+  The Float sweep checks every cmdline format as shown, and they're clear.
