@@ -8,7 +8,8 @@ theme-driven look and a handful of VS Code habits carried over.
 ### Look
 
 **Curated themes**:
-The short list of dark themes the theme picker offers; the last one applied is restored at startup.
+The dark themes the theme picker offers: some built in, any others added by naming their plugin
+(every dark theme it ships), and the **Mix**; the last one applied is restored at startup.
 _Avoid_: Colorschemes (for the curated list), theme list
 
 **Transparency**:
@@ -22,9 +23,14 @@ Markdown heading bars, inline code and code blocks.
 _Avoid_: Chips (those are accents that keep their background)
 
 **Theme family**:
-Curated themes that share one setup and one set of options: tokyonight (night, storm, moon) and
-catppuccin (frappe, macchiato, mocha).
+Curated themes that share one setup and one set of options this config knows: tokyonight (night,
+storm, moon) and catppuccin (frappe, macchiato, mocha). Other Curated themes belong to no family.
 _Avoid_: Colorscheme family, theme pack
+
+**Mix**:
+A Curated theme made from two others: the editor's UI from one, the code's colours from another, as
+the config names them. Offered in the theme picker beside the rest.
+_Avoid_: Converge (the plugin, not the concept), blend, hybrid, recipe
 
 **Syntax type**:
 A kind of code text the editor colours on its own: comments, keywords, strings, function names,

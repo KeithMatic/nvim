@@ -1,9 +1,11 @@
 local h = require("harness")
 
+-- The built-in themes and the Mix (`converge`); no themes are added by default.
 local curated = {
   "catppuccin-frappe",
   "catppuccin-macchiato",
   "catppuccin-mocha",
+  "converge",
   "tokyonight-moon",
   "tokyonight-night",
   "tokyonight-storm",
@@ -41,7 +43,7 @@ local function cancel(picker, theme)
   end, 50)
 end
 
-h.test("<leader>uC lists exactly the six curated dark themes", function()
+h.test("<leader>uC lists exactly the six built-in dark themes and the Mix", function()
   h.with_state(nil, function()
     local before = vim.g.colors_name
     local picker = open_picker()

@@ -99,9 +99,14 @@ local extras = {
   { name = "tags", label = "markup tags and attributes", groups = { "@tag", "@tag.attribute" } },
 }
 
---- The family of the current theme, if it has italic options.
+--- The family of the current theme, if it has italic options: on the Mix, its
+--- syntax theme's, whose italics it draws.
 local function current_family()
-  local family = (vim.g.colors_name or ""):match("^(%a+)")
+  local name = vim.g.colors_name or ""
+  if name == "converge" then
+    name = require("mix").recipe().syntax
+  end
+  local family = name:match("^(%a+)")
   return families[family] and family or nil
 end
 
@@ -215,12 +220,14 @@ function M.apply_extras()
 end
 
 --- Set up `family` again with its chosen italics (if the theme has a family),
---- and re-apply the theme.
+--- and re-apply the theme. The Mix's copies of the family's themes are
+--- forgotten, so it reads them again with the new italics (lua/mix.lua).
 local function reload(family)
   if family then
     local opts = LazyVim.opts(families[family].plugin)
     opts.styles = vim.tbl_extend("force", opts.styles or {}, M.styles(family))
     require(family).setup(opts)
+    require("mix").forget(family)
   end
   vim.cmd.colorscheme(vim.g.colors_name)
 end

@@ -33,8 +33,15 @@ own. The words used below (Tint, Layer, Buffer sticks, ...) are defined in [CONT
 
 ### Look
 
-- **Curated themes**: tokyonight (night, storm, moon) and catppuccin (frappe, macchiato, mocha), picked
-  with live preview (`<leader>uC`). The last one applied comes back at startup.
+- **Curated themes**: tokyonight (night, storm, moon), catppuccin (frappe, macchiato, mocha), any
+  theme you add, and the Mix, picked with live preview (`<leader>uC`). The last one applied comes back
+  at startup. To add a theme, paste its plugin repo into `added` in
+  [`lua/config/themes.lua`](lua/config/themes.lua): every dark theme it ships is offered, read once
+  (a brief flash) the first time the picker opens to leave out the light ones.
+- **Mix**: one theme with the editor's UI from one Curated theme and the code's colours from another
+  (tokyonight-moon + catppuccin-mocha), plus single-group overrides, all set in `mix` in
+  `lua/config/themes.lua` ([converge.nvim](https://github.com/SunnyTamang/converge.nvim)). Overrides on
+  something this config sets (the Tint, Transparency, ...) are replaced, with a warning at startup.
 - **Transparency**: panel and float backgrounds are cleared whatever the theme, so the terminal's
   glass shows through. Diagnostics, inlay hints and Markdown blocks keep only their colour.
 - **Tint**: the cursor line, the Explorer's line and the selected menu item get one colour faded over
@@ -483,6 +490,7 @@ A Layer lays one-key actions over the usual keys until you leave it. `?` lists i
 ```
 init.lua                 bootstraps lazy.nvim
 lua/config/              LazyVim's options, keymaps, autocmds and the extras list (lazy.lua)
+lua/config/themes.lua    the themes you add and the Mix
 lua/plugins/             plugin specs, one file per area (ui, editing, explorer, database, ...)
 lua/*.lua                this config's own modules (theme, runner, terminal, semicolon, ...)
 lua/layer/               the Layers

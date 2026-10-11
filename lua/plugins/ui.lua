@@ -1,6 +1,7 @@
--- UI: the themes and their transparency, the statusline (lua/statusline.lua),
--- mode colours, float borders the 'winborder' option doesn't reach, the curated
--- theme picker, the Buffer sticks, the motion hints, the Habit tips, the Rainbow brackets and
+-- UI: the themes (built in, the Mix, and those added in lua/config/themes.lua)
+-- and their transparency, the statusline (lua/statusline.lua), mode colours,
+-- float borders the 'winborder' option doesn't reach, the curated theme picker,
+-- the Buffer sticks, the motion hints, the Habit tips, the Rainbow brackets and
 -- the Block guide, Dropbar's Breadcrumbs,
 -- lspsaga's rename and outline, and noice's cmdline popup (centred, with the Icon set's glyphs)
 -- and its menu, the Dashboard's header and sections (lua/dashboard.lua), and
@@ -53,6 +54,17 @@ return {
       opts.styles = vim.tbl_extend("force", opts.styles or {}, require("theme_italics").styles("catppuccin"))
     end,
   },
+  -- The Mix (lua/mix.lua): loaded by `:colorscheme converge`, or when a theme
+  -- is read to find whether it's light.
+  {
+    "SunnyTamang/converge.nvim",
+    lazy = true,
+    config = function()
+      require("mix").setup()
+    end,
+  },
+  -- The themes added in lua/config/themes.lua, loaded by `:colorscheme`.
+  require("theme").added_specs(),
   {
     "nvim-lualine/lualine.nvim",
     dependencies = { "meuter/lualine-so-fancy.nvim" }, -- its diff (lua/statusline.lua)

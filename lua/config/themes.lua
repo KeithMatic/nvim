@@ -1,0 +1,27 @@
+-- The themes you add and the Mix: the one file to edit for either. Read by
+-- lua/plugins/ui.lua (the plugins), lua/theme.lua (the Curated themes) and
+-- lua/mix.lua (the Mix). See docs/converge-mix-design.md.
+return {
+  -- Paste a theme's plugin repo to offer every dark theme it ships in the
+  -- theme picker (<leader>uC). The first time the picker opens after adding
+  -- one, its themes are read once (a brief flash) to drop the light ones.
+  -- A table narrows it to some of its themes, or passes options to its setup():
+  --   "rebelot/kanagawa.nvim",
+  --   { "rebelot/kanagawa.nvim", variants = { "kanagawa-dragon" }, opts = { transparent = true } },
+  added = {},
+
+  -- The Mix: the editor's UI from one Curated theme, the code's colours from
+  -- another, applied as the theme `converge` (converge.nvim's `recipe`).
+  -- Overrides change single highlight groups: `from` takes them from another
+  -- theme, `set` gives your own colours (vim.api.nvim_set_hl's format). One the
+  -- config sets itself (the Tint, Transparency, Mode colours, ...) is replaced
+  -- by it, and reported at startup. Names with `-`, `.` or `@` go in ["..."].
+  mix = {
+    ui = "tokyonight-moon",
+    syntax = "catppuccin-mocha",
+    overrides = {
+      from = {},
+      set = {},
+    },
+  },
+}
