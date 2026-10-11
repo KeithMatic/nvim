@@ -326,6 +326,71 @@ h.test(
   end
 )
 
+h.test("an added light theme that leaves 'background' dark (kanagawa-lotus) isn't a Curated theme", function()
+  h.with_state(nil, function()
+    h.apply_theme("tokyonight-night")
+    local dir = fixture_plugin("pale")
+    vim.fn.writefile({
+      'vim.cmd("hi clear")',
+      'vim.g.colors_name = "pale-paper"',
+      'vim.api.nvim_set_hl(0, "Normal", { fg = "#303030", bg = "#f2ecbc" })',
+    }, dir .. "/colors/pale-paper.lua")
+    local added = { { dir = dir } }
+    local theme = require("theme")
+    theme.detect(added)
+    local curated = theme.curated(added)
+    h.eq(false, vim.list_contains(curated, "pale-paper"), "pale-paper offered")
+    h.eq(true, vim.list_contains(curated, "pale-dark"), "pale-dark offered")
+  end)
+end)
+
+h.test("reading added themes draws no frame, even when a plugin redraws on a theme change", function()
+  h.with_state(nil, function()
+    h.apply_theme("tokyonight-night")
+    local added = { { dir = fixture_plugin("redraw") } }
+    local redraws = 0
+    vim.cmd.redraw = function()
+      redraws = redraws + 1
+    end
+    local group = vim.api.nvim_create_augroup("redraw_spec", { clear = true })
+    vim.api.nvim_create_autocmd("ColorScheme", {
+      group = group,
+      callback = function()
+        vim.cmd.redraw()
+      end,
+    })
+    local lazyredraw = vim.o.lazyredraw
+    local ok, err = pcall(require("theme").detect, added)
+    vim.api.nvim_del_augroup_by_id(group)
+    vim.cmd.redraw = nil
+    h.eq(true, ok, tostring(err))
+    h.eq(0, redraws, "redraws while reading")
+    h.eq(lazyredraw, vim.o.lazyredraw, "'lazyredraw' is back")
+    h.eq(true, vim.fn.exists(":redraw") == 2 and type(vim.cmd.redraw) == "function", ":redraw works again")
+  end)
+end)
+
+h.test("reading added themes puts :redraw and 'lazyredraw' back when a read fails", function()
+  h.with_state(nil, function()
+    h.apply_theme("tokyonight-night")
+    local snapshots = require("converge.snapshots")
+    local get = snapshots.get
+    snapshots.get = function(name, background, opts)
+      if opts.capture then
+        error("read failed")
+      end
+      return get(name, background, opts)
+    end
+    local lazyredraw, redraw = vim.o.lazyredraw, rawget(vim.cmd, "redraw")
+    local ok, err = pcall(require("theme").detect, { { dir = fixture_plugin("failing") } })
+    snapshots.get = get
+    h.eq(false, ok, "the error is raised")
+    h.eq(true, tostring(err):find("read failed", 1, true) ~= nil, tostring(err))
+    h.eq(lazyredraw, vim.o.lazyredraw, "'lazyredraw' is back")
+    h.eq(redraw, rawget(vim.cmd, "redraw"), ":redraw is Neovim's again")
+  end)
+end)
+
 h.test("a `from` override, or a `set` link, on something the config sets is reported", function()
   local problems = require("mix").problems({
     ui = "tokyonight-moon",

@@ -15,9 +15,11 @@
 --   6. saves the theme so the next start restores it (live previews in the
 --      picker and the theme applied at startup aren't saved),
 --   7. clears the background of whatever the themes' native transparency
---      options leave solid, so the terminal's glass shows through, makes
---      the line diagnostics and the Breadcrumbs italic, and applies the Extra
---      italics (lua/theme_italics.lua).
+--      options leave solid (all of it, on an added theme), so the terminal's
+--      glass shows through: at once, so no frame shows the theme's background,
+--      and again once plugins have redefined theirs,
+--   8. makes the line diagnostics and the Breadcrumbs italic, and applies the
+--      Extra italics (lua/theme_italics.lua).
 local M = {}
 
 -- The built-in Curated themes: the Theme families'. The picker also offers the
@@ -82,14 +84,25 @@ local function added_names(added)
 end
 
 --- Whether converge's read of theme `name` found it dark: nil when it hasn't
---- read it yet, false when it's light or wouldn't load.
+--- read it yet, false when it's light or wouldn't load. Light is a light
+--- 'background', or a light editor background: some light themes
+--- (kanagawa-lotus, onelight) leave 'background' as it was.
 ---@return boolean?
 local function is_dark(name)
   local snap = require("converge.snapshots").get(name, "dark", { capture = false })
   if snap == nil then
     return nil
   end
-  return snap ~= false and snap.background == "dark"
+  if snap == false or snap.background ~= "dark" then
+    return false
+  end
+  local bg = (snap.groups.Normal or {}).bg
+  if not bg then
+    return true
+  end
+  -- Perceived lightness, 0 to 1.
+  local r, g, b = math.floor(bg / 65536) % 256, math.floor(bg / 256) % 256, bg % 256
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 < 0.5
 end
 
 --- The Curated themes: the built-in ones, the added ones read and found dark,
@@ -121,7 +134,8 @@ local restoring = false
 
 --- Have converge read every added theme it hasn't, to find the light ones.
 --- Each read applies its theme for a moment, so the theme and background are
---- put back after, unsaved.
+--- put back after, unsaved. Nothing is drawn meanwhile: the reads skip
+--- Transparency, so a frame would show each theme's background.
 ---@param added? (string|table)[] default: lua/config/themes.lua's
 function M.detect(added)
   local unread = vim.tbl_filter(function(name)
@@ -131,17 +145,27 @@ function M.detect(added)
     return
   end
   local current, background = vim.g.colors_name, vim.o.background
-  local snapshots = require("converge.snapshots")
-  for _, name in ipairs(unread) do
-    snapshots.get(name, "dark", { capture = true })
-  end
-  -- With no theme named, setting the background reloads none.
-  vim.g.colors_name = nil
-  vim.o.background = background
-  if current then
-    restoring = true
-    pcall(vim.cmd.colorscheme, current)
-    restoring = false
+  -- `vim.cmd` caches each command's function in itself, so putting back what
+  -- was there (nil, usually) brings :redraw back.
+  local redraw, lazyredraw = rawget(vim.cmd, "redraw"), vim.o.lazyredraw
+  vim.cmd.redraw, vim.o.lazyredraw = function() end, true
+  local ok, err = pcall(function()
+    local snapshots = require("converge.snapshots")
+    for _, name in ipairs(unread) do
+      snapshots.get(name, "dark", { capture = true })
+    end
+    -- With no theme named, setting the background reloads none.
+    vim.g.colors_name = nil
+    vim.o.background = background
+    if current then
+      restoring = true
+      pcall(vim.cmd.colorscheme, current)
+      restoring = false
+    end
+  end)
+  vim.cmd.redraw, vim.o.lazyredraw = redraw, lazyredraw
+  if not ok then
+    error(err, 0)
   end
 end
 
@@ -250,6 +274,26 @@ local transparency = {
     "SnacksBackdrop",
     "TroubleNormal",
     "TroubleNormalNC",
+    -- What added themes give a background that the Theme families don't: the
+    -- git signs in the gutter, the completion menu's columns, inactive
+    -- windows' gutter, the end of the buffer, Snacks' inactive winbar, the
+    -- outline, terminal statuslines and the message separator.
+    "GitSignsAdd",
+    "GitSignsChange",
+    "GitSignsDelete",
+    "GitSignsTopdelete",
+    "GitSignsChangedelete",
+    "GitSignsUntracked",
+    "PmenuKind",
+    "PmenuExtra",
+    "PmenuBorder",
+    "SignColumnNC",
+    "NonText",
+    "SnacksWinBarNC",
+    "AerialNormal",
+    "StatusLineTerm",
+    "StatusLineTermNC",
+    "MsgSeparator",
   },
   prefixes = {
     "BlinkCmp",
@@ -257,6 +301,7 @@ local transparency = {
     "NeoTree",
     "NoiceCmdline",
     "NoiceConfirm",
+    "NoiceLspProgress",
     "NoiceMini",
     "NoicePopup",
     "NoiceSplit",
@@ -294,12 +339,18 @@ local function should_clear(name)
 end
 
 --- Clear the background of every group transparency covers. Linked groups are
---- left alone, to follow their target, except in-text ones, which take their
---- target's colours instead.
+--- left alone, to follow their target, except in-text ones (see `in_text`) and
+--- panel backgrounds linked to a theme's own sidebar group that keeps one
+--- (NeoTreeNormal to evergarden's Panel), which take their target's colours
+--- instead. Other links (NeoTreePreview to Search) keep their accent.
 local function make_transparent()
   for name, hl in pairs(vim.api.nvim_get_hl(0, {})) do
-    if hl.link and has_prefix(name, transparency.in_text) then
-      hl = vim.api.nvim_get_hl(0, { name = name, link = false })
+    if hl.link and should_clear(name) then
+      local target = vim.api.nvim_get_hl(0, { name = name, link = false })
+      local panel = name:find("Normal", 1, true) and (target.bg or target.ctermbg)
+      if panel or has_prefix(name, transparency.in_text) then
+        hl = target
+      end
     end
     if not hl.link and (hl.bg or hl.ctermbg) and should_clear(name) then
       -- A `default` definition never replaces an existing one, so drop the flag.
@@ -531,10 +582,16 @@ function M.owner(group, attr)
 end
 
 --- The hook that runs on every theme change.
-local function on_change()
+local function on_change(args)
   -- converge reading a theme for the Mix, or to find light ones: not a change.
+  -- Nor is Transparency applied: converge would record the theme cleared.
   if require("mix").reading then
     return
+  end
+  -- A theme that doesn't name itself (palenight): name it, so its palette is
+  -- read and it's saved.
+  if not vim.g.colors_name and args.match ~= "" then
+    vim.g.colors_name = args.match
   end
   local palette = theme_palette()
   M.background = palette.bg
@@ -548,6 +605,9 @@ local function on_change()
   apply_tint()
   apply_rainbow(palette.rainbow)
   underline_references()
+  -- Now, once the theme's own background is read above, so no frame shows it
+  -- (the Theme families' options already cleared theirs; added themes' haven't).
+  make_transparent()
   if not (restoring or previewing()) then
     save_state({ theme = vim.g.colors_name })
   end
@@ -686,18 +746,31 @@ end
 --- every other section the theme's soft foreground, whatever the mode.
 --- A function, so lualine rebuilds it on every theme change.
 function M.lualine()
-  local theme = require("lualine.utils.loader").load_theme("auto")
+  -- A copy: a theme that ships its own lualine theme (oasis, evergarden)
+  -- returns the same table each time, which the next change would restyle again.
+  local theme = vim.deepcopy(require("lualine.utils.loader").load_theme("auto"))
   local soft = theme.normal.c.fg
-  for mode, sections in pairs(theme) do
-    for name, section in pairs(sections) do
-      if mode ~= "inactive" then
-        if name == "a" then
-          section.fg, section.gui = section.bg or section.fg, "bold"
-        else
-          section.fg, section.gui = soft, nil
+  -- Each section once: some themes share them between modes (evergarden's
+  -- command mode is its normal mode), and a second pass would lose the colour.
+  -- The active modes first, so a section shared with inactive is styled as theirs.
+  local seen = {}
+  local modes = vim.tbl_keys(theme)
+  table.sort(modes, function(a, b)
+    return (a == "inactive" and 1 or 0) < (b == "inactive" and 1 or 0)
+  end)
+  for _, mode in ipairs(modes) do
+    for name, section in pairs(theme[mode]) do
+      if not seen[section] then
+        seen[section] = true
+        if mode ~= "inactive" then
+          if name == "a" then
+            section.fg, section.gui = section.bg or section.fg, "bold"
+          else
+            section.fg, section.gui = soft, nil
+          end
         end
+        section.bg = "NONE"
       end
-      section.bg = "NONE"
     end
   end
   return theme

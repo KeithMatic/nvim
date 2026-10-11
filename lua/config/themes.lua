@@ -4,10 +4,12 @@
 return {
   -- Paste a theme's plugin repo to offer every dark theme it ships in the
   -- theme picker (<leader>uC). The first time the picker opens after adding
-  -- one, its themes are read once (a brief flash) to drop the light ones.
+  -- one, its themes are read once (a brief pause) to drop the light ones.
   -- A table narrows it to some of its themes, or passes options to its setup():
   --   "rebelot/kanagawa.nvim",
-  --   { "rebelot/kanagawa.nvim", variants = { "kanagawa-dragon" }, opts = { transparent = true } },
+  --   { "rebelot/kanagawa.nvim", variants = { "kanagawa-dragon" }, opts = { theme = "dragon" } },
+  -- Transparency is applied to every theme, so leave a theme's own transparency
+  -- option off: it hides the background the Tint is faded over.
   added = {},
 
   -- The Mix: the editor's UI from one Curated theme, the code's colours from

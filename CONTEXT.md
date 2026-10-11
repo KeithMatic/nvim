@@ -22,6 +22,11 @@ Highlights drawn inside the text as a solid block: diagnostics at the end of a l
 Markdown heading bars, inline code and code blocks.
 _Avoid_: Chips (those are accents that keep their background)
 
+**Baseline**:
+What **Transparency** leaves solid on tokyonight-moon: the accents (folds, the colour column, the
+quickfix line, the wildmenu, the completion scrollbar, float shadows), which every theme keeps solid too.
+_Avoid_: Reference theme, default look
+
 **Theme family**:
 Curated themes that share one setup and one set of options this config knows: tokyonight (night,
 storm, moon) and catppuccin (frappe, macchiato, mocha). Other Curated themes belong to no family.

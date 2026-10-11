@@ -6,6 +6,7 @@ require("lazy").load({
   plugins = {
     "blink.cmp",
     "bufferline.nvim",
+    "gitsigns.nvim",
     "lualine.nvim",
     "mason.nvim",
     "neo-tree.nvim",
@@ -24,6 +25,18 @@ local themes = {
   ["tokyonight-night"] = "#1a1b26",
   ["tokyonight-storm"] = "#24283b",
 }
+
+-- The Added themes (lua/config/themes.lua): every dark one, with its own
+-- editor background as converge's read of it found it (false: it has none). A
+-- repo pasted there is checked here without editing this file.
+local theme_module = require("theme")
+theme_module.detect()
+for _, name in ipairs(theme_module.curated()) do
+  if not vim.list_contains(theme_module.themes, name) and name ~= "converge" then
+    local normal = require("converge.snapshots").get(name, "dark", { capture = false }).groups.Normal
+    themes[name] = normal and normal.bg and ("#%06x"):format(normal.bg) or false
+  end
+end
 
 --- The background of `group`, following links.
 local function bg(group)
@@ -45,7 +58,6 @@ local transparent = {
   "TabLineFill",
   "BufferLineFill",
   "BufferLineBackground",
-  "BufferLineBufferSelected",
   -- floats: generic, completion, which-key, Lazy, Mason, notifications and pickers
   "NormalFloat",
   "FloatBorder",
@@ -86,10 +98,54 @@ local transparent = {
   "@markup.heading.1.markdown",
   "@markup.heading.2.markdown",
   "@markup.raw.markdown_inline",
+  -- what Added themes give a background that the Theme families don't (see
+  -- `transparency.groups` in lua/theme.lua)
+  "GitSignsAdd",
+  "GitSignsChange",
+  "GitSignsDelete",
+  "GitSignsTopdelete",
+  "GitSignsChangedelete",
+  "GitSignsUntracked",
+  "PmenuKind",
+  "PmenuExtra",
+  "PmenuBorder",
+  "SignColumnNC",
+  "NonText",
+  "NoiceLspProgressTitle",
+  "NoiceLspProgressClient",
+  "NoiceLspProgressSpinner",
+  "SnacksWinBarNC",
+  "AerialNormal",
+  "StatusLineTerm",
+  "StatusLineTermNC",
+  "MsgSeparator",
 }
+
+-- What's drawn on the first frame after a theme change, before the event loop
+-- runs anything scheduled: no theme's background may show there.
+local first_frame = {
+  "Normal",
+  "NormalNC",
+  "NormalFloat",
+  "FloatBorder",
+  "SignColumn",
+  "LineNr",
+  "EndOfBuffer",
+  "WinSeparator",
+  "StatusLine",
+  "Pmenu",
+}
+
+-- The Baseline: accents tokyonight keeps solid, which every theme keeps too.
+local baseline =
+  { "Folded", "ColorColumn", "QuickFixLine", "WildMenu", "PmenuSbar", "FloatShadow", "FloatShadowThrough" }
 
 -- The "where am I" highlights keep a background.
 local solid = { "CursorLine", "Visual", "PmenuSel", "BlinkCmpMenuSelection" }
+
+-- Panels' accents: where a theme links one to a group with a background (the
+-- Explorer's preview to Search), it keeps that background.
+local linked_accents = { "NeoTreePreview" }
 
 -- Accent chips each theme gives a background to, which aren't panels and keep it.
 local chips = {
@@ -98,6 +154,39 @@ local chips = {
 }
 
 for theme, background in pairs(themes) do
+  h.test(theme .. ": the first frame after the change shows no background (no flash)", function()
+    h.apply_theme("default")
+    vim.cmd.colorscheme(theme)
+    local solid_groups = {}
+    for _, group in ipairs(first_frame) do
+      if bg(group) then
+        table.insert(solid_groups, ("%s (#%06x)"):format(group, bg(group)))
+      end
+    end
+    h.eq({}, solid_groups, "groups with a background before the event loop runs")
+  end)
+
+  h.test(theme .. ": the Baseline's accents, and accents linked to a solid group, keep their background", function()
+    -- Read before applying it: a read applies the theme for a moment.
+    local snap = require("converge.snapshots").get(theme, "dark", { capture = true })
+    h.apply_theme(theme)
+    local cleared = {}
+    for _, group in ipairs(baseline) do
+      -- A link follows its target (kanagawa's WildMenu is Pmenu).
+      local own = snap and not snap.links[group] and snap.groups[group]
+      if own and own.bg and not bg(group) then
+        table.insert(cleared, group)
+      end
+    end
+    for _, group in ipairs(linked_accents) do
+      local own = snap and snap.links[group] and snap.groups[group]
+      if own and own.bg and not bg(group) then
+        table.insert(cleared, group)
+      end
+    end
+    h.eq({}, cleared, "accents cleared")
+  end)
+
   h.test(theme .. ": editor, sidebars, bars, floats and in-text blocks have no background", function()
     h.apply_theme(theme)
     local solid_groups = {}
@@ -118,7 +207,7 @@ for theme, background in pairs(themes) do
 
   h.test(theme .. ": accent chips (progress bar, badges, tab blocks) keep their background", function()
     h.apply_theme(theme)
-    for _, group in ipairs(chips[theme:match("^%a+")]) do
+    for _, group in ipairs(chips[theme:match("^%a+")] or {}) do
       h.eq(true, bg(group) ~= nil, group .. " has a background")
     end
   end)
@@ -159,6 +248,7 @@ for theme, background in pairs(themes) do
   end)
 
   h.test(theme .. ": its own editor background is recorded before clearing", function()
+    h.eq(true, background ~= false, "the theme has an editor background of its own")
     h.apply_theme(theme)
     h.eq(background, require("theme").background)
   end)
