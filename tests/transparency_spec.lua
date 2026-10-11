@@ -15,9 +15,12 @@ require("lazy").load({
     "which-key.nvim",
   },
 })
+-- neo-tree defines its groups (NeoTreePreview, ...) only once first used.
+require("neo-tree").ensure_config()
 
--- Per theme, its own editor background (from its palette).
-local themes = {
+-- Per theme, its own editor background (from its palette); an Added theme
+-- whose palette has none is missing here, and fails the test that checks it.
+local backgrounds = {
   ["catppuccin-frappe"] = "#303446",
   ["catppuccin-macchiato"] = "#24273a",
   ["catppuccin-mocha"] = "#1e1e2e",
@@ -27,14 +30,16 @@ local themes = {
 }
 
 -- The Added themes (lua/config/themes.lua): every dark one, with its own
--- editor background as converge's read of it found it (false: it has none). A
--- repo pasted there is checked here without editing this file.
+-- editor background as converge's read of it found it. A repo pasted there is
+-- checked here without editing this file.
 local theme_module = require("theme")
 theme_module.detect()
+local themes = vim.tbl_keys(backgrounds)
 for _, name in ipairs(theme_module.curated()) do
   if not vim.list_contains(theme_module.themes, name) and name ~= "converge" then
+    table.insert(themes, name)
     local normal = require("converge.snapshots").get(name, "dark", { capture = false }).groups.Normal
-    themes[name] = normal and normal.bg and ("#%06x"):format(normal.bg) or false
+    backgrounds[name] = normal and normal.bg and ("#%06x"):format(normal.bg)
   end
 end
 
@@ -153,7 +158,9 @@ local chips = {
   catppuccin = { "MasonMutedBlockBold" },
 }
 
-for theme, background in pairs(themes) do
+for _, theme in ipairs(themes) do
+  local background = backgrounds[theme]
+
   h.test(theme .. ": the first frame after the change shows no background (no flash)", function()
     h.apply_theme("default")
     vim.cmd.colorscheme(theme)
@@ -248,7 +255,7 @@ for theme, background in pairs(themes) do
   end)
 
   h.test(theme .. ": its own editor background is recorded before clearing", function()
-    h.eq(true, background ~= false, "the theme has an editor background of its own")
+    h.eq(true, background ~= nil, "the theme has an editor background of its own")
     h.apply_theme(theme)
     h.eq(background, require("theme").background)
   end)

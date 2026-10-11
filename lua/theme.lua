@@ -88,6 +88,11 @@ end
 --- 'background', or a light editor background: some light themes
 --- (kanagawa-lotus, onelight) leave 'background' as it was.
 ---@return boolean?
+--- The red, green and blue of "#rrggbb", 0 to 255 each.
+local function channels(hex)
+  return tonumber(hex:sub(2, 3), 16), tonumber(hex:sub(4, 5), 16), tonumber(hex:sub(6, 7), 16)
+end
+
 local function is_dark(name)
   local snap = require("converge.snapshots").get(name, "dark", { capture = false })
   if snap == nil then
@@ -101,7 +106,7 @@ local function is_dark(name)
     return true
   end
   -- Perceived lightness, 0 to 1.
-  local r, g, b = math.floor(bg / 65536) % 256, math.floor(bg / 256) % 256, bg % 256
+  local r, g, b = channels(("#%06x"):format(bg))
   return (0.299 * r + 0.587 * g + 0.114 * b) / 255 < 0.5
 end
 
@@ -501,12 +506,11 @@ end
 --- `color` at `alpha` over `base`, all "#rrggbb": a solid colour that looks
 --- like `color` faded.
 function M.blend(color, base, alpha)
-  local channels = {}
-  for i = 2, 6, 2 do
-    local c, b = tonumber(color:sub(i, i + 1), 16), tonumber(base:sub(i, i + 1), 16)
-    table.insert(channels, math.floor(alpha * c + (1 - alpha) * b + 0.5))
+  local c, b, mixed = { channels(color) }, { channels(base) }, {}
+  for i = 1, 3 do
+    mixed[i] = math.floor(alpha * c[i] + (1 - alpha) * b[i] + 0.5)
   end
-  return ("#%02x%02x%02x"):format(unpack(channels))
+  return ("#%02x%02x%02x"):format(unpack(mixed))
 end
 
 --- The global definition of `name`, links followed. Not `link = false` alone:
