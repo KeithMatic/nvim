@@ -217,3 +217,23 @@ None.
   today, so a test with fixture groups covers it.
 - **nordic's solid search icon is never drawn:** search uses noice's bottom cmdline, not the popup.
   The Float sweep checks every cmdline format as shown, and they're clear.
+- **The notifications' background was `ErrorMsg`.** Snacks' error notifications, and noice's error
+  messages, draw with `ErrorMsg`. nord (the user's theme), every oasis variant, onedark, oldworld,
+  palenight, vaporwave and others give it a solid block. The first probe only sent info and warn
+  notifications, so it missed this. `WarningMsg` is the same on nord: noice's warnings and Mason's
+  warning text. Both are now cleared: noice and the notifier draw every message in a float, and
+  there's no classic message area to keep a block for.
+- **The Mix flattens links.** converge records noice's message level label (`NoiceFormatLevel*`,
+  linked to an In-text block) as fixed colours, so the Mix kept the block that other themes lose
+  through the link. The `NoiceFormatLevel` prefix is now cleared.
+- **The accents a float keeps, as the sweep found them**, extend Q7's list:
+  - signature help's active parameter;
+  - scrollbar tracks (the Baseline already keeps `PmenuSbar`);
+  - Lazy's and Mason's tab buttons and blocks, which transparency_spec already treated as chips.
+- **The Float sweep resolves links itself.** `nvim_get_hl(…, link = false)` follows the current
+  window's 'winhighlight', so dropbar's dimmed icons for windows that aren't current leaked into
+  the comparison.
+- **More is left out of the startup comparison:** lualine's component groups (redrawn as they're
+  drawn), and Vim's syntax files' groups (lowercase names), which treesitter replaces.
+- **The Runner's window is a split, not a float**, so the sweep checks every window, splits
+  included (noice's split for long messages too).

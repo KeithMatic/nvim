@@ -13,13 +13,29 @@ h.test(theme .. ": starts as itself", function()
   h.eq(true, name == theme or vim.startswith(name, theme .. "-"), "started as " .. tostring(name))
 end)
 
+--- `group`'s definition, links followed. Not `link = false`, which follows the
+--- current window's 'winhighlight' too (dropbar maps its icons to dimmed ones
+--- in windows that aren't current).
+---@param group string
+---@return table
+local function resolved(group)
+  local hl = vim.api.nvim_get_hl(0, { name = group })
+  for _ = 1, 20 do -- a theme could link in a loop
+    if not hl.link then
+      break
+    end
+    hl = vim.api.nvim_get_hl(0, { name = hl.link })
+  end
+  return hl
+end
+
 --- Every defined highlight group, links followed: what each one draws with.
 --- Not `default`, which changes nothing drawn.
 ---@return table<string, table>
 local function look()
   local groups = {}
   for name in pairs(vim.api.nvim_get_hl(0, {})) do
-    local hl = vim.api.nvim_get_hl(0, { name = name, link = false })
+    local hl = resolved(name)
     hl.default = nil
     if next(hl) then
       groups[name] = hl
@@ -48,14 +64,31 @@ end)
 ---@param group string
 ---@return string?
 local function background(group)
-  local bg = vim.api.nvim_get_hl(0, { name = group, link = false }).bg
+  local bg = resolved(group).bg
   return bg and ("#%06x"):format(bg)
 end
 
 -- The accents a float keeps a background for, by name: the selected item (the
--- Tint), the cursor, search matches, the scrollbar thumb, the picker's window
--- labels, and noice's confirm buttons and progress bar.
-local accents = { "Sel", "Cursor", "Visual", "Search", "Thumb", "PickWin", "NoiceFormatConfirm", "NoiceFormatProgress" }
+-- Tint), the cursor, search matches, scrollbars, signature help's active
+-- parameter, the picker's window labels, noice's confirm buttons and progress
+-- bar, and Lazy's and Mason's tab buttons and blocks.
+local accents = {
+  "Sel",
+  "Cursor",
+  "Visual",
+  "Search",
+  "Thumb",
+  "Scrollbar",
+  "ScrollBar",
+  "ActiveParameter",
+  "PickWin",
+  "NoiceFormatConfirm",
+  "NoiceFormatProgress",
+  "Button",
+  "LazyH1",
+  "MasonHeader",
+  "Block",
+}
 
 ---@param group string
 ---@return boolean
@@ -68,12 +101,14 @@ local function accent(group)
   return false
 end
 
---- The Float sweep's check: every group the open floats draw with that has a
---- background and isn't an accent, as "filetype: group (#rrggbb)". A float
---- draws with what its 'winhighlight' maps the float groups to, its title's and
---- footer's groups, and what its text and virtual text are highlighted with.
+--- The Float sweep's check: every group the open windows draw with that has a
+--- background and isn't an accent, as "filetype: group (#rrggbb)". A window
+--- draws with what its 'winhighlight' maps the window groups to (a float's
+--- Normal falls back to NormalFloat), its title's and footer's groups, and what
+--- its text and virtual text are highlighted with. Splits too: the Runner's
+--- terminal, noice's split for long messages.
 ---@return string[]
-local function solid_in_floats()
+local function solid_in_windows()
   local found = {}
   local function check(win, group)
     if type(group) == "string" and group ~= "" and not accent(group) and background(group) then
@@ -83,26 +118,26 @@ local function solid_in_floats()
   end
   for _, win in ipairs(vim.api.nvim_list_wins()) do
     local config = vim.api.nvim_win_get_config(win)
-    if config.relative ~= "" then
-      local map = {}
-      for from, to in vim.wo[win].winhighlight:gmatch("([^:,]+):([^,]*)") do
-        map[from] = to
-      end
-      for _, group in ipairs({ "NormalFloat", "FloatBorder", "FloatTitle", "FloatFooter" }) do
-        check(win, map[group] or group)
-      end
-      check(win, map.Normal or map.NormalFloat or "NormalFloat")
-      for _, chunk in ipairs(vim.list_extend(vim.deepcopy(config.title or {}), config.footer or {})) do
-        check(win, chunk[2])
-      end
-      local buf = vim.api.nvim_win_get_buf(win)
-      for _, mark in ipairs(vim.api.nvim_buf_get_extmarks(buf, -1, 0, -1, { details = true })) do
-        local details = mark[4]
-        check(win, details.hl_group)
-        for _, chunk in ipairs(details.virt_text or {}) do
-          for _, group in ipairs(type(chunk[2]) == "table" and chunk[2] or { chunk[2] }) do
-            check(win, group)
-          end
+    local float = config.relative ~= ""
+    local map = {}
+    for from, to in vim.wo[win].winhighlight:gmatch("([^:,]+):([^,]*)") do
+      map[from] = to
+    end
+    local groups = float and { "NormalFloat", "FloatBorder", "FloatTitle", "FloatFooter" } or { "NormalNC" }
+    for _, group in ipairs(groups) do
+      check(win, map[group] or group)
+    end
+    check(win, map.Normal or (float and (map.NormalFloat or "NormalFloat")) or "Normal")
+    for _, chunk in ipairs(vim.list_extend(vim.deepcopy(config.title or {}), config.footer or {})) do
+      check(win, chunk[2])
+    end
+    local buf = vim.api.nvim_win_get_buf(win)
+    for _, mark in ipairs(vim.api.nvim_buf_get_extmarks(buf, -1, 0, -1, { details = true })) do
+      local details = mark[4]
+      check(win, details.hl_group)
+      for _, chunk in ipairs(details.virt_text or {}) do
+        for _, group in ipairs(type(chunk[2]) == "table" and chunk[2] or { chunk[2] }) do
+          check(win, group)
         end
       end
     end
@@ -145,9 +180,415 @@ for _, format in ipairs(cmdline_formats) do
         if not cmdline_shown(format.type, not format.no_icon) then
           return false
         end
-        solid = solid_in_floats()
+        solid = solid_in_windows()
       end,
     })
+    h.eq(0, #solid, "groups with a background:\n" .. table.concat(solid, "\n"))
+  end)
+end
+
+--- A window whose buffer shows `text`, else false.
+---@param text string
+---@return integer|false
+local function window_showing(text)
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    local lines = vim.api.nvim_buf_get_lines(vim.api.nvim_win_get_buf(win), 0, -1, false)
+    if table.concat(lines, "\n"):find(text, 1, true) then
+      return win
+    end
+  end
+  return false
+end
+
+--- A window whose buffer has filetype `filetype`, else false.
+---@param filetype string
+---@return integer|false
+local function window_of(filetype)
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    if vim.bo[vim.api.nvim_win_get_buf(win)].filetype == filetype then
+      return win
+    end
+  end
+  return false
+end
+
+--- Close every float but the Buffer sticks', and every split but the first.
+local function close_windows()
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    local float = vim.api.nvim_win_get_config(win).relative ~= ""
+    local sticks = vim.bo[vim.api.nvim_win_get_buf(win)].filetype == "buffersticks"
+    if vim.api.nvim_win_is_valid(win) and (float and not sticks) then
+      pcall(vim.api.nvim_win_close, win, true)
+    end
+  end
+  h.close_splits()
+end
+
+--- Open a float with `open`, and once `ready` returns something other than
+--- false, run the Float sweep's check and close it with `close`. `open` may
+--- wait for a key (the Buffer list, the confirm): the check runs from a timer.
+---@param open fun()
+---@param ready fun(): any
+---@param close? fun() default: close_windows
+---@return string[] solid
+local function sweep(open, ready, close)
+  close = close or close_windows
+  local solid, outcome
+  local deadline = vim.uv.now() + 8000
+  local timer = assert(vim.uv.new_timer())
+  timer:start(
+    50,
+    50,
+    vim.schedule_wrap(function()
+      if outcome then
+        return
+      end
+      local ok, shown = pcall(ready)
+      if ok and shown ~= false and shown ~= nil then
+        solid, outcome = solid_in_windows(), "checked"
+      elseif vim.uv.now() > deadline then
+        outcome = ok and "it never showed" or ("its check failed: " .. tostring(shown))
+      end
+      if outcome then
+        timer:stop()
+        timer:close()
+        close()
+      end
+    end)
+  )
+  open()
+  vim.wait(10000, function()
+    return outcome ~= nil
+  end, 20)
+  assert(outcome == "checked", outcome or "it never showed")
+  vim.wait(100, function()
+    return false
+  end)
+  return solid
+end
+
+-- A language server in this Neovim, for hover, signature help, LSP progress and
+-- completion docs: `greet`, documented.
+local lsp_progress
+local function fake_server(dispatchers)
+  local closing = false
+  local results = {
+    initialize = {
+      capabilities = {
+        hoverProvider = true,
+        signatureHelpProvider = { triggerCharacters = { "(" } },
+        completionProvider = {},
+      },
+    },
+    ["textDocument/hover"] = {
+      contents = { kind = "markdown", value = "```lua\nfunction greet(name: string)\n```\nSays hello." },
+    },
+    ["textDocument/signatureHelp"] = {
+      signatures = { { label = "greet(name: string)", parameters = { { label = "name: string" } } } },
+      activeSignature = 0,
+      activeParameter = 0,
+    },
+    ["textDocument/completion"] = {
+      isIncomplete = false,
+      items = { { label = "greeting", kind = 6, documentation = { kind = "markdown", value = "A **greeting**." } } },
+    },
+  }
+  lsp_progress = function(kind, title)
+    dispatchers.notification("$/progress", { token = "sweep", value = { kind = kind, title = title, percentage = 40 } })
+  end
+  local id = 0
+  return {
+    request = function(method, _, callback)
+      id = id + 1
+      vim.schedule(function()
+        callback(nil, results[method])
+      end)
+      return true, id
+    end,
+    notify = function(method)
+      closing = closing or method == "exit"
+      return true
+    end,
+    is_closing = function()
+      return closing
+    end,
+    terminate = function()
+      closing = true
+    end,
+  }
+end
+
+--- A Lua buffer with the fake language server attached, in the current window.
+local function lsp_buffer()
+  vim.cmd.enew({ bang = true })
+  vim.bo.filetype = "lua"
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, { "greet(" })
+  local client = vim.lsp.start({ name = "sweep", cmd = fake_server, root_dir = vim.fn.getcwd() })
+  vim.wait(3000, function()
+    return client ~= nil and vim.lsp.get_client_by_id(client).initialized
+  end, 20)
+  vim.api.nvim_win_set_cursor(0, { 1, 1 })
+end
+
+-- The rest of the floats the config shows, each opened as a user would, in turn.
+local floats = {
+  {
+    name = "notifications at every level",
+    open = function()
+      for _, level in ipairs({ "TRACE", "DEBUG", "INFO", "WARN", "ERROR" }) do
+        vim.notify("sweep " .. level, vim.log.levels[level])
+      end
+    end,
+    ready = function()
+      return window_showing("sweep TRACE") and window_showing("sweep ERROR")
+    end,
+    close = function()
+      Snacks.notifier.hide()
+    end,
+  },
+  {
+    name = "the notification history",
+    open = function()
+      Snacks.notifier.show_history()
+    end,
+    ready = function()
+      return window_of("snacks_notif_history")
+    end,
+  },
+  {
+    name = "LSP hover",
+    open = function()
+      lsp_buffer()
+      vim.lsp.buf.hover()
+    end,
+    ready = function()
+      return window_showing("Says hello")
+    end,
+  },
+  {
+    name = "signature help",
+    open = function()
+      lsp_buffer()
+      vim.lsp.buf.signature_help()
+    end,
+    ready = function()
+      return window_showing("greet(name: string)")
+    end,
+  },
+  {
+    name = "LSP progress",
+    open = function()
+      lsp_buffer()
+      lsp_progress("begin", "Sweeping")
+    end,
+    ready = function()
+      return window_showing("Sweeping")
+    end,
+    close = function()
+      lsp_progress("end", "Sweeping")
+      close_windows()
+    end,
+  },
+  {
+    name = "the confirm dialog",
+    open = function()
+      vim.fn.confirm("Sweep?", "&Yes\n&No")
+    end,
+    ready = function()
+      return window_showing("Sweep?")
+    end,
+    close = function()
+      vim.api.nvim_input("<Esc>")
+    end,
+  },
+  {
+    name = "the last message in a popup",
+    open = function()
+      vim.cmd.echomsg('"sweep message"')
+      vim.cmd("Noice last")
+    end,
+    ready = function()
+      return window_showing("sweep message")
+    end,
+  },
+  {
+    name = "a long message, in a split",
+    open = function()
+      vim.cmd.echo(vim.fn.string(("sweep line\n"):rep(25)))
+    end,
+    ready = function()
+      return window_showing("sweep line")
+    end,
+  },
+  {
+    name = "which-key",
+    open = function()
+      require("which-key").show({ keys = "<leader>" })
+    end,
+    ready = function()
+      return window_of("wk")
+    end,
+    close = function()
+      vim.api.nvim_input("<Esc>")
+      close_windows()
+    end,
+  },
+  {
+    name = "Lazy",
+    open = function()
+      vim.cmd("Lazy")
+    end,
+    ready = function()
+      return window_of("lazy")
+    end,
+  },
+  {
+    name = "Mason",
+    open = function()
+      vim.cmd("Mason")
+    end,
+    ready = function()
+      return window_of("mason")
+    end,
+  },
+  {
+    name = "the picker",
+    open = function()
+      Snacks.picker.files({ cwd = vim.fn.stdpath("config") })
+    end,
+    ready = function()
+      local picker = Snacks.picker.get({ source = "files" })[1]
+      return picker and #picker:items() > 0 and window_of("snacks_picker_list")
+    end,
+    close = function()
+      for _, picker in ipairs(Snacks.picker.get({ source = "files" })) do
+        picker:close()
+      end
+    end,
+  },
+  {
+    name = "Snacks' input",
+    open = function()
+      Snacks.input({ prompt = "Sweep" }, function() end)
+    end,
+    ready = function()
+      return window_of("snacks_input")
+    end,
+    close = function()
+      vim.cmd.stopinsert()
+      close_windows()
+    end,
+  },
+  {
+    name = "the Explorer",
+    open = function()
+      h.focus_explorer()
+    end,
+    ready = function()
+      return window_of("neo-tree")
+    end,
+    close = function()
+      vim.cmd("Neotree close")
+    end,
+  },
+  {
+    name = "the Terminal manager",
+    open = function()
+      require("terminal").toggle()
+    end,
+    ready = function()
+      return require("terminal").shown()
+    end,
+    close = function()
+      require("terminal").toggle()
+      vim.cmd.stopinsert()
+    end,
+  },
+  {
+    name = "the Buffer list",
+    open = function()
+      require("column_order").pick("split")
+    end,
+    ready = function()
+      return window_of("buffersticks") and BufferSticks.is_visible()
+    end,
+    close = function()
+      vim.api.nvim_input("<Esc>")
+    end,
+  },
+  {
+    name = "a Habit tip",
+    open = function()
+      local cmd = next(require("tobira.i18n").load().suggestions)
+      require("tobira.ui.float").show({ cmd = cmd, category = "motion" }, false)
+    end,
+    ready = function()
+      return require("tobira.ui.float").is_open()
+    end,
+    close = function()
+      require("tobira.ui.float").close()
+    end,
+  },
+  {
+    name = "the Habit tips' guide, progress and stats",
+    open = function()
+      require("tobira.ui.guide").open()
+    end,
+    ready = function()
+      return require("tobira.ui.guide").is_open()
+    end,
+  },
+  {
+    name = "the cheat sheet",
+    open = function()
+      h.feed("<leader>sK", "mx")
+    end,
+    ready = function()
+      return #vim.tbl_filter(function(win)
+        return vim.api.nvim_win_get_config(win).relative ~= ""
+          and vim.bo[vim.api.nvim_win_get_buf(win)].filetype ~= "buffersticks"
+      end, vim.api.nvim_list_wins()) > 0
+    end,
+  },
+  {
+    name = "the Runner",
+    open = function()
+      local file = vim.fn.tempname() .. ".py"
+      vim.fn.writefile({ "print('sweep run')" }, file)
+      vim.cmd.edit(file)
+      require("runner").run()
+    end,
+    ready = function()
+      return window_showing("sweep run")
+    end,
+    close = function()
+      vim.cmd.stopinsert()
+      close_windows()
+    end,
+  },
+}
+
+-- blink's menu shows while typing, so it's typed rather than opened.
+h.test(theme .. ": blink's menu and docs draw nothing on a background", function()
+  lsp_buffer()
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, { "" })
+  local solid
+  h.drive("i", {
+    "gre",
+    function()
+      if not (window_of("blink-cmp-menu") and window_of("blink-cmp-documentation")) then
+        return false
+      end
+      solid = solid_in_windows()
+    end,
+  })
+  close_windows()
+  h.eq(0, #solid, "groups with a background:\n" .. table.concat(solid, "\n"))
+end)
+
+for _, float in ipairs(floats) do
+  h.test(theme .. ": " .. float.name .. " draw nothing on a background", function()
+    local solid = sweep(float.open, float.ready, float.close)
     h.eq(0, #solid, "groups with a background:\n" .. table.concat(solid, "\n"))
   end)
 end
@@ -155,15 +596,18 @@ end
 --- Whether `group` is set by a plugin's own doing, which a theme change doesn't
 --- redo: the cursors, which modes.nvim colours in each mode (themes link
 --- CursorIM, lCursor, noice's and hop's to Cursor), which-key's icons, linked to
---- mini.icons' colours only as which-key loads, and lualine's groups for modes
---- other than normal, brought up to date only when that mode shows.
+--- mini.icons' colours only as which-key loads, lualine's groups but its
+--- sections' in normal mode (a mode's, or a component's, are brought up to date
+--- only when they're drawn), and Vim's syntax files' (pythonBoolean), which
+--- treesitter's highlighting replaces.
 ---@param group string
 ---@return boolean
 local function plugin_set(group)
   return group == "CursorIM"
     or group:match("Cursor$") ~= nil
     or group:match("^WhichKeyIcon") ~= nil
-    or (group:match("^lualine_") ~= nil and not group:match("_normal$"))
+    or (group:match("^lualine_") ~= nil and not group:match("^lualine_%a_normal$"))
+    or group:match("^%l") ~= nil
 end
 
 h.test(theme .. ": with every plugin loaded, it looks as when the theme is applied again", function()

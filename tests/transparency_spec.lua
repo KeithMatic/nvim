@@ -128,6 +128,9 @@ local transparent = {
   "StatusLineTerm",
   "StatusLineTermNC",
   "MsgSeparator",
+  -- error and warning messages, which noice and the notifier draw in floats
+  "ErrorMsg",
+  "WarningMsg",
 }
 
 -- What's drawn on the first frame after a theme change, before the event loop

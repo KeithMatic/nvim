@@ -299,6 +299,11 @@ local transparency = {
     "StatusLineTerm",
     "StatusLineTermNC",
     "MsgSeparator",
+    -- Error and warning messages (and error notifications, Mason's warnings),
+    -- which noice and the notifier draw in floats: some themes (nord, oasis,
+    -- onedark) give them a block.
+    "ErrorMsg",
+    "WarningMsg",
   },
   prefixes = {
     "BlinkCmp",
@@ -307,6 +312,7 @@ local transparency = {
     "NeoTree",
     "NoiceCmdline",
     "NoiceConfirm",
+    "NoiceFormatLevel", -- a message's level: linked to an In-text block, flattened by the Mix
     "NoiceLspProgress",
     "NoiceMini",
     "NoicePopup",
