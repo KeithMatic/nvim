@@ -511,6 +511,10 @@ config, data, state and cache), so a test run never touches my real Neovim state
 plugins. The first run, and any run after `lazy-lock.json` changes, installs plugins at their locked
 versions plus LazyVim's Mason tools and Treesitter parsers into the sandbox.
 
+`mix_spec` and `theme_spec` read `tests/theme/themes.lua` in place of `lua/config/themes.lua` (no
+themes added, the default Mix), so adding themes or changing the Mix doesn't break them.
+`transparency_spec` checks every theme added there, and `boot_spec` that the Mix names real ones.
+
 A run ends with a recap of every failure, so `tests/run.sh | tail` is enough to read one. The whole run is saved to `.tests/last.log`, and each spec's Neovim messages to `.tests/messages/<spec>.log`.
 
 CI (`.github/workflows/tests.yml`) runs `stylua --check lua tests` and then the full suite on macOS, on every pull request and every push to main.

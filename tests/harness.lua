@@ -271,6 +271,19 @@ end
 
 local spec = assert(vim.env.TEST_SPEC, "TEST_SPEC not set")
 package.path = vim.fs.dirname(spec) .. "/?.lua;" .. package.path
+
+-- These specs read tests/theme/themes.lua in place of lua/config/themes.lua, so
+-- the themes added there and its Mix don't change what they expect. Set in the
+-- environment, it reaches the second Neovim they boot too.
+local fixed_themes = { "mix_spec.lua", "theme_spec.lua" }
+if vim.list_contains(fixed_themes, vim.fs.basename(spec)) then
+  vim.env.TEST_THEMES = vim.fs.dirname(spec) .. "/theme/themes.lua"
+end
+if vim.env.TEST_THEMES then
+  package.preload["config.themes"] = function()
+    return dofile(vim.env.TEST_THEMES)
+  end
+end
 package.loaded.harness = M
 vim.api.nvim_create_autocmd("VimEnter", {
   once = true,

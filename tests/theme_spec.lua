@@ -1,6 +1,6 @@
 local h = require("harness")
 
--- The built-in themes and the Mix (`converge`); no themes are added by default.
+-- The built-in themes and the Mix (`converge`): tests/theme/themes.lua adds none.
 local curated = {
   "catppuccin-frappe",
   "catppuccin-macchiato",

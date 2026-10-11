@@ -269,10 +269,6 @@ h.test("the Mix's label counts its overrides", function()
   )
 end)
 
-h.test("the configured Mix names only Curated themes and overrides nothing the config sets", function()
-  h.eq({}, require("mix").problems())
-end)
-
 h.test("a Mix naming a theme that isn't a Curated theme is reported, and falls back", function()
   local mix = require("mix")
   local bad = { ui = "no-such-ui", syntax = "no-such-syntax" }
