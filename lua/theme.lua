@@ -16,7 +16,7 @@
 --      picker and the theme applied at startup aren't saved),
 --   7. clears the background of whatever the themes' native transparency
 --      options leave solid (all of it, on an added theme), so the terminal's
---      glass shows through: at once, so no frame shows the theme's background,
+--      glass shows through: at once, so no redraw shows the theme's background,
 --      and again once plugins have redefined theirs,
 --   8. makes the line diagnostics and the Breadcrumbs italic, and applies the
 --      Extra italics (lua/theme_italics.lua).

@@ -133,7 +133,7 @@ local transparent = {
   "WarningMsg",
 }
 
--- What's drawn on the first frame after a theme change, before the event loop
+-- What's drawn on the first redraw after a theme change, before the event loop
 -- runs anything scheduled: no theme's background may show there.
 local first_frame = {
   "Normal",
@@ -168,7 +168,7 @@ local chips = {
 for _, theme in ipairs(themes) do
   local background = backgrounds[theme]
 
-  h.test(theme .. ": the first frame after the change shows no background (no flash)", function()
+  h.test(theme .. ": the first redraw after the change shows no background (no flash)", function()
     h.apply_theme("default")
     vim.cmd.colorscheme(theme)
     local solid_groups = {}

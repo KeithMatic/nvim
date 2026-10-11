@@ -32,7 +32,7 @@ end
 --- Every defined highlight group, links followed: what each one draws with.
 --- Not `default`, which changes nothing drawn.
 ---@return table<string, table>
-local function look()
+local function all_highlights()
   local groups = {}
   for name in pairs(vim.api.nvim_get_hl(0, {})) do
     local hl = resolved(name)
@@ -51,7 +51,7 @@ h.test(theme .. ": the statusline has no background after a fresh start", functi
   local solid = {}
   for _, part in ipairs(drawn.highlights) do
     for _, group in ipairs(part.groups or { part.group }) do
-      local bg = vim.api.nvim_get_hl(0, { name = group, link = false }).bg
+      local bg = resolved(group).bg
       if bg and not vim.list_contains(solid, group) then
         table.insert(solid, ("%s (#%06x)"):format(group, bg))
       end
@@ -84,10 +84,11 @@ local accents = {
   "PickWin",
   "NoiceFormatConfirm",
   "NoiceFormatProgress",
-  "Button",
+  "LazyButton",
   "LazyH1",
   "MasonHeader",
-  "Block",
+  "MasonHighlightBlock",
+  "MasonMutedBlock",
 }
 
 ---@param group string
@@ -134,8 +135,14 @@ local function solid_in_windows()
     local buf = vim.api.nvim_win_get_buf(win)
     for _, mark in ipairs(vim.api.nvim_buf_get_extmarks(buf, -1, 0, -1, { details = true })) do
       local details = mark[4]
-      check(win, details.hl_group)
-      for _, chunk in ipairs(details.virt_text or {}) do
+      for _, key in ipairs({ "hl_group", "line_hl_group", "sign_hl_group", "number_hl_group" }) do
+        check(win, details[key])
+      end
+      local chunks = vim.deepcopy(details.virt_text or {})
+      for _, line in ipairs(details.virt_lines or {}) do
+        vim.list_extend(chunks, line)
+      end
+      for _, chunk in ipairs(chunks) do
         for _, group in ipairs(type(chunk[2]) == "table" and chunk[2] or { chunk[2] }) do
           check(win, group)
         end
@@ -183,6 +190,7 @@ for _, format in ipairs(cmdline_formats) do
         solid = solid_in_windows()
       end,
     })
+    assert(solid, "the cmdline never showed")
     h.eq(0, #solid, "groups with a background:\n" .. table.concat(solid, "\n"))
   end)
 end
@@ -212,14 +220,19 @@ local function window_of(filetype)
   return false
 end
 
+--- The open floats but the Buffer sticks', which are always there.
+---@return integer[]
+local function floats_open()
+  return vim.tbl_filter(function(win)
+    return vim.api.nvim_win_get_config(win).relative ~= ""
+      and vim.bo[vim.api.nvim_win_get_buf(win)].filetype ~= "buffersticks"
+  end, vim.api.nvim_list_wins())
+end
+
 --- Close every float but the Buffer sticks', and every split but the first.
 local function close_windows()
-  for _, win in ipairs(vim.api.nvim_list_wins()) do
-    local float = vim.api.nvim_win_get_config(win).relative ~= ""
-    local sticks = vim.bo[vim.api.nvim_win_get_buf(win)].filetype == "buffersticks"
-    if vim.api.nvim_win_is_valid(win) and (float and not sticks) then
-      pcall(vim.api.nvim_win_close, win, true)
-    end
+  for _, win in ipairs(floats_open()) do
+    pcall(vim.api.nvim_win_close, win, true)
   end
   h.close_splits()
 end
@@ -544,10 +557,7 @@ local floats = {
       h.feed("<leader>sK", "mx")
     end,
     ready = function()
-      return #vim.tbl_filter(function(win)
-        return vim.api.nvim_win_get_config(win).relative ~= ""
-          and vim.bo[vim.api.nvim_win_get_buf(win)].filetype ~= "buffersticks"
-      end, vim.api.nvim_list_wins()) > 0
+      return #floats_open() > 0
     end,
   },
   {
@@ -583,6 +593,7 @@ h.test(theme .. ": blink's menu and docs draw nothing on a background", function
     end,
   })
   close_windows()
+  assert(solid, "blink's menu and docs never showed")
   h.eq(0, #solid, "groups with a background:\n" .. table.concat(solid, "\n"))
 end)
 
@@ -593,8 +604,8 @@ for _, float in ipairs(floats) do
   end)
 end
 
---- Whether `group` is set by a plugin's own doing, which a theme change doesn't
---- redo: the cursors, which modes.nvim colours in each mode (themes link
+--- Whether the comparison leaves `group` out: groups set by something other
+--- than the theme, which a theme change doesn't redo: the cursors, which modes.nvim colours in each mode (themes link
 --- CursorIM, lCursor, noice's and hop's to Cursor), which-key's icons, linked to
 --- mini.icons' colours only as which-key loads, lualine's groups but its
 --- sections' in normal mode (a mode's, or a component's, are brought up to date
@@ -602,7 +613,7 @@ end
 --- treesitter's highlighting replaces.
 ---@param group string
 ---@return boolean
-local function plugin_set(group)
+local function not_compared(group)
   return group == "CursorIM"
     or group:match("Cursor$") ~= nil
     or group:match("^WhichKeyIcon") ~= nil
@@ -621,16 +632,16 @@ h.test(theme .. ": with every plugin loaded, it looks as when the theme is appli
   vim.wait(200, function()
     return false
   end)
-  local startup = look()
+  local startup = all_highlights()
   h.apply_theme(theme)
-  local again = look()
+  local again = all_highlights()
 
   -- Groups only one side defines are the plugin's doing, not the look's: some
   -- define theirs on first use (blink), some don't define them again after a
   -- theme change (aerial, lspsaga, crates).
   local differ = {}
   for name in pairs(again) do
-    if startup[name] and not plugin_set(name) and not vim.deep_equal(startup[name], again[name]) then
+    if startup[name] and not not_compared(name) and not vim.deep_equal(startup[name], again[name]) then
       table.insert(
         differ,
         ("%s: %s, applied again %s"):format(

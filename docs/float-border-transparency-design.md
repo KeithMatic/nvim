@@ -11,21 +11,33 @@ fresh start matches a theme change.
 
 ## Terms
 
-**Frame**: A float's border, title, footer and the icon in its prompt (noice's cmdline icon): what
-surrounds a float's text.
-_Avoid_: chrome, decoration, border items
+These follow the glossary in `CONTEXT.md`.
 
-**Late plugin**: A plugin loaded after the startup theme is applied, so it defines its highlight
-groups after Transparency ran. Examples: lualine and noice at VeryLazy, Snacks' notifier on the
-first notification, blink on the first insert, neo-tree on first use.
-_Avoid_: lazy plugin, deferred plugin
-
-**Float sweep**: A test that opens every float the config shows, on every Curated theme. It checks
-that nothing the float draws has a background, except the accents that keep one.
-_Avoid_: float audit, popup test
-
-Existing terms used here, from `CONTEXT.md`: **Transparency**, **Curated themes**, **Added theme**,
-**Baseline**, **Tint**, **In-text blocks**, **Theme italics** / **Extra italics**.
+- **Frame**: a float's border, title, footer and prompt, with the prompt's icon (noice's cmdline
+  icon): what surrounds a float's text, shown in its colour only, even when a theme or plugin links
+  it to a group with a background. _Avoid_: chrome, decoration, border items.
+- **Late plugin**: a plugin loaded after the startup theme (lualine and noice at VeryLazy, the
+  notifier on the first notification, blink on the first insert), which defines its highlights then
+  and is restyled as it loads, so a fresh start looks as applying the theme does. _Avoid_: lazy
+  plugin, deferred plugin.
+- **Float sweep**: the test that opens every float the config shows after a fresh start, on every
+  Curated theme, and checks nothing it draws has a background but the accents that keep one (the
+  selected item, the cursor, search matches, scrollbar thumbs, confirm buttons, progress bars, the
+  picker's window labels). _Avoid_: float audit, popup test.
+- **Transparency**: panel and float backgrounds cleared so the terminal's glass shows through,
+  whatever the theme, a float's Frame included; also the In-text blocks, which keep only their
+  colour. _Avoid_: glass, no-background.
+- **Curated themes**: the dark themes the theme picker offers: some built in, any others added by
+  naming their plugin (every dark theme it ships), and the Mix. _Avoid_: colorschemes, theme list.
+- **Added theme**: a Curated theme from a plugin named in the config rather than built in.
+  _Avoid_: extra theme, installed theme.
+- **Baseline**: what Transparency leaves solid on tokyonight-moon: the accents (folds, the colour
+  column, the quickfix line, the wildmenu, the completion scrollbar, float shadows), which every
+  theme keeps solid too. _Avoid_: reference theme, default look.
+- **Tint**: the colour faded over the theme's background that marks "where am I" lines.
+  _Avoid_: cursorline colour, highlight.
+- **In-text blocks**: highlights drawn inside the text as a solid block (line diagnostics, inlay
+  hints, Markdown heading bars and code). _Avoid_: chips.
 
 ## Why
 
@@ -237,3 +249,13 @@ None.
   drawn), and Vim's syntax files' groups (lowercase names), which treesitter replaces.
 - **The Runner's window is a split, not a float**, so the sweep checks every window, splits
   included (noice's split for long messages too).
+- **What the review changed, and what it left:**
+  - The Float sweep's accents are named exactly (Mason's and Lazy's blocks and buttons by name), not
+    by "Block" or "Button" anywhere in a name.
+  - The sweep also checks a window's line, sign and number highlights and its virtual lines.
+  - Q3's lualine refresh turned out unneeded: lualine rebuilds its theme on its own ColorScheme
+    hook and when it sets up, and the statusline check passes on every theme without it.
+  - The restyle for Late plugins has no reading guard: converge's reads run synchronously, so the
+    restyle, a tick later, never runs during one.
+  - The test keeps its own accent list and link walk rather than reading `lua/theme.lua`'s, so it
+    stays an independent check of what's drawn.
