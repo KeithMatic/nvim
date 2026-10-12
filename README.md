@@ -138,7 +138,7 @@ any prefix.
 | --- | --- |
 | `<leader>sK` ★ | Cheat sheet: this README in a float |
 | `<leader><Space>` | Find files (root dir) |
-| `<leader>/` ★ | Toggle comment (line, or the selection) |
+| `<leader>/` ★ | Toggle a comment on the line (normal) or the selection (visual) |
 | `<leader>,` | Buffers |
 | `<leader>:` | Command history |
 | `<leader>.` / `<leader>S` | Scratch buffer / select scratch buffer |
@@ -333,7 +333,7 @@ any prefix.
 | `<leader>Da` ★ | Add a connection |
 | `<leader>Ds` ★ | New scratchpad |
 | `<leader>Dc` ★ | Cancel the running query |
-| `<leader>Dr` ★ | Run the statement (or the selection) — SQL files |
+| `<leader>Dr` ★ | Run the statement (normal) or the selection (visual) — SQL files |
 | `<leader>De` ★ | Run the whole file — SQL files |
 | `<leader>Db` ★ | Switch the buffer's database — SQL files |
 | `?` | Show the drawer's and results' keys (inside them) |

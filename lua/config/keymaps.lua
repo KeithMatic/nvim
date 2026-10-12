@@ -36,33 +36,55 @@ local function in_file(keys, own)
   end
 end
 
+--- Shrink the run of spaces (or tabs) under the cursor to one space; on
+--- anything else, do nothing.
+local function shrink_spaces()
+  local row, col = unpack(vim.api.nvim_win_get_cursor(0))
+  local line = vim.api.nvim_get_current_line()
+  local from, to = col + 1, col + 1
+  if not line:sub(from, from):match("%s") then
+    return
+  end
+  while from > 1 and line:sub(from - 1, from - 1):match("%s") do
+    from = from - 1
+  end
+  while to < #line and line:sub(to + 1, to + 1):match("%s") do
+    to = to + 1
+  end
+  vim.api.nvim_buf_set_text(0, row - 1, from - 1, row - 1, to, { " " })
+  vim.api.nvim_win_set_cursor(0, { row, from - 1 })
+end
+
 -- The Terminal manager (lua/terminal.lua) takes over LazyVim's Snacks terminal keys.
 local terminal = require("terminal")
+-- <C-/> shows or hides it from Normal and Terminal mode; terminals send <C-_>.
+local toggle_terminal = { terminal.toggle, desc = "Toggle Terminal Manager" }
+local toggle_terminal_alias = { terminal.toggle, desc = "which_key_ignore" }
 
 set_keymaps({
   n = {
     -- AstroNvim's shortcuts use Celeste's gc/gcc; project search remains on <leader>sg.
-    ["<leader>/"] = { "gcc", remap = true, desc = "Toggle comment line" },
+    ["<leader>/"] = { "gcc", remap = true, desc = "Toggle Comment Line" },
     -- Re-assert Celeste's insertion helpers after LazyVim's built-in aliases load.
-    ["gco"] = { '<Cmd>lua require("celeste_comment").H.insert_comment("below")<CR>', desc = "Add comment below" },
-    ["gcO"] = { '<Cmd>lua require("celeste_comment").H.insert_comment("above")<CR>', desc = "Add comment above" },
+    ["gco"] = { '<Cmd>lua require("celeste_comment").H.insert_comment("below")<CR>', desc = "Add Comment Below" },
+    ["gcO"] = { '<Cmd>lua require("celeste_comment").H.insert_comment("above")<CR>', desc = "Add Comment Above" },
 
     -- The code runner (:RunFile, set up in autocmds.lua). <leader>cx is free in LazyVim's "code" group.
     ["<leader>cx"] = { "<Cmd>RunFile<CR>", desc = "Run File" },
 
-    ["<C-/>"] = { terminal.toggle, desc = "Terminal Manager" },
-    ["<C-_>"] = { terminal.toggle, desc = "which_key_ignore" },
+    ["<C-/>"] = toggle_terminal,
+    ["<C-_>"] = toggle_terminal_alias,
     ["<leader>ft"] = {
       function()
         terminal.new_at(LazyVim.root())
       end,
-      desc = "Terminal (Root Dir)",
+      desc = "Open Terminal (Root Dir)",
     },
     ["<leader>fT"] = {
       function()
         terminal.new_at(vim.fn.expand("%:p:h"))
       end,
-      desc = "Terminal (File Dir)",
+      desc = "Open Terminal (File Dir)",
     },
 
     -- The cheat sheet: every keymap and feature (the README), from anywhere.
@@ -71,7 +93,7 @@ set_keymaps({
       function()
         require("cheat_sheet").open()
       end,
-      desc = "Keymaps & Features",
+      desc = "Open Keymaps & Features",
     },
 
     -- mini.files on the current file, as <leader>fm; the cwd for a buffer with no file.
@@ -89,8 +111,7 @@ set_keymaps({
     -- The enclosing { } block, linewise. Bare Y now waits timeoutlen.
     ["YY"] = { "va{Vy", desc = "Yank Brace Block" },
     ["U"] = { "<Cmd>redo<CR>", desc = "Redo" },
-    -- Shrinks a run of spaces under the cursor to one.
-    ["d."] = { "viwhd", desc = "Delete Extra Space" },
+    ["d."] = { shrink_spaces, desc = "Delete Extra Space" },
 
     ["<CR>"] = { in_file("ciw", "<CR>"), expr = true, desc = "Change Word" },
     ["<BS>"] = { in_file("ci", "<BS>"), expr = true, desc = "Change Inside" },
@@ -112,8 +133,8 @@ set_keymaps({
   },
 
   t = {
-    ["<C-/>"] = { terminal.toggle, desc = "Terminal Manager" },
-    ["<C-_>"] = { terminal.toggle, desc = "which_key_ignore" },
+    ["<C-/>"] = toggle_terminal,
+    ["<C-_>"] = toggle_terminal_alias,
   },
 
   i = {
@@ -123,13 +144,15 @@ set_keymaps({
     ["<M-h>"] = { "<C-d>", desc = "Outdent Line" },
     ["<M-l>"] = { "<C-t>", desc = "Indent Line" },
     -- blink.cmp's <C-e> hides an open menu first and falls back to this.
-    ["<C-a>"] = { "<Esc>^i", desc = "Go to Line Start" },
+    -- <Cmd>, not <Esc>: leaving Insert mode would save (autosave), split the
+    -- undo step and drop an autoindent.
+    ["<C-a>"] = { "<Cmd>normal! ^<CR>", desc = "Go to Line Start" },
     ["<C-e>"] = { "<End>", desc = "Go to Line End" },
   },
 
   -- Visual only, not Select: r typed over a snippet placeholder stays r.
   x = {
-    ["<leader>/"] = { "gc", remap = true, desc = "Toggle comment" },
+    ["<leader>/"] = { "gc", remap = true, desc = "Toggle Comment" },
     -- :%s/…//g prefilled with the selection, matched literally (\V); the cursor
     -- waits in the replacement.
     ["r"] = {

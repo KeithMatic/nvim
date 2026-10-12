@@ -24,7 +24,11 @@ vim.keymap.set = function(mode, lhs, rhs, opts)
   local caller = debug.getinfo(2, "S") -- nil when called straight from C
   local source = caller and caller.source:gsub("^@", "") or ""
   if vim.startswith(source, config_lua) then
-    table.insert(M.config_keymaps, { lhs = lhs, desc = opts and opts.desc, file = source:sub(#config_lua + 1) })
+    local modes = type(mode) == "table" and mode or { mode }
+    table.insert(
+      M.config_keymaps,
+      { lhs = lhs, desc = opts and opts.desc, file = source:sub(#config_lua + 1), modes = modes }
+    )
   end
   return orig_keymap_set(mode, lhs, rhs, opts)
 end
