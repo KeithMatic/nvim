@@ -15,6 +15,20 @@ vim.notify = function(msg, level, opts)
   return orig_notify(msg, level, opts)
 end
 
+-- Every vim.keymap.set call made from this config's Lua files, for
+-- readme_spec: a mapping whose rhs is a string keeps no record of its source.
+M.config_keymaps = {}
+local config_lua = vim.fn.stdpath("config") .. "/lua/"
+local orig_keymap_set = vim.keymap.set
+vim.keymap.set = function(mode, lhs, rhs, opts)
+  local caller = debug.getinfo(2, "S") -- nil when called straight from C
+  local source = caller and caller.source:gsub("^@", "") or ""
+  if vim.startswith(source, config_lua) then
+    table.insert(M.config_keymaps, { lhs = lhs, desc = opts and opts.desc, file = source:sub(#config_lua + 1) })
+  end
+  return orig_keymap_set(mode, lhs, rhs, opts)
+end
+
 ---@param name string
 ---@param fn fun()
 function M.test(name, fn)
@@ -47,6 +61,19 @@ function M.focus_explorer()
   return vim.wait(5000, function()
     return vim.bo.filetype == "neo-tree" and vim.api.nvim_get_current_line() ~= ""
   end, 50)
+end
+
+--- Close every split but the current window, leaving floats open.
+--- Not :only, which also closes floats and fails (E445) whenever a float's
+--- WinClosed closes the window it would close next: noice's message popup
+--- closes its border, ending :only's pass before the Buffer sticks' float.
+function M.close_splits()
+  local current = vim.api.nvim_get_current_win()
+  for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+    if win ~= current and vim.api.nvim_win_is_valid(win) and vim.api.nvim_win_get_config(win).relative == "" then
+      vim.api.nvim_win_close(win, false)
+    end
+  end
 end
 
 --- Open a fresh, empty file with extension `ext`, so filetype and

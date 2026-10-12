@@ -77,5 +77,9 @@ h.test("hints keep their highlight after being hidden and switching theme", func
   press_toggle()
   press_toggle()
   h.apply_theme("catppuccin-mocha")
-  h.eq(false, vim.tbl_isempty(vim.api.nvim_get_hl(0, { name = "PrecognitionHighlight" })), "PrecognitionHighlight defined")
+  h.eq(
+    false,
+    vim.tbl_isempty(vim.api.nvim_get_hl(0, { name = "PrecognitionHighlight" })),
+    "PrecognitionHighlight defined"
+  )
 end)

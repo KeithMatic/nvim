@@ -214,3 +214,17 @@ _Avoid_: tabs, drawer
 **Hide**:
 Closing the **Terminal manager**'s windows while every terminal keeps running, to show again as it was.
 _Avoid_: close (volt's close forgets the terminals), minimise
+
+### Keys
+
+**Ported key**:
+A key brought over from the old AstroNvim `mappings.lua` into `lua/config/keymaps.lua`.
+_Avoid_: new key, Astro key
+
+**Clash**:
+Two definitions of the same key in the same mode, where the one set later silently shadows the other.
+_Avoid_: conflict, collision
+
+**Prefix delay**:
+The `timeoutlen` pause a key gains when it becomes the start of a longer mapping (`Y` waits once `YY` exists).
+_Avoid_: lag, timeout

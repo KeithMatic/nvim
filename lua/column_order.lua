@@ -115,7 +115,10 @@ function M.close(which)
     return
   end
   for i, b in ipairs(list) do
-    local side = which == "left" and i < here or which == "right" and i > here or which == "others" or which == "unpinned"
+    local side = which == "left" and i < here
+      or which == "right" and i > here
+      or which == "others"
+      or which == "unpinned"
     if side and b.id ~= cur and not pinned[b.id] then
       Snacks.bufdelete(b.id)
     end

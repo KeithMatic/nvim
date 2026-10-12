@@ -3,3 +3,6 @@
 
 # Neovim's runtime log, written to on every session
 nvim.log
+
+# macOS Finder metadata
+.DS_Store

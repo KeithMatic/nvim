@@ -29,7 +29,8 @@ h.test("every language extra shows as enabled, from config rather than the extra
   end
 end)
 
-h.test("claudecode is the only AI extra", function()
+-- claudecode is chat in a terminal, not completion, so nothing competes for <Tab>.
+h.test("claudecode is the only AI extra enabled", function()
   local enabled = {}
   for _, extra in ipairs(LazyVim.extras.get()) do
     if extra.enabled and extra.name:match("^ai%.") then

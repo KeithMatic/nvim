@@ -59,7 +59,8 @@ end)
 
 h.test("sqmeow's scratchpad keys stay out of other buffers", function()
   h.open("lua")
-  h.eq("", vim.fn.maparg("<CR>", "n"), "<CR> in a Lua buffer")
+  -- Only sqmeow's buffer-local <CR>: keymaps.lua has a global one (Change Word).
+  h.eq(false, vim.fn.maparg("<CR>", "n", false, true).buffer == 1, "a buffer-local <CR> in a Lua buffer")
 end)
 
 --- Make `connection` sqmeow's only, current one, as if opened in the drawer.
@@ -143,8 +144,21 @@ end)
 h.test("switching database ties the buffer to it, and can untie it", function()
   local state = require("sqmeow.core.state")
   state.connections = {
-    [97] = { id = 97, name = "PostgreSQL@18", url = "postgres://localhost/", current_database = "postgres", state = "connected" },
-    [98] = { id = 98, name = "PostgreSQL@18/dvdrental", parent = 97, database = "dvdrental", url = "postgres://localhost/", state = "connected" },
+    [97] = {
+      id = 97,
+      name = "PostgreSQL@18",
+      url = "postgres://localhost/",
+      current_database = "postgres",
+      state = "connected",
+    },
+    [98] = {
+      id = 98,
+      name = "PostgreSQL@18/dvdrental",
+      parent = 97,
+      database = "dvdrental",
+      url = "postgres://localhost/",
+      state = "connected",
+    },
   }
   state.current = 97
   h.open("sql")
@@ -209,7 +223,7 @@ end
 local function close_database()
   require("sqmeow.ui.drawer").close()
   require("sqmeow.ui.result").close()
-  vim.cmd.only({ bang = true })
+  h.close_splits()
 end
 
 h.test("<leader>0 jumps to the Database drawer and back", function()

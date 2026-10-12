@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Run the full suite before a push: about ten minutes. It tests the working
+# tree, so stash anything uncommitted first. Skip with `git push --no-verify`.
+set -euo pipefail
+
+echo "pre-push: running the full suite (git push --no-verify skips it)..."
+# stdin carries the refs being pushed; keep it away from Neovim.
+exec "$(git rev-parse --show-toplevel)/tests/run.sh" </dev/null
