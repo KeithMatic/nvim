@@ -32,15 +32,13 @@ local backgrounds = {
 -- The Added themes (lua/config/themes.lua): every dark one, with its own
 -- editor background as converge's read of it found it. A repo pasted there is
 -- checked here without editing this file.
-local theme_module = require("theme")
-theme_module.detect()
+local curated_themes = require("curated_themes")
+curated_themes.read_added()
 local themes = vim.tbl_keys(backgrounds)
-for _, name in ipairs(theme_module.curated()) do
-  if not vim.list_contains(theme_module.themes, name) and name ~= "converge" then
-    table.insert(themes, name)
-    local normal = require("converge.snapshots").get(name, "dark", { capture = false }).groups.Normal
-    backgrounds[name] = normal and normal.bg and ("#%06x"):format(normal.bg)
-  end
+for _, name in ipairs(curated_themes.added()) do
+  table.insert(themes, name)
+  local normal = require("mix").snapshot(name, "dark").groups.Normal
+  backgrounds[name] = normal and normal.bg and ("#%06x"):format(normal.bg)
 end
 
 --- The background of `group`, following links.

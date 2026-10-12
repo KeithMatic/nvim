@@ -1,5 +1,5 @@
--- Themes: the Curated themes (built in, added in lua/config/themes.lua, and
--- the Mix), persistence, Transparency and the Tint. Every theme change,
+-- Themes: the look of every Curated theme (lua/curated_themes.lua lists them),
+-- persistence, Transparency and the Tint. Every theme change,
 -- however it happens (the picker, `:colorscheme`), goes through one
 -- ColorScheme hook (but for converge's reads of themes, lua/mix.lua), which:
 --   1. records the theme's own editor background (`M.background`; on the Mix,
@@ -22,153 +22,52 @@
 --      Extra italics (lua/theme_italics.lua).
 local M = {}
 
--- The built-in Curated themes: the Theme families'. The picker also offers the
--- dark themes of the plugins added in lua/config/themes.lua, and the Mix
--- (`converge`, lua/mix.lua); see `M.curated`.
-M.themes = {
-  "catppuccin-frappe",
-  "catppuccin-macchiato",
-  "catppuccin-mocha",
-  "tokyonight-night",
-  "tokyonight-storm",
-  "tokyonight-moon",
-}
-
 -- Used when nothing is saved, or the saved theme won't load.
 M.default = "tokyonight-moon"
-
---- Each entry of `added` (lua/config/themes.lua's, by default) as a table:
---- a pasted repo string becomes `{ repo }`. Copies, so callers may change them.
----@param added? (string|table)[]
----@return table[]
-local function as_specs(added)
-  return vim.tbl_map(function(entry)
-    return type(entry) == "string" and { entry } or vim.deepcopy(entry)
-  end, added or require("config.themes").added)
-end
-
---- Each entry of `added` (lua/config/themes.lua's, by default) as a lazy.nvim
---- spec: lazy-loaded, which `:colorscheme` does, with `variants` left out.
----@param added? (string|table)[]
----@return table[]
-function M.added_specs(added)
-  return vim.tbl_map(function(spec)
-    spec.lazy, spec.variants = true, nil
-    return spec
-  end, as_specs(added))
-end
-
---- The themes `added` ships: every one in each plugin's colors/ folder, or
---- those its `variants` names.
----@param added? (string|table)[]
----@return string[]
-local function added_names(added)
-  local names = {}
-  for _, spec in ipairs(as_specs(added)) do
-    local dir = spec.dir and vim.fs.normalize(spec.dir)
-    if not dir then
-      for _, plugin in pairs(require("lazy.core.config").plugins) do
-        if plugin[1] == spec[1] then
-          dir = plugin.dir
-        end
-      end
-    end
-    for _, file in ipairs(dir and vim.fn.glob(dir .. "/colors/*", false, true) or {}) do
-      local name, ext = vim.fn.fnamemodify(file, ":t:r"), vim.fn.fnamemodify(file, ":e")
-      if (ext == "lua" or ext == "vim") and (not spec.variants or vim.list_contains(spec.variants, name)) then
-        table.insert(names, name)
-      end
-    end
-  end
-  return names
-end
 
 --- The red, green and blue of "#rrggbb", 0 to 255 each.
 local function channels(hex)
   return tonumber(hex:sub(2, 3), 16), tonumber(hex:sub(4, 5), 16), tonumber(hex:sub(6, 7), 16)
 end
 
---- Whether converge's read of theme `name` found it dark: nil when it hasn't
---- read it yet, false when it's light or wouldn't load. Light is a light
---- 'background', or a light editor background: some light themes
---- (kanagawa-lotus, onelight) leave 'background' as it was.
----@return boolean?
-local function is_dark(name)
-  local snap = require("converge.snapshots").get(name, "dark", { capture = false })
-  if snap == nil then
-    return nil
-  end
-  if snap == false or snap.background ~= "dark" then
-    return false
-  end
-  local bg = (snap.groups.Normal or {}).bg
-  if not bg then
-    return true
-  end
-  -- Perceived lightness, 0 to 1.
-  local r, g, b = channels(("#%06x"):format(bg))
-  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 < 0.5
-end
-
---- The Curated themes: the built-in ones, the added ones read and found dark,
---- and the Mix.
----@param added? (string|table)[] default: lua/config/themes.lua's
----@return string[]
-function M.curated(added)
-  local list = vim.deepcopy(M.themes)
-  for _, name in ipairs(added_names(added)) do
-    if is_dark(name) then
-      table.insert(list, name)
-    end
-  end
-  table.insert(list, "converge")
-  return list
-end
-
---- Whether `name` is a Curated theme other than the Mix, counting an added one
---- not read yet.
----@param name any
----@param added? (string|table)[] default: lua/config/themes.lua's
----@return boolean
-function M.is_curated(name, added)
-  return vim.list_contains(M.themes, name) or (vim.list_contains(added_names(added), name) and is_dark(name) ~= false)
+--- How light "#rrggbb" looks, from 0 (black) to 1 (white).
+---@param color string
+---@return number
+function M.lightness(color)
+  local r, g, b = channels(color)
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255
 end
 
 -- True while startup applies the saved theme (or a fallback), which is never saved.
 local restoring = false
 
---- Have converge read every added theme it hasn't, to find the light ones.
---- Each read applies its theme for a moment, so the theme and background are
---- put back after, unsaved. Nothing is drawn meanwhile: the reads skip
---- Transparency, so a frame would show each theme's background.
----@param added? (string|table)[] default: lua/config/themes.lua's
-function M.detect(added)
-  local unread = vim.tbl_filter(function(name)
-    return is_dark(name) == nil
-  end, added_names(added))
-  if #unread == 0 then
-    return
-  end
-  local current, background = vim.g.colors_name, vim.o.background
+--- Apply theme `name` without saving it: the theme put back after a Theme read.
+---@param name string
+function M.apply_unsaved(name)
+  restoring = true
+  pcall(vim.cmd.colorscheme, name)
+  restoring = false
+end
+
+--- Run `fn` with nothing redrawn: 'lazyredraw' on, and Lua's `:redraw`
+--- (`vim.cmd.redraw()`, `vim.cmd("redraw")`) doing nothing, all put back after,
+--- errors too. An `nvim_command("redraw")` still draws: nothing stops that.
+---@param fn fun()
+function M.without_redraws(fn)
   -- `vim.cmd` caches each command's function in itself, so putting back what
   -- was there (nil, usually) brings :redraw back.
   local redraw, lazyredraw = rawget(vim.cmd, "redraw"), vim.o.lazyredraw
+  local meta = getmetatable(vim.cmd)
+  local call = meta.__call
   vim.cmd.redraw, vim.o.lazyredraw = function() end, true
-  local ok, err = pcall(function()
-    local snapshots = require("converge.snapshots")
-    for _, name in ipairs(unread) do
-      snapshots.get(name, "dark", { capture = true })
+  meta.__call = function(cmd, command, ...)
+    if type(command) == "string" and command:match("^%s*redr[aw]*!?%s*$") then
+      return
     end
-    -- With no theme named, setting the background reloads none.
-    vim.g.colors_name = nil
-    vim.o.background = background
-    if current then
-      restoring = true
-      pcall(vim.cmd.colorscheme, current)
-      restoring = false
-    end
-  end)
-  vim.cmd.redraw, vim.o.lazyredraw = redraw, lazyredraw
+    return call(cmd, command, ...)
+  end
+  local ok, err = pcall(fn)
+  vim.cmd.redraw, vim.o.lazyredraw, meta.__call = redraw, lazyredraw, call
   if not ok then
     error(err, 0)
   end
@@ -466,7 +365,7 @@ local function groups_of(name)
       return vim.api.nvim_get_hl(0, { name = group, link = false })
     end
   end
-  local snap = require("converge.snapshots").get(name, vim.o.background, { capture = false })
+  local snap = require("mix").snapshot(name, vim.o.background)
   return function(group)
     return snap and snap.groups[group] or {}
   end
@@ -533,12 +432,7 @@ end
 --- The current theme's palette (see `palette_of`). On the Mix, the background
 --- and Mode colours are its UI theme's, the Rainbow brackets its syntax theme's.
 local function theme_palette()
-  local name = vim.g.colors_name or ""
-  local ui, syntax = name, name
-  if name == "converge" then
-    local recipe = require("mix").recipe()
-    ui, syntax = recipe.ui, recipe.syntax
-  end
+  local ui, syntax = require("mix").halves(vim.g.colors_name or "")
   local palette = palette_of(ui)
   palette.rainbow = palette_of(syntax).rainbow
   return palette
@@ -646,7 +540,8 @@ local function on_change(args)
   -- The Mix on a cold cache: converge reads its themes a tick later, then draws
   -- it and fires this again. Nothing is drawn yet, and naming it now would tell
   -- converge another theme was picked meanwhile, so it would never draw.
-  if args.match == "converge" and vim.g.colors_name ~= "converge" then
+  local mix = require("mix").name
+  if args.match == mix and vim.g.colors_name ~= mix then
     return
   end
   -- Name the theme as it was chosen, so it's read, saved and restored as
@@ -798,11 +693,8 @@ function M.with_background(setup)
   vim.api.nvim_create_autocmd("ColorScheme", { group = group, callback = solidify_normal })
   solidify_normal()
   -- No redraws while Normal is solid: modes.nvim's setup redraws, which would
-  -- flash the theme's background over the glass at startup. `vim.cmd` caches
-  -- each command's function in itself, so clearing the stub brings it back.
-  vim.cmd.redraw = function() end
-  local ok, err = pcall(setup)
-  vim.cmd.redraw = nil
+  -- show a Flash of the theme's background over the glass at startup.
+  local ok, err = pcall(M.without_redraws, setup)
   restore_normal()
   if not ok then
     error(err, 0)
@@ -813,15 +705,19 @@ end
 --- A colorscheme picker, with live preview, limited to the Curated themes.
 --- Added themes not read yet are read first, to leave out the light ones.
 function M.pick()
-  M.detect()
-  local curated = M.curated()
+  local themes = require("curated_themes")
+  themes.read_added()
+  local curated, mix = themes.list(), require("mix")
   Snacks.picker.colorschemes({
     transform = function(item)
       return vim.list_contains(curated, item.text)
     end,
     -- The Mix by what's in it; picking it still applies `converge`.
-    format = function(item)
-      return { { item.text == "converge" and require("mix").label() or item.text } }
+    format = function(item, picker)
+      if item.text == mix.name then
+        return { { mix.label() } }
+      end
+      return Snacks.picker.format.text(item, picker)
     end,
   })
 end

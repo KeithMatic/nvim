@@ -64,7 +64,7 @@ return {
     end,
   },
   -- The themes added in lua/config/themes.lua, loaded by `:colorscheme`.
-  require("theme").added_specs(),
+  require("curated_themes").specs(),
   {
     "nvim-lualine/lualine.nvim",
     dependencies = { "meuter/lualine-so-fancy.nvim" }, -- its diff (lua/statusline.lua)

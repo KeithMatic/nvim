@@ -315,9 +315,8 @@ h.test(
     h.with_state(nil, function()
       h.apply_theme("tokyonight-night")
       local added = { { dir = fixture_plugin() } }
-      local theme = require("theme")
-      theme.detect(added)
-      local curated = theme.curated(added)
+      require("curated_themes").read_added(added)
+      local curated = require("curated_themes").list(added)
       h.eq(true, vim.list_contains(curated, "fixture-dark"), "fixture-dark offered")
       h.eq(true, vim.list_contains(curated, "fixture-dim"), "fixture-dim offered")
       h.eq(false, vim.list_contains(curated, "fixture-light"), "fixture-light offered")
@@ -339,9 +338,8 @@ h.test("an added light theme that leaves 'background' dark (kanagawa-lotus) isn'
       'vim.api.nvim_set_hl(0, "Normal", { fg = "#303030", bg = "#f2ecbc" })',
     }, dir .. "/colors/pale-paper.lua")
     local added = { { dir = dir } }
-    local theme = require("theme")
-    theme.detect(added)
-    local curated = theme.curated(added)
+    require("curated_themes").read_added(added)
+    local curated = require("curated_themes").list(added)
     h.eq(false, vim.list_contains(curated, "pale-paper"), "pale-paper offered")
     h.eq(true, vim.list_contains(curated, "pale-dark"), "pale-dark offered")
   end)
@@ -351,21 +349,32 @@ h.test("reading added themes draws no frame, even when a plugin redraws on a the
   h.with_state(nil, function()
     h.apply_theme("tokyonight-night")
     local added = { { dir = fixture_plugin("redraw") } }
+    -- Count both ways Lua asks for one: vim.cmd.redraw() and vim.cmd("redraw").
     local redraws = 0
     vim.cmd.redraw = function()
       redraws = redraws + 1
+    end
+    local meta = getmetatable(vim.cmd)
+    local call = meta.__call
+    meta.__call = function(cmd, command, ...)
+      if command == "redraw" then
+        redraws = redraws + 1
+        return
+      end
+      return call(cmd, command, ...)
     end
     local group = vim.api.nvim_create_augroup("redraw_spec", { clear = true })
     vim.api.nvim_create_autocmd("ColorScheme", {
       group = group,
       callback = function()
         vim.cmd.redraw()
+        vim.cmd("redraw")
       end,
     })
     local lazyredraw = vim.o.lazyredraw
-    local ok, err = pcall(require("theme").detect, added)
+    local ok, err = pcall(require("curated_themes").read_added, added)
     vim.api.nvim_del_augroup_by_id(group)
-    vim.cmd.redraw = nil
+    vim.cmd.redraw, meta.__call = nil, call
     h.eq(true, ok, tostring(err))
     h.eq(0, redraws, "redraws while reading")
     h.eq(lazyredraw, vim.o.lazyredraw, "'lazyredraw' is back")
@@ -385,7 +394,7 @@ h.test("reading added themes puts :redraw and 'lazyredraw' back when a read fail
       return get(name, background, opts)
     end
     local lazyredraw, redraw = vim.o.lazyredraw, rawget(vim.cmd, "redraw")
-    local ok, err = pcall(require("theme").detect, { { dir = fixture_plugin("failing") } })
+    local ok, err = pcall(require("curated_themes").read_added, { { dir = fixture_plugin("failing") } })
     snapshots.get = get
     h.eq(false, ok, "the error is raised")
     h.eq(true, tostring(err):find("read failed", 1, true) ~= nil, tostring(err))
@@ -427,13 +436,12 @@ h.test(
     h.with_state(nil, function()
       h.apply_theme("tokyonight-night")
       local added = { { dir = fixture_plugin("unread") } }
-      local theme = require("theme")
-      h.eq(true, theme.is_curated("unread-light", added), "a theme not read yet")
-      theme.detect(added)
-      h.eq(true, theme.is_curated("unread-dark", added), "a dark one")
-      h.eq(false, theme.is_curated("unread-light", added), "a light one")
-      h.eq(false, theme.is_curated("converge", added), "the Mix itself")
-      h.eq(true, theme.is_curated("catppuccin-mocha", added), "a built-in one")
+      h.eq(true, require("curated_themes").mixable("unread-light", added), "a theme not read yet")
+      require("curated_themes").read_added(added)
+      h.eq(true, require("curated_themes").mixable("unread-dark", added), "a dark one")
+      h.eq(false, require("curated_themes").mixable("unread-light", added), "a light one")
+      h.eq(false, require("curated_themes").mixable("converge", added), "the Mix itself")
+      h.eq(true, require("curated_themes").mixable("catppuccin-mocha", added), "a built-in one")
     end)
   end
 )
@@ -442,9 +450,8 @@ h.test("variants narrows an added plugin's themes", function()
   h.with_state(nil, function()
     h.apply_theme("tokyonight-night")
     local added = { { dir = fixture_plugin(), variants = { "fixture-dim" } } }
-    local theme = require("theme")
-    theme.detect(added)
-    local curated = theme.curated(added)
+    require("curated_themes").read_added(added)
+    local curated = require("curated_themes").list(added)
     h.eq(true, vim.list_contains(curated, "fixture-dim"), "fixture-dim offered")
     h.eq(false, vim.list_contains(curated, "fixture-dark"), "fixture-dark offered")
   end)
@@ -454,15 +461,14 @@ h.test("an added theme is read once, then known", function()
   h.with_state(nil, function()
     h.apply_theme("tokyonight-night")
     local added = { { dir = fixture_plugin() } }
-    local theme = require("theme")
-    theme.detect(added)
+    require("curated_themes").read_added(added)
     local applied = 0
     local id = vim.api.nvim_create_autocmd("ColorScheme", {
       callback = function()
         applied = applied + 1
       end,
     })
-    theme.detect(added)
+    require("curated_themes").read_added(added)
     vim.api.nvim_del_autocmd(id)
     h.eq(0, applied, "themes applied by the second check")
   end)
@@ -505,7 +511,7 @@ h.test("an added repo becomes a lazy-loaded plugin, with its opts and without va
       { "rebelot/kanagawa.nvim", lazy = true },
       { "folke/other.nvim", lazy = true, opts = { transparent = true } },
     },
-    require("theme").added_specs({
+    require("curated_themes").specs({
       "rebelot/kanagawa.nvim",
       { "folke/other.nvim", variants = { "other-night" }, opts = { transparent = true } },
     })

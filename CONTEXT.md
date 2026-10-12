@@ -39,6 +39,16 @@ What **Transparency** leaves solid on tokyonight-moon: the accents (folds, the c
 quickfix line, the wildmenu, the completion scrollbar, float shadows), which every theme keeps solid too.
 _Avoid_: Reference theme, default look
 
+**Flash**:
+A redraw showing a theme's solid background before **Transparency** clears it: at startup, or on a
+switch or preview to the theme.
+_Avoid_: flicker
+
+**Theme read**:
+converge applying a theme for a moment to record its colours, for the **Mix** or to leave the light
+**Added themes** out of the **Curated themes**; nothing is drawn, saved or restyled meanwhile.
+_Avoid_: capture, probe
+
 **Late plugin**:
 A plugin loaded after the startup theme (lualine and noice at VeryLazy, the notifier on the first
 notification, blink on the first insert), which defines its highlights then and is restyled as it

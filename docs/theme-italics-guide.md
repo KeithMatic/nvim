@@ -36,7 +36,7 @@ You don't need to open these to use the picker, but it helps to know where thing
 
 | What | Where | What it does |
 |---|---|---|
-| The list of themes | `lua/theme.lua` (at the top, `M.themes`) | The six themes `<leader>uC` offers. |
+| The list of themes | `lua/curated_themes.lua` (at the top, `M.built_in`) | The six built-in themes `<leader>uC` offers. |
 | The theme's own italic options | `lua/theme_italics.lua` (the `families` table) | What tokyonight and catppuccin let you italicise. |
 | The Extra italics | `lua/theme_italics.lua` (the `extras` table) | The Syntax types this config can italicise on any theme. |
 | The `<leader>uy` key | `lua/plugins/ui.lua` (search for `uy`) | Opens the picker. |

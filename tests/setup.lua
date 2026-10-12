@@ -61,18 +61,31 @@ local function missing()
   return todo
 end
 
--- Mason keeps a package's install handle once the install ends, so a closed
--- handle on a package that isn't installed means the install failed. Nothing
--- retries it, so waiting longer won't help.
-local function install_failed(pkg)
-  local handle = pkg:get_install_handle():or_else(nil)
-  return not pkg:is_installed() and handle ~= nil and handle:is_closed()
+--- Mason package `name`'s install handle, once an install has started: Mason
+--- keeps it after the install ends. Nil before any.
+local function install_handle(name)
+  return registry.get_package(name):get_install_handle():or_else(nil)
+end
+
+--- What package `name`'s installer printed, stdout then stderr: "" when
+--- nothing (or no install yet).
+local function install_output(name)
+  local handle = install_handle(name)
+  local buffers = handle and handle.stdio_sink.buffers or { stdout = {}, stderr = {} }
+  return vim.trim(table.concat(buffers.stdout) .. table.concat(buffers.stderr))
+end
+
+-- A closed handle on a package that isn't installed means the install failed.
+-- Nothing retries it, so waiting longer won't help.
+local function install_failed(name)
+  local handle = install_handle(name)
+  return not registry.is_installed(name) and handle ~= nil and handle:is_closed()
 end
 
 local function failed()
   local names = {}
   for _, name in ipairs(wanted_packages()) do
-    if install_failed(registry.get_package(name)) then
+    if install_failed(name) then
       table.insert(names, name)
     end
   end
@@ -102,9 +115,7 @@ end, 200)
 local function explain(names)
   local out, unexplained = {}, false
   for _, name in ipairs(names) do
-    local handle = registry.get_package(name):get_install_handle():or_else(nil)
-    local buffers = handle and handle.stdio_sink.buffers or { stdout = {}, stderr = {} }
-    local output = vim.trim(table.concat(buffers.stdout) .. table.concat(buffers.stderr))
+    local output = install_output(name)
     if output == "" then
       unexplained = true
     else

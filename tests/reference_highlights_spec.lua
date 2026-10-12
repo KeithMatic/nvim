@@ -14,7 +14,7 @@ local function misstyled_references()
   return misstyled
 end
 
-for _, theme in ipairs(require("theme").themes) do
+for _, theme in ipairs(require("curated_themes").built_in) do
   h.test(theme .. ": reference highlights are underlines with no background", function()
     h.apply_theme(theme)
     h.eq({}, misstyled_references(), "reference groups")

@@ -102,11 +102,8 @@ local extras = {
 --- The family of the current theme, if it has italic options: on the Mix, its
 --- syntax theme's, whose italics it draws.
 local function current_family()
-  local name = vim.g.colors_name or ""
-  if name == "converge" then
-    name = require("mix").recipe().syntax
-  end
-  local family = name:match("^(%a+)")
+  local _, syntax = require("mix").halves(vim.g.colors_name or "")
+  local family = syntax:match("^(%a+)")
   return families[family] and family or nil
 end
 

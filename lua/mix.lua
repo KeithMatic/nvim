@@ -5,25 +5,66 @@
 -- its Rainbow brackets from its syntax theme. See docs/converge-mix-design.md.
 local M = {}
 
--- True while converge reads a theme, for the Mix or to find light ones: the
+-- The Mix as a theme's name: what `:colorscheme` applies, and what's saved.
+M.name = "converge"
+
+-- True during a Theme read, for the Mix or to find the light Added themes: the
 -- theme hook (lua/theme.lua) ignores those, so nothing is saved or tinted.
 M.reading = false
+
+--- The Mix as lua/config/themes.lua's `mix` names it.
+---@class MixConfig
+---@field ui? string the Curated theme the editor's UI comes from
+---@field syntax? string the Curated theme the code's colours come from
+---@field overrides? { from?: table<string, string[]>, set?: table<string, table> }
+
+--- The themes theme `name` draws its UI and its code's colours from: the
+--- Mix's two halves, or `name` twice for any other theme.
+---@param name string
+---@return string ui
+---@return string syntax
+function M.halves(name)
+  if name ~= M.name then
+    return name, name
+  end
+  local recipe = M.recipe()
+  return recipe.ui, recipe.syntax
+end
+
+--- converge's record of theme `name`'s colours with `background`, from a
+--- Theme read: nil when it hasn't been read, false when it wouldn't load.
+---@param name string
+---@param background "dark"|"light"
+---@return table|false|nil
+function M.snapshot(name, background)
+  return require("converge.snapshots").get(name, background, { capture = false })
+end
+
+--- A Theme read of each of `names`, with a dark background. Each applies its
+--- theme for a moment: callers put the theme back.
+---@param names string[]
+function M.read(names)
+  local snapshots = require("converge.snapshots")
+  for _, name in ipairs(names) do
+    snapshots.get(name, "dark", { capture = true })
+  end
+end
 
 --- The Mix as converge's recipe: its UI and syntax themes, each a Curated
 --- theme (a bad UI theme falls back to the default theme, a bad syntax theme
 --- to the UI theme), and its overrides. The other slices follow the UI theme.
----@param mix? {ui?: string, syntax?: string, overrides?: table} default: lua/config/themes.lua's
+---@param mix? MixConfig default: lua/config/themes.lua's
 ---@return {ui: string, syntax: string, overrides?: table}
 function M.recipe(mix)
   mix = mix or require("config.themes").mix
-  local theme = require("theme")
-  local ui = theme.is_curated(mix.ui) and mix.ui or theme.default
-  local syntax = theme.is_curated(mix.syntax) and mix.syntax or ui
+  local mixable = require("curated_themes").mixable
+  local ui = mixable(mix.ui) and mix.ui or require("theme").default
+  local syntax = mixable(mix.syntax) and mix.syntax or ui
   return { ui = ui, syntax = syntax, overrides = mix.overrides }
 end
 
 --- The Mix's name in the theme picker: its pair, and how many groups it overrides.
----@param mix? {ui?: string, syntax?: string, overrides?: table} default: lua/config/themes.lua's
+---@param mix? MixConfig default: lua/config/themes.lua's
 ---@return string
 function M.label(mix)
   local recipe = M.recipe(mix)
@@ -66,7 +107,7 @@ end
 
 --- What's wrong with `mix`, one message each: a theme that isn't a Curated
 --- theme, and an override the config's own look replaces.
----@param mix? {ui?: string, syntax?: string, overrides?: table} default: lua/config/themes.lua's
+---@param mix? MixConfig default: lua/config/themes.lua's
 ---@return string[]
 function M.problems(mix)
   mix = mix or require("config.themes").mix
@@ -90,7 +131,7 @@ function M.problems(mix)
     end
   end
   for _, from in ipairs(vim.fn.sort(vim.tbl_keys(overrides.from or {}))) do
-    if not require("theme").is_curated(from) then
+    if not require("curated_themes").mixable(from) then
       table.insert(problems, ("Mix: overrides.from names %s, which isn't a Curated theme"):format(vim.inspect(from)))
     end
     for _, group in ipairs(overrides.from[from]) do

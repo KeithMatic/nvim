@@ -1,5 +1,5 @@
 -- The themes you add and the Mix: the one file to edit for either. Read by
--- lua/plugins/ui.lua (the plugins), lua/theme.lua (the Curated themes) and
+-- lua/plugins/ui.lua (the plugins), lua/curated_themes.lua (the Curated themes) and
 -- lua/mix.lua (the Mix). See docs/converge-mix-design.md.
 return {
   -- Paste a theme's plugin repo to offer every dark theme it ships in the
