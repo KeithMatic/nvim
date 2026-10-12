@@ -201,6 +201,31 @@ function M.boot(spec, env, timeout)
   M.eq(0, result.code, ("second instance (%s):\n%s%s"):format(spec, result.stdout or "", table.concat(messages, "\n")))
 end
 
+--- Boot a second Neovim (h.boot) that restores the saved theme, and assert
+--- that it starts with `theme` and no errors, and whatever `expect` adds
+--- (tests/theme/boot.lua's EXPECT_BG, EXPECT_FG, EXPECT_ITALIC).
+---@param theme string
+---@param expect? table<string, string>
+function M.boots_with(theme, expect)
+  M.boot("theme/boot.lua", vim.tbl_extend("force", expect or {}, { EXPECT_THEME = theme }))
+end
+
+--- Run `fn` with `target[key]` set to `value`, then put back what was there
+--- (nil included), errors too.
+---@param target table
+---@param key any
+---@param value any
+---@param fn fun()
+function M.with_stub(target, key, value, fn)
+  local before = rawget(target, key)
+  rawset(target, key, value)
+  local ok, err = pcall(fn)
+  rawset(target, key, before)
+  if not ok then
+    error(err, 0)
+  end
+end
+
 --- Run `fn` with the theme module's saved state set to `content` (nil: no
 --- state file), then put back whatever was saved before, so other specs boot
 --- as they would have.

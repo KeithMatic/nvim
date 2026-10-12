@@ -61,6 +61,9 @@ local function missing()
   return todo
 end
 
+-- Mason has no public API for an install's outcome or output: these two read
+-- its install handle, and are the only places that do.
+
 --- Mason package `name`'s install handle, once an install has started: Mason
 --- keeps it after the install ends. Nil before any.
 local function install_handle(name)

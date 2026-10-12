@@ -18,7 +18,12 @@ end
 
 --- The README's table rows that name keys, outside fenced blocks: the keys
 --- in the row's first cell (canonical), and the row's text, lower-cased.
----@return { keys: table<string, true>, text: string }[]
+--- A README table row that names keys.
+---@class ReadmeRow
+---@field keys table<string, true> the keys in its first cell, canonical
+---@field text string the whole row, lower-cased
+
+---@return ReadmeRow[]
 local function readme_rows()
   local text = table.concat(vim.fn.readfile(config .. "/README.md"), "\n"):gsub("```.-```", "")
   local rows = {}
@@ -49,7 +54,7 @@ local mode_words = {
 
 --- Whether a row of `rows` has `key` in its first cell and, when `mode` is
 --- given, names it.
----@param rows { keys: table<string, true>, text: string }[]
+---@param rows ReadmeRow[]
 ---@param key string
 ---@param mode? string
 local function in_a_row(rows, key, mode)
@@ -64,15 +69,22 @@ local function in_a_row(rows, key, mode)
   end)
 end
 
---- Where this config defines keys, each as a function returning
---- { lhs, desc, where, modes } entries. No one source sees every key.
----@type table<string, fun(): { [1]: string, [2]: string?, [3]: string, [4]: string[] }[]>
+--- A key this config defines.
+---@class DefinedKey
+---@field lhs string
+---@field desc? string
+---@field where string the file or plugin that defines it
+---@field modes string[]
+
+--- Where this config defines keys, each as a function returning its keys. No
+--- one source sees every key.
+---@type table<string, fun(): DefinedKey[]>
 local sources = {
   -- The harness records vim.keymap.set calls from this config's files: a
   -- mapping whose rhs is a string keeps no source of its own.
   keymap_set = function()
     return vim.tbl_map(function(map)
-      return { map.lhs, map.desc, map.file, map.modes }
+      return { lhs = map.lhs, desc = map.desc, where = map.file, modes = map.modes }
     end, h.config_keymaps)
   end,
   -- Mappings whose callback is defined in this config, though set by a helper
@@ -83,7 +95,7 @@ local sources = {
       for _, map in ipairs(vim.api.nvim_get_keymap(mode)) do
         local source = map.callback and debug.getinfo(map.callback, "S").source:gsub("^@", "") or ""
         if vim.startswith(source, config_lua) then
-          table.insert(found, { map.lhs, map.desc, source:sub(#config_lua + 1), { mode } })
+          table.insert(found, { lhs = map.lhs, desc = map.desc, where = source:sub(#config_lua + 1), modes = { mode } })
         end
       end
     end
@@ -98,7 +110,10 @@ local sources = {
     for name, plugin in pairs(spec.plugins) do
       for _, key in pairs(require("lazy.core.handler.keys").resolve(Plugin.values(plugin, "keys", true))) do
         local mode = key.mode or "n"
-        table.insert(found, { key.lhs, key.desc, name, type(mode) == "table" and mode or { mode } })
+        table.insert(
+          found,
+          { lhs = key.lhs, desc = key.desc, where = name, modes = type(mode) == "table" and mode or { mode } }
+        )
       end
     end
     return found
@@ -107,12 +122,12 @@ local sources = {
 
 --- Every key with a description from `source`, as canonical key → mode →
 --- { desc, where }.
----@param source fun(): { [1]: string, [2]: string?, [3]: string, [4]: string[] }[]
+---@param source fun(): DefinedKey[]
 ---@return table<string, table<string, { desc: string, where: string }>>
 local function described(source)
   local keys = {}
   for _, key in ipairs(source()) do
-    local lhs, desc, where, modes = key[1], key[2], key[3], key[4]
+    local lhs, desc, where, modes = key.lhs, key.desc, key.where, key.modes
     if desc and desc ~= "" and desc ~= "which_key_ignore" then
       local by_mode = keys[canonical(lhs)] or {}
       for _, mode in ipairs(modes) do

@@ -23,10 +23,10 @@ These follow the glossary in `CONTEXT.md`.
 - **Added theme**: a Curated theme from a plugin named in the config rather than built in; only the
   dark themes it ships count. _Avoid_: extra theme, installed theme.
 - **Flash**: a redraw showing a theme's solid background before Transparency clears it: at startup,
-  or on a switch or preview to the theme. _Avoid_: flicker.
+  or on a switch or preview to the theme. _Avoid_: flicker; not flash.nvim's jumps.
 - **Theme read**: converge applying a theme for a moment to record its colours, for the Mix or to
-  leave the light Added themes out of the Curated themes; nothing is drawn, saved or restyled
-  meanwhile. _Avoid_: capture, probe.
+  leave the light Added themes out of the Curated themes. Nothing is saved or restyled meanwhile,
+  and the read that leaves out the light themes draws nothing. _Avoid_: capture, probe.
 - **Baseline**: what Transparency leaves solid on tokyonight-moon: the accents (folds, the colour
   column, the quickfix line, the wildmenu, the completion scrollbar, float shadows), which every
   theme keeps solid too. _Avoid_: reference theme, default look.

@@ -38,6 +38,9 @@ These follow the glossary in `CONTEXT.md`.
   _Avoid_: cursorline colour, highlight.
 - **In-text blocks**: highlights drawn inside the text as a solid block (line diagnostics, inlay
   hints, Markdown heading bars and code). _Avoid_: chips.
+- **Theme read**: converge applying a theme for a moment to record its colours, for the Mix or to
+  leave the light Added themes out of the Curated themes. Nothing is saved or restyled meanwhile,
+  and the read that leaves out the light themes draws nothing. _Avoid_: capture, probe.
 
 ## Why
 
@@ -266,9 +269,10 @@ None.
 
 - **The startup comparison now catches a group that's empty at startup and drawn on a background
   after a theme change**, such as the Tint missing from a Late plugin's groups. It still skips a
-  group solid at startup and empty after a change: plugins that set their groups once (Mason,
-  crates, litee, blink's hacks) look like that, and the Float sweep already checks every drawn
-  group at startup for a background.
+  group solid at startup and empty after a change, because plugins that set their groups once
+  (Mason, crates, litee, blink's hacks) look like that. The Float sweep checks the floats it opens
+  at startup, so a group solid at startup outside those floats (crates', litee's, aerial's
+  windows, which the sweep doesn't open) goes unchecked: a known gap.
 - **The sweep sees highlights drawn by decoration providers:** blink's menu items, and treesitter
   in hover and docs. Their extmarks only exist while a window is drawn, so the check wraps
   `nvim_buf_set_extmark` around a full redraw and records them.

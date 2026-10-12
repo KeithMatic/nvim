@@ -18,11 +18,11 @@ M.built_in = {
   "tokyonight-moon",
 }
 
---- Each entry of `added` as a table: a pasted repo string becomes `{ repo }`.
---- Copies, so callers may change them.
+--- Each entry of `added` as a table, as themes.lua's tables are: a pasted repo
+--- string becomes `{ repo }`. Copies, so callers may change them.
 ---@param added? Added default: lua/config/themes.lua's
 ---@return table[]
-local function as_specs(added)
+local function as_entries(added)
   return vim.tbl_map(function(entry)
     return type(entry) == "string" and { entry } or vim.deepcopy(entry)
   end, added or require("config.themes").added)
@@ -36,7 +36,7 @@ function M.specs(added)
   return vim.tbl_map(function(spec)
     spec.lazy, spec.variants = true, nil
     return spec
-  end, as_specs(added))
+  end, as_entries(added))
 end
 
 --- The themes `added` ships: every one in each plugin's colors/ folder, or
@@ -45,7 +45,7 @@ end
 ---@return string[]
 local function shipped(added)
   local names = {}
-  for _, spec in ipairs(as_specs(added)) do
+  for _, spec in ipairs(as_entries(added)) do
     local dir = spec.dir and vim.fs.normalize(spec.dir)
     if not dir then
       for _, plugin in pairs(require("lazy.core.config").plugins) do

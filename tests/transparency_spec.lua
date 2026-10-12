@@ -405,10 +405,9 @@ h.test("a Frame part named after an accent (the search icon) shows no background
   h.eq(true, bg("Search") ~= nil, "Search keeps its background")
 end)
 
--- Plugins that load after the theme are restyled as they load: once a tick,
--- however many load in it, and not while converge reads a theme (its reads
--- load the themes' plugins).
-h.test("plugins that load are restyled once a tick, and not while converge reads a theme", function()
+-- Late plugins are restyled as they load: once a tick, however many load in
+-- it, and not during a Theme read (a read loads its theme's plugin).
+h.test("Late plugins are restyled once a tick, and not during a Theme read", function()
   h.apply_theme("tokyonight-moon")
   local mix = require("mix")
   --- Whether a solid group in Transparency's reach is still solid after
@@ -425,24 +424,22 @@ h.test("plugins that load are restyled once a tick, and not while converge reads
     end)
     return bg("NoiceCmdlineLateFixture") ~= nil
   end
-  h.eq(true, solid_after_loads(1, true), "loaded while converge reads a theme")
+  h.eq(true, solid_after_loads(1, true), "loaded during a Theme read")
   h.eq(false, solid_after_loads(1, false), "loaded otherwise")
 
   -- A restyle walks every group: count the walks.
   local walks, get_hl = 0, vim.api.nvim_get_hl
-  vim.api.nvim_get_hl = function(ns, opts)
+  local function counting(ns, opts)
     walks = walks + ((ns == 0 and next(opts) == nil) and 1 or 0)
     return get_hl(ns, opts)
   end
-  local ok, err = pcall(function()
+  h.with_stub(vim.api, "nvim_get_hl", counting, function()
     solid_after_loads(1, false)
     local one = walks
     walks = 0
     solid_after_loads(5, false)
     h.eq(one, walks, "walks for five loads in a tick, as for one")
   end)
-  vim.api.nvim_get_hl = get_hl
-  assert(ok, err)
 end)
 
 -- A theme may draw a Baseline accent by linking it to a group Transparency

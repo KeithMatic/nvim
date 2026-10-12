@@ -89,10 +89,7 @@ end)
 
 h.test("a fresh start restores the Extra italics", function()
   h.with_state('{"theme":"catppuccin-mocha","extra_italics":{"parameters":true}}', function()
-    h.boot("theme/boot.lua", {
-      EXPECT_THEME = "catppuccin-mocha",
-      EXPECT_ITALIC = vim.json.encode({ ["@variable.parameter"] = true }),
-    })
+    h.boots_with("catppuccin-mocha", { EXPECT_ITALIC = vim.json.encode({ ["@variable.parameter"] = true }) })
   end)
 end)
 

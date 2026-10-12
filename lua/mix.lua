@@ -3,6 +3,8 @@
 -- the theme `converge` by converge.nvim. The config's own look (lua/theme.lua)
 -- goes on top: the Mix's background and Mode colours come from its UI theme,
 -- its Rainbow brackets from its syntax theme. See docs/converge-mix-design.md.
+-- It also owns converge's Theme reads (`reading`, `snapshot`, `read`), for the
+-- Mix and for leaving the light Added themes out (lua/curated_themes.lua).
 local M = {}
 
 -- The Mix as a theme's name: what `:colorscheme` applies, and what's saved.

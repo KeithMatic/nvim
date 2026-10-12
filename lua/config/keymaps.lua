@@ -36,25 +36,6 @@ local function in_file(keys, own)
   end
 end
 
---- Shrink the run of spaces (or tabs) under the cursor to one space; on
---- anything else, do nothing.
-local function shrink_spaces()
-  local row, col = unpack(vim.api.nvim_win_get_cursor(0))
-  local line = vim.api.nvim_get_current_line()
-  local from, to = col + 1, col + 1
-  if not line:sub(from, from):match("%s") then
-    return
-  end
-  while from > 1 and line:sub(from - 1, from - 1):match("%s") do
-    from = from - 1
-  end
-  while to < #line and line:sub(to + 1, to + 1):match("%s") do
-    to = to + 1
-  end
-  vim.api.nvim_buf_set_text(0, row - 1, from - 1, row - 1, to, { " " })
-  vim.api.nvim_win_set_cursor(0, { row, from - 1 })
-end
-
 -- The Terminal manager (lua/terminal.lua) takes over LazyVim's Snacks terminal keys.
 local terminal = require("terminal")
 -- <C-/> shows or hides it from Normal and Terminal mode; terminals send <C-_>.
@@ -111,7 +92,8 @@ set_keymaps({
     -- The enclosing { } block, linewise. Bare Y now waits timeoutlen.
     ["YY"] = { "va{Vy", desc = "Yank Brace Block" },
     ["U"] = { "<Cmd>redo<CR>", desc = "Redo" },
-    ["d."] = { shrink_spaces, desc = "Delete Extra Space" },
+    -- An operator (lua/whitespace.lua), so . repeats it.
+    ["d."] = { require("whitespace").shrink_operator, expr = true, desc = "Delete Extra Space" },
 
     ["<CR>"] = { in_file("ciw", "<CR>"), expr = true, desc = "Change Word" },
     ["<BS>"] = { in_file("ci", "<BS>"), expr = true, desc = "Change Inside" },

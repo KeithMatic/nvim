@@ -70,6 +70,18 @@ h.test("d. shrinks the run of spaces under the cursor to one, and leaves anythin
   end
 end)
 
+h.test("d. on a single space changes nothing, and . repeats it on the next run", function()
+  scratch({ "a b    c    d" }, { 1, 1 })
+  vim.bo.modified = false
+  h.feed("d.", "xt")
+  h.eq(false, vim.bo.modified, "a single space: the buffer unchanged")
+  vim.api.nvim_win_set_cursor(0, { 1, 4 })
+  h.feed("d.", "xt")
+  vim.api.nvim_win_set_cursor(0, { 1, 6 })
+  h.feed(".", "xt")
+  h.eq({ "a b c d" }, vim.api.nvim_buf_get_lines(0, 0, -1, false), ". shrank the second run")
+end)
+
 h.test("insert <C-a> goes to the line's first non-blank without leaving Insert mode", function()
   scratch({ "    foo bar" }, { 1, 10 })
   local left = 0

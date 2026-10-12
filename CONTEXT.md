@@ -42,11 +42,12 @@ _Avoid_: Reference theme, default look
 **Flash**:
 A redraw showing a theme's solid background before **Transparency** clears it: at startup, or on a
 switch or preview to the theme.
-_Avoid_: flicker
+_Avoid_: flicker; not flash.nvim's jumps (Flash, the plugin, not this)
 
 **Theme read**:
 converge applying a theme for a moment to record its colours, for the **Mix** or to leave the light
-**Added themes** out of the **Curated themes**; nothing is drawn, saved or restyled meanwhile.
+**Added themes** out of the **Curated themes**. Nothing is saved or restyled meanwhile, and the
+read that leaves out the light themes draws nothing.
 _Avoid_: capture, probe
 
 **Late plugin**:

@@ -120,7 +120,7 @@ end
 local function drawn_by_providers()
   local drawn = {}
   local set_extmark = vim.api.nvim_buf_set_extmark
-  vim.api.nvim_buf_set_extmark = function(buf, ns, row, col, opts)
+  local function noting(buf, ns, row, col, opts)
     if opts and opts.ephemeral then
       buf = buf == 0 and vim.api.nvim_get_current_buf() or buf
       drawn[buf] = drawn[buf] or {}
@@ -131,9 +131,9 @@ local function drawn_by_providers()
     end
     return set_extmark(buf, ns, row, col, opts)
   end
-  local ok, err = pcall(vim.cmd, "redraw!")
-  vim.api.nvim_buf_set_extmark = set_extmark
-  assert(ok, err)
+  h.with_stub(vim.api, "nvim_buf_set_extmark", noting, function()
+    vim.cmd("redraw!")
+  end)
   return drawn
 end
 
@@ -232,7 +232,7 @@ for _, format in ipairs(cmdline_formats) do
         solid = solid_in_windows()
       end,
     })
-    assert(ok and solid, "the cmdline never showed" .. (ok and "" or ": " .. tostring(err)))
+    assert(ok and solid, "the cmdline never showed, or its check failed" .. (ok and "" or ": " .. tostring(err)))
     h.eq(0, #solid, "groups with a background:\n" .. table.concat(solid, "\n"))
   end)
 end
@@ -642,7 +642,10 @@ h.test(theme .. ": blink's menu and docs draw nothing on a background", function
     end,
   })
   close_windows()
-  assert(ok and solid, "blink's menu and docs never showed" .. (ok and "" or ": " .. tostring(err)))
+  assert(
+    ok and solid,
+    "blink's menu and docs never showed, or the check failed" .. (ok and "" or ": " .. tostring(err))
+  )
   h.eq(0, #solid, "groups with a background:\n" .. table.concat(solid, "\n"))
 end)
 
@@ -689,8 +692,10 @@ h.test(theme .. ": with every plugin loaded, it looks as when the theme is appli
   -- theirs on first use (blink), some don't define them again after a theme
   -- change (aerial, Mason, crates), which leaves them empty. Not one that's
   -- empty at startup but draws on a background after a theme change (the Tint
-  -- missing from a Late plugin's groups). One solid at startup is the Float
-  -- sweep's to find: it checks what's drawn then.
+  -- missing from a Late plugin's groups). One solid at startup and empty after
+  -- a change is left out, since that's how a plugin that sets its groups once
+  -- looks: the Float sweep checks the floats it opens at startup, and a group
+  -- solid at startup outside them goes unchecked.
   local differ = {}
   for name in pairs(vim.tbl_extend("force", {}, startup, again)) do
     local before, after = startup[name] or {}, again[name] or {}

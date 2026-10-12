@@ -49,8 +49,29 @@ function M.apply_unsaved(name)
   restoring = false
 end
 
+-- Command modifiers that may come before a `:redraw`.
+local modifiers = { "silent", "silent!", "unsilent", "noautocmd", "keepalt", "keepjumps", "keepmarks", "lockmarks" }
+
+--- Whether `command`, as `vim.cmd` takes it (a string, or a table such as
+--- { cmd = "redraw" }), is a `:redraw`, after any modifiers.
+---@param command string|table
+---@return boolean
+local function is_redraw(command)
+  if type(command) == "table" then
+    return type(command.cmd) == "string" and command.cmd:match("^redr[aw]*$") ~= nil
+  end
+  local words = vim.split(vim.trim(command), "%s+")
+  for i = 1, #words - 1 do
+    if not vim.list_contains(modifiers, words[i]) then
+      return false
+    end
+  end
+  return words[#words]:match("^redr[aw]*!?$") ~= nil
+end
+
 --- Run `fn` with nothing redrawn: 'lazyredraw' on, and Lua's `:redraw`
---- (`vim.cmd.redraw()`, `vim.cmd("redraw")`) doing nothing, all put back after,
+--- (`vim.cmd.redraw()`, `vim.cmd("silent! redraw")`, `vim.cmd({ cmd = "redraw" })`)
+--- doing nothing, all put back after,
 --- errors too. An `nvim_command("redraw")` still draws: nothing stops that.
 ---@param fn fun()
 function M.without_redraws(fn)
@@ -61,7 +82,7 @@ function M.without_redraws(fn)
   local call = meta.__call
   vim.cmd.redraw, vim.o.lazyredraw = function() end, true
   meta.__call = function(cmd, command, ...)
-    if type(command) == "string" and command:match("^%s*redr[aw]*!?%s*$") then
+    if is_redraw(command) then
       return
     end
     return call(cmd, command, ...)
@@ -537,19 +558,15 @@ local function on_change(args)
   if require("mix").reading then
     return
   end
-  -- The Mix on a cold cache: converge reads its themes a tick later, then draws
-  -- it and fires this again. Nothing is drawn yet, and naming it now would tell
-  -- converge another theme was picked meanwhile, so it would never draw.
-  local mix = require("mix").name
-  if args.match == mix and vim.g.colors_name ~= mix then
-    return
-  end
   -- Name the theme as it was chosen, so it's read, saved and restored as
   -- itself: palenight doesn't name itself, and kanagawa-dragon and
-  -- evergarden-spring name themselves after their family. Not the Mix, which
-  -- names itself once converge has read its themes, a tick later.
+  -- evergarden-spring name themselves after their family. Never the Mix, which
+  -- names itself once drawn: on a cold cache converge reads its themes a tick
+  -- later, and a name set now would tell it another theme was picked
+  -- meanwhile, so it would never draw.
   local name = vim.g.colors_name
-  if args.match ~= "" and (not name or vim.startswith(args.match, name .. "-")) then
+  local named_as_chosen = args.match == "" or args.match == require("mix").name
+  if not named_as_chosen and (not name or vim.startswith(args.match, name .. "-")) then
     vim.g.colors_name = args.match
   end
   local palette = theme_palette()
@@ -618,7 +635,7 @@ function M.load()
     group = group,
     pattern = { "LazyLoad", "VeryLazy" },
     callback = function()
-      -- converge reading a theme loads its plugin: not a plugin to restyle.
+      -- A Theme read loads its theme's plugin: not a Late plugin.
       if not require("mix").reading then
         restyle_late()
       end
@@ -703,9 +720,9 @@ end
 --- A colorscheme picker, with live preview, limited to the Curated themes.
 --- Added themes not read yet are read first, to leave out the light ones.
 function M.pick()
-  local themes = require("curated_themes")
-  themes.read_added()
-  local curated, mix = themes.list(), require("mix")
+  local curated_themes = require("curated_themes")
+  curated_themes.read_added()
+  local curated, mix = curated_themes.list(), require("mix")
   Snacks.picker.colorschemes({
     transform = function(item)
       return vim.list_contains(curated, item.text)

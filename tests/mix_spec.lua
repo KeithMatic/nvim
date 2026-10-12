@@ -44,12 +44,6 @@ local function cold_cache()
   require("converge.snapshots").clear()
 end
 
---- Boot a second headless Neovim on this config and assert that it starts with
---- `theme` and no errors (see theme_spec.lua).
-local function assert_boots_with(theme)
-  h.boot("theme/boot.lua", { EXPECT_THEME = theme })
-end
-
 --- A local theme plugin: <prefix>-dark and <prefix>-dim (dark), <prefix>-light
 --- (light), on the runtimepath as lazy.nvim would put it once loaded. A new
 --- `prefix` gives themes converge hasn't read this session.
@@ -176,18 +170,36 @@ h.test("the Mix is restored on the next start", function()
     h.apply_theme("tokyonight-night")
     apply_mix()
     h.eq("converge", saved_theme(), "saved")
-    assert_boots_with("converge")
+    h.boots_with("converge")
   end)
 end)
 
--- Its themes read again a tick after startup (a theme plugin updated since,
--- or a cleared cache), the Mix is still drawn, not just named.
-h.test("the Mix is drawn at the next start even when converge has to read its themes first", function()
+-- Its themes read again a tick after startup (a Theme read on a cold cache: a
+-- theme plugin updated since, or the cache cleared), the Mix is still drawn,
+-- not just named.
+h.test("the Mix is drawn at the next start even when it needs a Theme read first", function()
   h.with_state(nil, function()
     h.apply_theme("tokyonight-night")
     apply_mix()
     cold_cache()
-    h.boot("theme/boot.lua", { EXPECT_THEME = "converge", EXPECT_FG = vim.json.encode({ Function = "#89b4fa" }) })
+    h.boots_with("converge", { EXPECT_FG = vim.json.encode({ Function = "#89b4fa" }) })
+  end)
+end)
+
+-- converge drawing nothing (or only part of the Mix) and naming nothing: what
+-- is on screen still gets Transparency.
+h.test("when converge draws only part of the Mix, what it drew still gets Transparency", function()
+  h.with_state(nil, function()
+    h.apply_theme("tokyonight-night")
+    local converge = require("converge")
+    local apply = converge.apply
+    converge.apply = function()
+      vim.api.nvim_set_hl(0, "NoiceCmdlinePopupPartFixture", { bg = "#123456" })
+    end
+    local ok, err = pcall(h.apply_theme, "converge")
+    converge.apply = apply
+    assert(ok, err)
+    h.eq(nil, hl("NoiceCmdlinePopupPartFixture").bg, "the part converge drew")
   end)
 end)
 
@@ -349,17 +361,18 @@ h.test("reading added themes draws no frame, even when a plugin redraws on a the
   h.with_state(nil, function()
     h.apply_theme("tokyonight-night")
     local added = { { dir = fixture_plugin("redraw") } }
-    -- Count both ways Lua asks for one: vim.cmd.redraw() and vim.cmd("redraw").
+    -- Count every way Lua asks for one: vim.cmd.redraw(), and vim.cmd with a
+    -- string (modifiers too) or a table.
     local redraws = 0
-    vim.cmd.redraw = function()
+    local function count()
       redraws = redraws + 1
     end
     local meta = getmetatable(vim.cmd)
     local call = meta.__call
-    meta.__call = function(cmd, command, ...)
-      if command == "redraw" then
-        redraws = redraws + 1
-        return
+    local function counting(cmd, command, ...)
+      local name = type(command) == "table" and command.cmd or command
+      if name == "redraw" or name == "silent! redraw" then
+        return count()
       end
       return call(cmd, command, ...)
     end
@@ -369,12 +382,18 @@ h.test("reading added themes draws no frame, even when a plugin redraws on a the
       callback = function()
         vim.cmd.redraw()
         vim.cmd("redraw")
+        vim.cmd("silent! redraw")
+        vim.cmd({ cmd = "redraw" })
       end,
     })
     local lazyredraw = vim.o.lazyredraw
-    local ok, err = pcall(require("curated_themes").read_added, added)
+    local ok, err
+    h.with_stub(vim.cmd, "redraw", count, function()
+      h.with_stub(meta, "__call", counting, function()
+        ok, err = pcall(require("curated_themes").read_added, added)
+      end)
+    end)
     vim.api.nvim_del_augroup_by_id(group)
-    vim.cmd.redraw, meta.__call = nil, call
     h.eq(true, ok, tostring(err))
     h.eq(0, redraws, "redraws while reading")
     h.eq(lazyredraw, vim.o.lazyredraw, "'lazyredraw' is back")

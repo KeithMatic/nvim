@@ -39,6 +39,11 @@ These follow the glossary in `CONTEXT.md`.
   toggles.
 - **Extra italics**: Syntax types this config makes italic after any theme loads, chosen once and shared by every
   theme. *Avoid:* custom italics, italic overrides.
+- **Flash**: a redraw showing a theme's solid background before Transparency clears it: at startup,
+  or on a switch or preview to the theme. *Avoid:* flicker; not flash.nvim's jumps.
+- **Theme read**: converge applying a theme for a moment to record its colours, for the **Mix** or
+  to leave the light Added themes out of the Curated themes. Nothing is saved or restyled
+  meanwhile, and the read that leaves out the light themes draws nothing. *Avoid:* capture, probe.
 
 ## Why
 
@@ -158,7 +163,7 @@ colours and brackets from its own groups, and that a second check reads nothing.
 
   The Curated themes moved to `lua/curated_themes.lua`. `is_curated` is now `mixable`, since it
   leaves out the Mix itself.
-- **No change for a syntax theme "missing" a bracket's group.** converge's capture starts from
+- **No change for a syntax theme "missing" a bracket's group.** A Theme read starts from
   Neovim's defaults and records every group, so a loadable theme's snapshot always has
   `DiagnosticWarn`, `Keyword` and `Function`. A theme that doesn't set one is drawn with Neovim's
   default, which is then that theme's colour. Only a theme that won't load has no snapshot, and
@@ -169,3 +174,16 @@ colours and brackets from its own groups, and that a second check reads nothing.
 - **Left as is:** `forget()` clears converge's in-memory copies of every theme, not just the
   family's. converge has no per-theme clear, and the next Mix reloads them from its cache on disk.
 - **The picker formats only the Mix itself.** Every other theme gets Snacks' own formatter.
+
+## Review of the fixes
+
+What the review of the fixes left as is:
+
+- **Reading converge's record directly.** `curated_themes` and transparency_spec read a Theme
+  read's record directly (`background`, `groups.Normal`). It's converge's own shape, shared by
+  every caller, and a wrapper for each field would only pass it through.
+- **`theme`, `mix` and `curated_themes` require one another, but only inside functions,** so
+  nothing fails at load. `theme.lightness` and `theme.apply_unsaved` are public for
+  `curated_themes`.
+- **"gutter" in the README and the added-theme doc.** The glossary's own Icon set entry says
+  "gutter signs". The _Avoid_ under Line numbers is about calling the line numbers a gutter.
