@@ -626,6 +626,12 @@ local function on_change(args)
   if require("mix").reading then
     return
   end
+  -- The Mix on a cold cache: converge reads its themes a tick later, then draws
+  -- it and fires this again. Nothing is drawn yet, and naming it now would tell
+  -- converge another theme was picked meanwhile, so it would never draw.
+  if args.match == "converge" and vim.g.colors_name ~= "converge" then
+    return
+  end
   -- Name the theme as it was chosen, so it's read, saved and restored as
   -- itself: palenight doesn't name itself, and kanagawa-dragon and
   -- evergarden-spring name themselves after their family. Not the Mix, which

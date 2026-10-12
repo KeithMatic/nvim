@@ -180,6 +180,17 @@ h.test("the Mix is restored on the next start", function()
   end)
 end)
 
+-- Its themes read again a tick after startup (a theme plugin updated since,
+-- or a cleared cache), the Mix is still drawn, not just named.
+h.test("the Mix is drawn at the next start even when converge has to read its themes first", function()
+  h.with_state(nil, function()
+    h.apply_theme("tokyonight-night")
+    apply_mix()
+    cold_cache()
+    h.boot("theme/boot.lua", { EXPECT_THEME = "converge", EXPECT_FG = vim.json.encode({ Function = "#89b4fa" }) })
+  end)
+end)
+
 h.test("reading the Mix's themes saves none of them as the theme", function()
   h.with_state(nil, function()
     h.apply_theme("tokyonight-night")
