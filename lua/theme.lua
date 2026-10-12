@@ -179,8 +179,8 @@ local transparency = {
     "TroubleNormal",
     "TroubleNormalNC",
     -- What added themes give a background that the Theme families don't: the
-    -- git signs in the gutter, the completion menu's columns, inactive
-    -- windows' gutter, the end of the buffer, Snacks' inactive winbar, the
+    -- git signs in the sign column, the completion menu's columns, inactive
+    -- windows' sign column, the end of the buffer, Snacks' inactive winbar, the
     -- outline, terminal statuslines and the message separator.
     "GitSignsAdd",
     "GitSignsChange",
@@ -207,7 +207,7 @@ local transparency = {
   prefixes = {
     "BlinkCmp",
     "BufferLine",
-    "DiagnosticSign", -- the gutter's diagnostic signs
+    "DiagnosticSign", -- the diagnostic signs in the sign column
     "NeoTree",
     "NoiceCmdline",
     "NoiceConfirm",
@@ -613,9 +613,7 @@ function M.load()
 
   local group = vim.api.nvim_create_augroup("theme", { clear = true })
   vim.api.nvim_create_autocmd("ColorScheme", { group = group, callback = on_change })
-  -- Plugins that load after the theme (lualine and noice at VeryLazy, the
-  -- notifier on the first notification, blink on the first insert) define
-  -- their highlights then: restyle those too.
+  -- Late plugins define their highlights as they load: restyle those too.
   vim.api.nvim_create_autocmd("User", {
     group = group,
     pattern = { "LazyLoad", "VeryLazy" },

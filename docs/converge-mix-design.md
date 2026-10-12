@@ -142,3 +142,30 @@ restored at the next start; reading themes saves nothing; Theme italics on a Mix
 family; the configured Mix is valid; bad names and overrides on config-owned groups are reported. A fixture plugin with
 one dark and one light theme checks that only the dark one is offered, that a theme with no family takes its Mode
 colours and brackets from its own groups, and that a second check reads nothing.
+
+## Found in the whole-branch review
+
+- **A saved Mix wasn't drawn at startup on a cold cache.** This was a regression from naming
+  unnamed themes in the theme hook. converge reads the Mix's themes a tick after
+  `:colorscheme converge` and gives up if the theme's name changed meanwhile. The hook named the
+  unnamed startup theme `converge` at once, so the Mix was never drawn. The hook now waits until
+  converge has drawn it. A test empties the cache, starts a second Neovim, and checks the Mix's code
+  colours.
+- **`lua/mix.lua` owns everything about converge:**
+  - the Mix's name (`M.name`);
+  - its two halves (`M.halves`, which `theme.lua` and `theme_italics.lua` share);
+  - the snapshot reads.
+
+  The Curated themes moved to `lua/curated_themes.lua`. `is_curated` is now `mixable`, since it
+  leaves out the Mix itself.
+- **No change for a syntax theme "missing" a bracket's group.** converge's capture starts from
+  Neovim's defaults and records every group, so a loadable theme's snapshot always has
+  `DiagnosticWarn`, `Keyword` and `Function`. A theme that doesn't set one is drawn with Neovim's
+  default, which is then that theme's colour. Only a theme that won't load has no snapshot, and
+  then all three brackets follow the Mix's own groups.
+- **Left as the spec allows:** a light Added theme named in the Mix isn't reported until a Theme
+  read has run ("counting an added one not read yet"). Reading at startup would cost the Flash it
+  avoids.
+- **Left as is:** `forget()` clears converge's in-memory copies of every theme, not just the
+  family's. converge has no per-theme clear, and the next Mix reloads them from its cache on disk.
+- **The picker formats only the Mix itself.** Every other theme gets Snacks' own formatter.

@@ -37,9 +37,9 @@ own. The words used below (Tint, Layer, Buffer sticks, ...) are defined in [CONT
   theme you add, and the Mix, picked with live preview (`<leader>uC`). The last one applied comes back
   at startup. To add a theme, paste its plugin repo into `added` in
   [`lua/config/themes.lua`](lua/config/themes.lua): every dark theme it ships is offered, read once
-  (a brief flash) the first time the picker opens to leave out the light ones.
+  (a brief pause) the first time the picker opens to leave out the light ones.
 - **Mix**: one theme with the editor's UI from one Curated theme and the code's colours from another
-  (tokyonight-moon + catppuccin-mocha), plus single-group overrides, all set in `mix` in
+  (here tokyonight-moon + onedark), plus single-group overrides, all set in `mix` in
   `lua/config/themes.lua` ([converge.nvim](https://github.com/SunnyTamang/converge.nvim)). Overrides on
   something this config sets (the Tint, Transparency, ...) are replaced, with a warning at startup.
 - **Transparency**: panel and float backgrounds are cleared whatever the theme, so the terminal's

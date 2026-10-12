@@ -12,25 +12,24 @@ the event loop runs as well as after. There is no visual for this design.
 
 ## Terms
 
+These follow the glossary in `CONTEXT.md`.
+
 - **Transparency**: panel and float backgrounds cleared so the terminal's glass shows through,
-  whatever the theme (as in CONTEXT.md). _Avoid_: Glass, no-background.
-- **Theme families**: tokyonight and catppuccin, the built-in Curated themes. Their own plugin
-  options in `lua/plugins/ui.lua` make them transparent. _Avoid_: built-in themes, native themes.
-- **Added theme**: a theme shipped by a plugin repo pasted into `added` in
-  `lua/config/themes.lua` (kanagawa, nordic, oasis-\*, onedark, ...). _Avoid_: custom theme,
-  third-party theme.
-- **The flash**: one or more frames drawn with a theme's solid `Normal` background before
-  Transparency clears it. It happens at startup when the saved theme is an Added theme, and on
-  every switch or preview to one. _Avoid_: flicker.
-- **Synchronous clear**: Transparency applied inside the ColorScheme hook itself, after the theme's
-  background is recorded, so no frame is drawn with that background solid. The scheduled restyle
-  stays for plugins that redefine highlights later. _Avoid_: early clear, instant transparency.
-- **Theme read**: converge applying a theme for a moment to snapshot its groups, either for the Mix
-  or for `M.detect` finding light themes. `mix.reading` is set during a read, so the hook ignores
-  it. _Avoid_: capture, probe.
-- **Baseline**: what tokyonight-moon leaves solid after Transparency: `Folded`, `ColorColumn`,
-  `QuickFixLine`, `WildMenu`, `PmenuSbar`, `FloatShadow`/`FloatShadowThrough`. These are accents,
-  kept by design, and every theme should match them. _Avoid_: reference theme, default look.
+  whatever the theme, a float's Frame included; also the In-text blocks, which keep only their
+  colour. _Avoid_: glass, no-background.
+- **Theme family**: Curated themes that share one setup and one set of options this config knows:
+  tokyonight (night, storm, moon) and catppuccin (frappe, macchiato, mocha). Other Curated themes
+  belong to no family. _Avoid_: colorscheme family, theme pack.
+- **Added theme**: a Curated theme from a plugin named in the config rather than built in; only the
+  dark themes it ships count. _Avoid_: extra theme, installed theme.
+- **Flash**: a redraw showing a theme's solid background before Transparency clears it: at startup,
+  or on a switch or preview to the theme. _Avoid_: flicker.
+- **Theme read**: converge applying a theme for a moment to record its colours, for the Mix or to
+  leave the light Added themes out of the Curated themes; nothing is drawn, saved or restyled
+  meanwhile. _Avoid_: capture, probe.
+- **Baseline**: what Transparency leaves solid on tokyonight-moon: the accents (folds, the colour
+  column, the quickfix line, the wildmenu, the completion scrollbar, float shadows), which every
+  theme keeps solid too. _Avoid_: reference theme, default look.
 
 ## Why
 
@@ -45,7 +44,7 @@ least one frame before it.
 
 ## Locked decisions
 
-### 1. Added themes become transparent through the Synchronous clear (Q1 → A)
+### 1. Added themes become transparent through a clear in the theme hook (Q1 → A)
 
 In `on_change` (`lua/theme.lua`), after `theme_palette()` has recorded `M.background` and the Mode
 colours, and before returning, call `make_transparent()` directly. Keep `vim.schedule(restyle)`
@@ -58,7 +57,7 @@ Ordering matters. `palette_of` reads the live groups of the applied theme (`grou
 `M.background` is lost, and the Tint, Block guide and modes.nvim blend over `#000000`.
 
 `theme.with_background` (used for modes.nvim) still works. Its `solidify_normal` ColorScheme hook
-was created after the theme hook, so it runs after the Synchronous clear. It saves the
+was created after the theme hook, so it runs after the hook's clear. It saves the
 already-cleared `Normal`, makes it solid for modes.nvim's hook, and `restore_normal` puts the
 cleared version back. No redraw happens inside that chain of autocommands.
 
@@ -77,7 +76,7 @@ lualine's theme (`theme.lualine`) is already background-free.
 
 ### 2. Theme reads: hold redraws in `M.detect`, accept the Mix's cache-miss frame (Q4 → C)
 
-The Synchronous clear must not run during a Theme read. converge snapshots a theme's groups after
+The hook's clear must not run during a Theme read. converge snapshots a theme's groups after
 `:colorscheme`, so clearing then would record a transparent snapshot. The early return on
 `require("mix").reading` in `on_change` stays.
 
@@ -126,7 +125,7 @@ Rejected:
   - Rejected: B, clearing the accents too, which would change the Theme families' look as well; C,
     inverting to a keep-list, which would clear accent chips in every theme.
 - **The Theme families keep their own transparency options (Q3 → A).** On top of them the
-  Synchronous clear does nothing, and their options also shade borders and titles for a transparent
+  hook's clear does nothing, and their options also shade borders and titles for a transparent
   background. `tests/transparency_spec.lua` pins that look.
 - **Regression spec (Q5 → A).** Extend `tests/transparency_spec.lua`. Run `M.detect()`, then take
   every dark Added theme from `theme.curated()`, excluding the families and `converge`. For each:
@@ -190,7 +189,7 @@ Extending the spec to every dark Added theme turned up several more ways an Adde
 initial design. All of them are fixed, with tests:
 
 - **Even the Theme families flashed slightly.** tokyonight left `StatusLine` and `Pmenu` solid, and
-  catppuccin left `Pmenu` solid, until the scheduled pass. The Synchronous clear fixes them too.
+  catppuccin left `Pmenu` solid, until the scheduled pass. The hook's clear fixes them too.
   catppuccin's `PmenuKind`/`PmenuBorder` stripes are now cleared, as the Q2 list says.
 - **Light themes offered as dark.** kanagawa-lotus and onelight don't set `'background'` to light,
   so converge records them as dark. `is_dark` in `lua/theme.lua` now also rejects a light editor
@@ -207,6 +206,18 @@ initial design. All of them are fixed, with tests:
   restyles a copy, and each section once.
 - `BufferLineBufferSelected` is no longer asserted: bufferline is disabled in this config, and the
   group is kept on purpose (`keep` matches `Sel`).
+
+## Found in the whole-branch review
+
+- **A Baseline accent linked to a group Transparency clears lost its block.** kanagawa's `WildMenu`
+  is a link to `Pmenu`. Before clearing, `make_transparent` now gives such an accent its target's
+  colours, block included. The per-theme test checks linked accents too, and a fixture theme covers
+  it in CI.
+- **The redraw hold also catches `vim.cmd("redraw")`.** Holding redraws is now one helper,
+  `theme.without_redraws`, shared by the Theme read and `with_background`. An
+  `nvim_command("redraw")` still draws: nothing in the API stops it.
+- **The Theme read moved to `lua/curated_themes.lua`** with the rest of the Curated themes' code.
+  `detect` is now `read_added`, and `M.themes` is now `built_in`.
 
 ## Deferred
 

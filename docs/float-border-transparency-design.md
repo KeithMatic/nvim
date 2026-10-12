@@ -3,7 +3,7 @@
 Some float borders and their contents still show a background: noice's cmdline popup on kanagawa
 and nordic's search icon. A float's
 **Frame** (border, title, footer, prompt icon) will never keep a background on any Curated theme.
-A Frame group that links to a solid group loses that background, and the gutter's diagnostic signs
+A Frame group that links to a solid group loses that background, and the diagnostic signs in the sign column
 are cleared. Plugins that load after the startup theme (**Late plugins**) get the whole restyle
 when they load, so a fresh start looks exactly like a theme change. A **Float sweep** test opens
 every float the config shows on every Curated theme. A startup comparison per theme checks that a
@@ -51,7 +51,7 @@ a theme change and from a fresh start.
 - **Cmdline popup on kanagawa (wave, dragon, lotus excluded as light):** the border, title and icon
   are solid (`#2a2a37` / `#282727`). noice's defaults link `NoiceCmdlinePopupBorder*`,
   `NoiceCmdlinePopupTitle*` and `NoiceCmdlineIcon*` to `DiagnosticSignInfo` / `DiagnosticSignWarn`.
-  kanagawa gives the gutter's signs the SignColumn colour as a background. Transparency keeps links
+  kanagawa gives the sign column's signs the SignColumn colour as a background. Transparency keeps links
   unless they're panel backgrounds ("Normal" names) or In-text blocks, so the solid background comes
   through the link.
 - **nordic:** `NoiceCmdlineIconSearch` is solid.
@@ -86,19 +86,19 @@ The restyle runs after every plugin load, and lualine is refreshed then.
 - **Trade-off accepted:** one restyle pass (a walk over all highlight groups, a few ms) per plugin
   load, mostly during startup.
 
-### Q5: Frame links are broken and the gutter's diagnostic signs are cleared
+### Q5: Frame links are broken and the diagnostic signs in the sign column are cleared
 
 Both fixes apply:
 
 - For a Frame group among the cleared groups (a name containing `Border`, `Title`, `Footer`, `Icon`
   or `Prompt`), break its link when the target has a background. This rule sits beside the existing
   "Normal" panel rule in `make_transparent`.
-- Clear `DiagnosticSign*`, the gutter's diagnostic signs. The gutter is transparent, and GitSigns'
+- Clear `DiagnosticSign*`, the diagnostic signs in the sign column. The sign column is transparent, and GitSigns'
   signs were already cleared.
 
 Rejected:
 
-- **B, Frame link-breaking only:** kanagawa's gutter would keep solid sign blocks beside a clear
+- **B, Frame link-breaking only:** kanagawa's sign column would keep solid sign blocks beside a clear
   SignColumn.
 - **C, clearing `DiagnosticSign*` only:** this fixes today's kanagawa case by accident. A theme that
   links a border to `Pmenu`, or that gives an icon its own background, stays solid. Nordic's search
@@ -222,13 +222,15 @@ None.
   which-key's icons. Breaking dropbar's links (to WinBarNC) dropped their italics. The Frame's icon
   is the prompt's, so the words are Border, Title, Footer, Prompt, CmdlineIcon and InputIcon.
 - **A Frame or panel link is broken only when its final target keeps its background.** A target that
-  is cleared too (the gutter's diagnostic signs, WinBar) ends up transparent anyway, and the link
+  is cleared too (the diagnostic signs in the sign column, WinBar) ends up transparent anyway, and the link
   keeps following what's done to it next. Copying it early froze a stale copy: neo-tree's title bar
   lost WinBar's italics, depending on the order the groups were walked. With the diagnostic signs
   cleared, kanagawa's cmdline popup is fixed through the link. No Curated theme needs the Frame rule
   today, so a test with fixture groups covers it.
-- **nordic's solid search icon is never drawn:** search uses noice's bottom cmdline, not the popup.
-  The Float sweep checks every cmdline format as shown, and they're clear.
+- **nordic's solid search icon was hidden, not undrawn.** noice draws the icon as virtual text in
+  every cmdline view, the bottom one included. "Search" in the Keep list matched
+  `NoiceCmdlineIconSearch`, so Transparency kept it, and the Float sweep's accent check let it pass.
+  A Frame part is now never an accent, in both (found by the whole-branch review).
 - **The notifications' background was `ErrorMsg`.** Snacks' error notifications, and noice's error
   messages, draw with `ErrorMsg`. nord (the user's theme), every oasis variant, onedark, oldworld,
   palenight, vaporwave and others give it a solid block. The first probe only sent info and warn
@@ -259,3 +261,17 @@ None.
     restyle, a tick later, never runs during one.
   - The test keeps its own accent list and link walk rather than reading `lua/theme.lua`'s, so it
     stays an independent check of what's drawn.
+
+## Found in the whole-branch review
+
+- **The startup comparison now catches a group that's empty at startup and drawn on a background
+  after a theme change**, such as the Tint missing from a Late plugin's groups. It still skips a
+  group solid at startup and empty after a change: plugins that set their groups once (Mason,
+  crates, litee, blink's hacks) look like that, and the Float sweep already checks every drawn
+  group at startup for a background.
+- **The sweep sees highlights drawn by decoration providers:** blink's menu items, and treesitter
+  in hover and docs. Their extmarks only exist while a window is drawn, so the check wraps
+  `nvim_buf_set_extmark` around a full redraw and records them.
+- **Restyling Late plugins skips a load during a Theme read.** A read loads the theme's plugin,
+  which isn't a plugin to restyle. Loads in one tick still cost one pass. A test now covers both.
+- **A popup that never shows fails saying so**, with `h.drive`'s own error after it.

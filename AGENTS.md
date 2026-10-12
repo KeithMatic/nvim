@@ -14,4 +14,4 @@ Single-context: one `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/age
 
 ## Tests
 
-Check a change with `tests/run.sh tests/<area>_spec.lua`: it runs in its own sandbox and never syncs or cleans the real plugin install. See README.md › Tests.
+Check a change with `tests/run.sh tests/<area>_spec.lua`: it runs in its own sandbox (`.tests/`) and never syncs or cleans the real plugin install. See README.md › Tests.
