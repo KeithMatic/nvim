@@ -10,7 +10,19 @@ return {
   --   { "rebelot/kanagawa.nvim", variants = { "kanagawa-dragon" }, opts = { theme = "dragon" } },
   -- Transparency is applied to every theme, so leave a theme's own transparency
   -- option off: it hides the background the Tint is faded over.
-  added = {},
+  added = {
+    "olimorris/onedarkpro.nvim",
+    "AlexvZyl/nordic.nvim",
+    "everviolet/nvim",
+    "rebelot/kanagawa.nvim",
+    "wilmanbarrios/palenight.nvim",
+    "dgox16/oldworld.nvim",
+    "gbprod/nord.nvim",
+    "Aejkatappaja/cendre",
+    "JoosepAlviste/palenightfall.nvim",
+    "uhs-robert/oasis.nvim",
+    "2giosangmitom/nightfall.nvim",
+  },
 
   -- The Mix: the editor's UI from one Curated theme, the code's colours from
   -- another, applied as the theme `converge` (converge.nvim's `recipe`).
@@ -20,7 +32,7 @@ return {
   -- by it, and reported at startup. Names with `-`, `.` or `@` go in ["..."].
   mix = {
     ui = "tokyonight-moon",
-    syntax = "catppuccin-mocha",
+    syntax = "onedark",
     overrides = {
       from = {},
       set = {},
