@@ -37,9 +37,7 @@ local function all_highlights()
   for name in pairs(vim.api.nvim_get_hl(0, {})) do
     local hl = resolved(name)
     hl.default = nil
-    if next(hl) then
-      groups[name] = hl
-    end
+    groups[name] = hl
   end
   return groups
 end
@@ -91,15 +89,52 @@ local accents = {
   "MasonMutedBlock",
 }
 
+-- A float's Frame, by name: its border, title, footer and prompt, with the
+-- prompt's icon. Never an accent, even named after one (the search cmdline's
+-- NoiceCmdlineIconSearch).
+local frame = { "Border", "Title", "Footer", "Prompt", "CmdlineIcon", "InputIcon" }
+
 ---@param group string
+---@param words string[]
 ---@return boolean
-local function accent(group)
-  for _, part in ipairs(accents) do
-    if group:find(part, 1, true) then
+local function has_word(group, words)
+  for _, word in ipairs(words) do
+    if group:find(word, 1, true) then
       return true
     end
   end
   return false
+end
+
+---@param group string
+---@return boolean
+local function accent(group)
+  return has_word(group, accents) and not has_word(group, frame)
+end
+
+--- The highlights decoration providers draw in each buffer (blink's menu items,
+--- treesitter's highlights): their extmarks are ephemeral, set only while a
+--- window is drawn, so `nvim_buf_get_extmarks` never returns them. Redraw
+--- everything and note them as they're set.
+---@return table<integer, (string|integer)[]> buffer to highlight groups
+local function drawn_by_providers()
+  local drawn = {}
+  local set_extmark = vim.api.nvim_buf_set_extmark
+  vim.api.nvim_buf_set_extmark = function(buf, ns, row, col, opts)
+    if opts and opts.ephemeral then
+      buf = buf == 0 and vim.api.nvim_get_current_buf() or buf
+      drawn[buf] = drawn[buf] or {}
+      table.insert(drawn[buf], opts.hl_group)
+      for _, chunk in ipairs(opts.virt_text or {}) do
+        vim.list_extend(drawn[buf], type(chunk[2]) == "table" and chunk[2] or { chunk[2] })
+      end
+    end
+    return set_extmark(buf, ns, row, col, opts)
+  end
+  local ok, err = pcall(vim.cmd, "redraw!")
+  vim.api.nvim_buf_set_extmark = set_extmark
+  assert(ok, err)
+  return drawn
 end
 
 --- The Float sweep's check: every group the open windows draw with that has a
@@ -111,7 +146,11 @@ end
 ---@return string[]
 local function solid_in_windows()
   local found = {}
+  local by_providers = drawn_by_providers()
   local function check(win, group)
+    if type(group) == "number" then -- treesitter's, by id
+      group = vim.fn.synIDattr(group, "name")
+    end
     if type(group) == "string" and group ~= "" and not accent(group) and background(group) then
       local filetype = vim.bo[vim.api.nvim_win_get_buf(win)].filetype
       found[("%s: %s (%s)"):format(filetype, group, background(group))] = true
@@ -133,6 +172,9 @@ local function solid_in_windows()
       check(win, chunk[2])
     end
     local buf = vim.api.nvim_win_get_buf(win)
+    for _, group in ipairs(by_providers[buf] or {}) do
+      check(win, group)
+    end
     for _, mark in ipairs(vim.api.nvim_buf_get_extmarks(buf, -1, 0, -1, { details = true })) do
       local details = mark[4]
       for _, key in ipairs({ "hl_group", "line_hl_group", "sign_hl_group", "number_hl_group" }) do
@@ -182,7 +224,7 @@ local cmdline_formats = {
 for _, format in ipairs(cmdline_formats) do
   h.test(theme .. ": the " .. format.name .. " cmdline draws nothing on a background", function()
     local solid
-    h.drive(format.keys, {
+    local ok, err = pcall(h.drive, format.keys, {
       function()
         if not cmdline_shown(format.type, not format.no_icon) then
           return false
@@ -190,7 +232,7 @@ for _, format in ipairs(cmdline_formats) do
         solid = solid_in_windows()
       end,
     })
-    assert(solid, "the cmdline never showed")
+    assert(ok and solid, "the cmdline never showed" .. (ok and "" or ": " .. tostring(err)))
     h.eq(0, #solid, "groups with a background:\n" .. table.concat(solid, "\n"))
   end)
 end
@@ -237,15 +279,21 @@ local function close_windows()
   h.close_splits()
 end
 
---- Open a float with `open`, and once `ready` returns something other than
---- false, run the Float sweep's check and close it with `close`. `open` may
---- wait for a key (the Buffer list, the confirm): the check runs from a timer.
----@param open fun()
----@param ready fun(): any
----@param close? fun() default: close_windows
+--- A float the Float sweep opens: `open` shows it as a user would, `ready`
+--- returns something other than false once it shows, and `close` closes it.
+---@class SweptFloat
+---@field name string
+---@field open fun()
+---@field ready fun(): any
+---@field close? fun() default: close_windows
+
+--- Open `float`, and once it's ready, run the Float sweep's check and close
+--- it. `open` may wait for a key (the Buffer list, the confirm): the check
+--- runs from a timer.
+---@param float SweptFloat
 ---@return string[] solid
-local function sweep(open, ready, close)
-  close = close or close_windows
+local function sweep(float)
+  local open, ready, close = float.open, float.ready, float.close or close_windows
   local solid, outcome
   local deadline = vim.uv.now() + 8000
   local timer = assert(vim.uv.new_timer())
@@ -344,6 +392,7 @@ local function lsp_buffer()
 end
 
 -- The rest of the floats the config shows, each opened as a user would, in turn.
+---@type SweptFloat[]
 local floats = {
   {
     name = "notifications at every level",
@@ -583,7 +632,7 @@ h.test(theme .. ": blink's menu and docs draw nothing on a background", function
   lsp_buffer()
   vim.api.nvim_buf_set_lines(0, 0, -1, false, { "" })
   local solid
-  h.drive("i", {
+  local ok, err = pcall(h.drive, "i", {
     "gre",
     function()
       if not (window_of("blink-cmp-menu") and window_of("blink-cmp-documentation")) then
@@ -593,13 +642,13 @@ h.test(theme .. ": blink's menu and docs draw nothing on a background", function
     end,
   })
   close_windows()
-  assert(solid, "blink's menu and docs never showed")
+  assert(ok and solid, "blink's menu and docs never showed" .. (ok and "" or ": " .. tostring(err)))
   h.eq(0, #solid, "groups with a background:\n" .. table.concat(solid, "\n"))
 end)
 
 for _, float in ipairs(floats) do
   h.test(theme .. ": " .. float.name .. " draw nothing on a background", function()
-    local solid = sweep(float.open, float.ready, float.close)
+    local solid = sweep(float)
     h.eq(0, #solid, "groups with a background:\n" .. table.concat(solid, "\n"))
   end)
 end
@@ -636,18 +685,24 @@ h.test(theme .. ": with every plugin loaded, it looks as when the theme is appli
   h.apply_theme(theme)
   local again = all_highlights()
 
-  -- Groups only one side defines are the plugin's doing, not the look's: some
-  -- define theirs on first use (blink), some don't define them again after a
-  -- theme change (aerial, lspsaga, crates).
+  -- A group only one side defines is mostly the plugin's doing: some define
+  -- theirs on first use (blink), some don't define them again after a theme
+  -- change (aerial, Mason, crates), which leaves them empty. Not one that's
+  -- empty at startup but draws on a background after a theme change (the Tint
+  -- missing from a Late plugin's groups). One solid at startup is the Float
+  -- sweep's to find: it checks what's drawn then.
   local differ = {}
-  for name in pairs(again) do
-    if startup[name] and not not_compared(name) and not vim.deep_equal(startup[name], again[name]) then
+  for name in pairs(vim.tbl_extend("force", {}, startup, again)) do
+    local before, after = startup[name] or {}, again[name] or {}
+    local both = next(before) ~= nil and next(after) ~= nil
+    local gains_a_background = next(before) == nil and after.bg ~= nil
+    if (both or gains_a_background) and not not_compared(name) and not vim.deep_equal(before, after) then
       table.insert(
         differ,
         ("%s: %s, applied again %s"):format(
           name,
-          vim.inspect(startup[name], { newline = " ", indent = "" }),
-          vim.inspect(again[name], { newline = " ", indent = "" })
+          vim.inspect(before, { newline = " ", indent = "" }),
+          vim.inspect(after, { newline = " ", indent = "" })
         )
       )
     end

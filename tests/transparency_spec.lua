@@ -186,8 +186,9 @@ for _, theme in ipairs(themes) do
     h.apply_theme(theme)
     local cleared = {}
     for _, group in ipairs(baseline) do
-      -- A link follows its target (kanagawa's WildMenu is Pmenu).
-      local own = snap and not snap.links[group] and snap.groups[group]
+      -- Linked too: kanagawa's WildMenu is Pmenu, which Transparency clears,
+      -- and it stays the solid block kanagawa drew it as.
+      local own = snap and snap.groups[group]
       if own and own.bg and not bg(group) then
         table.insert(cleared, group)
       end
@@ -389,4 +390,81 @@ h.test("a Frame part linked to a solid group shows no background, other links ke
   h.eq(true, bg("Folded") ~= nil, "Folded keeps its background (the Baseline)")
   h.eq(nil, bg("NoiceCmdlinePopupBorderFixture"), "the Frame part")
   h.eq(bg("Folded"), bg("NoiceCmdlinePopupFixture"), "the other link")
+end)
+
+-- A Frame part named after an accent (the search cmdline's icon, which nordic
+-- gives a background) is still the Frame: it shows no background, while the
+-- accent it's named after keeps one.
+h.test("a Frame part named after an accent (the search icon) shows no background", function()
+  local id = vim.api.nvim_create_autocmd("ColorScheme", {
+    callback = function()
+      vim.api.nvim_set_hl(0, "NoiceCmdlineIconSearchFixture", { fg = "#e0af68", bg = "#191d24" })
+    end,
+  })
+  h.apply_theme("tokyonight-moon")
+  vim.api.nvim_del_autocmd(id)
+  h.eq(nil, bg("NoiceCmdlineIconSearchFixture"), "the search icon")
+  h.eq(true, bg("Search") ~= nil, "Search keeps its background")
+end)
+
+-- Plugins that load after the theme are restyled as they load: once a tick,
+-- however many load in it, and not while converge reads a theme (its reads
+-- load the themes' plugins).
+h.test("plugins that load are restyled once a tick, and not while converge reads a theme", function()
+  h.apply_theme("tokyonight-moon")
+  local mix = require("mix")
+  --- Whether a solid group in Transparency's reach is still solid after
+  --- `count` plugins load in one tick, `reading` or not.
+  local function solid_after_loads(count, reading)
+    vim.api.nvim_set_hl(0, "NoiceCmdlineLateFixture", { bg = "#191d24" })
+    mix.reading = reading
+    for _ = 1, count do
+      vim.api.nvim_exec_autocmds("User", { pattern = "LazyLoad", modeline = false })
+    end
+    mix.reading = false
+    vim.wait(100, function()
+      return false
+    end)
+    return bg("NoiceCmdlineLateFixture") ~= nil
+  end
+  h.eq(true, solid_after_loads(1, true), "loaded while converge reads a theme")
+  h.eq(false, solid_after_loads(1, false), "loaded otherwise")
+
+  -- A restyle walks every group: count the walks.
+  local walks, get_hl = 0, vim.api.nvim_get_hl
+  vim.api.nvim_get_hl = function(ns, opts)
+    walks = walks + ((ns == 0 and next(opts) == nil) and 1 or 0)
+    return get_hl(ns, opts)
+  end
+  local ok, err = pcall(function()
+    solid_after_loads(1, false)
+    local one = walks
+    walks = 0
+    solid_after_loads(5, false)
+    h.eq(one, walks, "walks for five loads in a tick, as for one")
+  end)
+  vim.api.nvim_get_hl = get_hl
+  assert(ok, err)
+end)
+
+-- A theme may draw a Baseline accent by linking it to a group Transparency
+-- clears (kanagawa's WildMenu is Pmenu): the accent keeps the solid block the
+-- theme drew it as, while the group it linked to is cleared.
+h.test("a Baseline accent linked to a group Transparency clears keeps the theme's background", function()
+  local dir = vim.fn.tempname()
+  vim.fn.mkdir(dir .. "/colors", "p")
+  vim.fn.writefile({
+    'vim.cmd("hi clear")',
+    'vim.o.background = "dark"',
+    'vim.g.colors_name = "linked-accent-dark"',
+    'vim.api.nvim_set_hl(0, "Normal", { fg = "#d0d0d0", bg = "#101820" })',
+    'vim.api.nvim_set_hl(0, "Pmenu", { fg = "#d0d0d0", bg = "#2a2a37" })',
+    'vim.api.nvim_set_hl(0, "WildMenu", { link = "Pmenu" })',
+  }, dir .. "/colors/linked-accent-dark.lua")
+  vim.opt.rtp:append(dir)
+  h.apply_theme("linked-accent-dark")
+  local wildmenu, pmenu = bg("WildMenu"), bg("Pmenu")
+  h.apply_theme("tokyonight-moon")
+  h.eq("#2a2a37", wildmenu and ("#%06x"):format(wildmenu), "WildMenu")
+  h.eq(nil, pmenu, "Pmenu")
 end)

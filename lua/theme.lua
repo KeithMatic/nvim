@@ -333,10 +333,14 @@ local transparency = {
   in_text = { "@markup.heading", "@markup.raw", "DiagnosticVirtualText", "LspInlayHint", "RenderMarkdown" },
   -- A float's Frame, by name: its border, title, footer and prompt, with the
   -- prompt's icon (not other icons: dropbar's, which-key's). Cleared even when
-  -- they're links: noice links its cmdline popup's to the gutter's diagnostic
-  -- signs, which some themes (kanagawa) give a background.
+  -- linked to a group that keeps a background, and even when named after an
+  -- accent (noice's NoiceCmdlineIconSearch, which nordic makes solid).
   frame = { "Border", "Title", "Footer", "Prompt", "CmdlineIcon", "InputIcon" },
   keep = { "Cursor", "Sel", "Visual", "Search", "Diff", "Thumb", "ScrollBar", "Scrollbar", "PickWin" },
+  -- The Baseline: the accents every theme keeps solid. One a theme draws by
+  -- linking it to a group cleared here (kanagawa's WildMenu is Pmenu) keeps the
+  -- block the theme drew.
+  baseline = { "Folded", "ColorColumn", "QuickFixLine", "WildMenu", "PmenuSbar", "FloatShadow", "FloatShadowThrough" },
 }
 
 --- Whether `name` starts with one of `prefixes`.
@@ -353,11 +357,14 @@ local function has_word(name, words)
   end)
 end
 
+--- Whether Transparency clears `name`: a listed group, unless it's an accent
+--- (`keep`). A Frame part is never an accent, even named after one (noice's
+--- NoiceCmdlineIconSearch).
 local function should_clear(name)
   local listed = vim.list_contains(transparency.groups, name)
     or has_prefix(name, transparency.prefixes)
     or has_prefix(name, transparency.in_text)
-  return listed and not has_word(name, transparency.keep)
+  return listed and (has_word(name, transparency.frame) or not has_word(name, transparency.keep))
 end
 
 --- The group `name`'s links end at.
@@ -380,11 +387,21 @@ end
 --- (NeoTreeNormal to evergarden's Panel), which take their target's colours
 --- instead. Other links (NeoTreePreview to Search) keep their accent, and links
 --- to a group cleared here (noice's cmdline border to DiagnosticSignInfo) stay,
---- to follow what's done to it next (the italics).
+--- to follow what's done to it next (the italics). First, a Baseline accent
+--- linked to a group cleared here takes that group's colours, block included.
 local function make_transparent()
+  -- Targets are read raw: `link = false` follows the current window's
+  -- 'winhighlight' too. A Baseline accent first, before its target is cleared.
+  for _, name in ipairs(transparency.baseline) do
+    local target = vim.api.nvim_get_hl(0, { name = link_target(name) })
+    if vim.api.nvim_get_hl(0, { name = name }).link and should_clear(link_target(name)) and target.bg then
+      target.default = nil
+      vim.api.nvim_set_hl(0, name, target)
+    end
+  end
   for name, hl in pairs(vim.api.nvim_get_hl(0, {})) do
     if hl.link and should_clear(name) then
-      local target = vim.api.nvim_get_hl(0, { name = name, link = false })
+      local target = vim.api.nvim_get_hl(0, { name = link_target(name) })
       local keeps_bg = (target.bg or target.ctermbg) and not should_clear(link_target(name))
       local panel_or_frame = keeps_bg and (name:find("Normal", 1, true) or has_word(name, transparency.frame))
       if panel_or_frame or has_prefix(name, transparency.in_text) then
@@ -707,7 +724,12 @@ function M.load()
   vim.api.nvim_create_autocmd("User", {
     group = group,
     pattern = { "LazyLoad", "VeryLazy" },
-    callback = restyle_late,
+    callback = function()
+      -- converge reading a theme loads its plugin: not a plugin to restyle.
+      if not require("mix").reading then
+        restyle_late()
+      end
+    end,
   })
   -- Scheduled, so it also covers LazyVim's own fallback (habamax) should the default fail too.
   restoring = true
