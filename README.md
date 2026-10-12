@@ -33,8 +33,15 @@ own. The words used below (Tint, Layer, Buffer sticks, ...) are defined in [CONT
 
 ### Look
 
-- **Curated themes**: tokyonight (night, storm, moon) and catppuccin (frappe, macchiato, mocha), picked
-  with live preview (`<leader>uC`). The last one applied comes back at startup.
+- **Curated themes**: tokyonight (night, storm, moon), catppuccin (frappe, macchiato, mocha), any
+  theme you add, and the Mix, picked with live preview (`<leader>uC`). The last one applied comes back
+  at startup. To add a theme, paste its plugin repo into `added` in
+  [`lua/config/themes.lua`](lua/config/themes.lua): every dark theme it ships is offered, read once
+  (a brief pause) the first time the picker opens to leave out the light ones.
+- **Mix**: one theme with the editor's UI from one Curated theme and the code's colours from another
+  (here tokyonight-moon + onedark), plus single-group overrides, all set in `mix` in
+  `lua/config/themes.lua` ([converge.nvim](https://github.com/SunnyTamang/converge.nvim)). Overrides on
+  something this config sets (the Tint, Transparency, ...) are replaced, with a warning at startup.
 - **Transparency**: panel and float backgrounds are cleared whatever the theme, so the terminal's
   glass shows through. Diagnostics, inlay hints and Markdown blocks keep only their colour.
 - **Tint**: the cursor line, the Explorer's line and the selected menu item get one colour faded over
@@ -131,7 +138,7 @@ any prefix.
 | --- | --- |
 | `<leader>sK` ★ | Cheat sheet: this README in a float |
 | `<leader><Space>` | Find files (root dir) |
-| `<leader>/` ★ | Toggle comment (line, or the selection) |
+| `<leader>/` ★ | Toggle a comment on the line (normal) or the selection (visual) |
 | `<leader>,` | Buffers |
 | `<leader>:` | Command history |
 | `<leader>.` / `<leader>S` | Scratch buffer / select scratch buffer |
@@ -326,7 +333,7 @@ any prefix.
 | `<leader>Da` ★ | Add a connection |
 | `<leader>Ds` ★ | New scratchpad |
 | `<leader>Dc` ★ | Cancel the running query |
-| `<leader>Dr` ★ | Run the statement (or the selection) — SQL files |
+| `<leader>Dr` ★ | Run the statement (normal) or the selection (visual) — SQL files |
 | `<leader>De` ★ | Run the whole file — SQL files |
 | `<leader>Db` ★ | Switch the buffer's database — SQL files |
 | `?` | Show the drawer's and results' keys (inside them) |
@@ -483,6 +490,7 @@ A Layer lays one-key actions over the usual keys until you leave it. `?` lists i
 ```
 init.lua                 bootstraps lazy.nvim
 lua/config/              LazyVim's options, keymaps, autocmds and the extras list (lazy.lua)
+lua/config/themes.lua    the themes you add and the Mix
 lua/plugins/             plugin specs, one file per area (ui, editing, explorer, database, ...)
 lua/*.lua                this config's own modules (theme, runner, terminal, semicolon, ...)
 lua/layer/               the Layers
@@ -502,6 +510,10 @@ Each spec boots the real config headlessly inside an isolated XDG sandbox in `.t
 config, data, state and cache), so a test run never touches my real Neovim state, saved theme or
 plugins. The first run, and any run after `lazy-lock.json` changes, installs plugins at their locked
 versions plus LazyVim's Mason tools and Treesitter parsers into the sandbox.
+
+`mix_spec` and `theme_spec` read `tests/theme/themes.lua` in place of `lua/config/themes.lua` (no
+themes added, the default Mix), so adding themes or changing the Mix doesn't break them.
+`transparency_spec` checks every theme added there, and `boot_spec` that the Mix names real ones.
 
 A run ends with a recap of every failure, so `tests/run.sh | tail` is enough to read one. The whole run is saved to `.tests/last.log`, and each spec's Neovim messages to `.tests/messages/<spec>.log`.
 

@@ -1,0 +1,189 @@
+# The Mix and added themes: design
+
+Bring in [converge.nvim](https://github.com/SunnyTamang/converge.nvim) to offer a **Mix**: one Curated theme with the
+editor's UI from one theme and the code's colours from another. Alongside it, any theme can become a Curated theme by
+pasting its plugin repo into one list. Both live in one file you edit, `lua/config/themes.lua`.
+
+## Terms
+
+These follow the glossary in `CONTEXT.md`.
+
+- **Curated themes**: the dark themes the theme picker offers: some built in, any others added by naming their plugin
+  (every dark theme it ships), and the **Mix**; the last one applied is restored at startup. *Avoid:* colorschemes (for
+  the curated list), theme list.
+- **Theme family**: Curated themes that share one setup and one set of options this config knows: tokyonight (night,
+  storm, moon) and catppuccin (frappe, macchiato, mocha). Other Curated themes belong to no family. *Avoid:* colorscheme
+  family, theme pack.
+- **Mix**: a Curated theme made from two others: the editor's UI from one, the code's colours from another, as the
+  config names them. Offered in the theme picker beside the rest. *Avoid:* converge (the plugin, not the concept),
+  blend, hybrid, recipe (converge's word for its settings, fine in code about them).
+- **Override**: a single highlight group of the Mix taken from another theme or given its own colours, as the config
+  names it. What this config's own look sets (the Tint, Transparency, the Mode colours, ...) wins over it. *Avoid:*
+  tweak, customisation.
+- **Added theme**: a Curated theme from a plugin named in the config rather than built in; only the dark themes it
+  ships count. *Avoid:* extra theme (Extra italics are something else), installed theme.
+- **Mode colours**: the theme's colours for normal, insert, visual, command, delete and copy, shared by the Cursor
+  line, the Mode-coloured line number and the statusline's mode icon.
+- **Tint**: the colour faded over the theme's background that marks "where am I" lines: the cursor line, the
+  explorer's line and the selected menu item. *Avoid:* cursorline colour, highlight.
+- **Transparency**: panel and float backgrounds cleared so the terminal's glass shows through, whatever the theme;
+  also the In-text blocks, which keep only their colour. *Avoid:* glass, no-background.
+- **Rainbow brackets**: bracket pairs coloured by how deeply they nest, cycling the theme's yellow, purple and blue.
+  *Avoid:* bracket pair colourisation, rainbow-delimiters (the plugin, not the concept).
+- **Block guide**: the single dotted line drawn down the block the cursor is in, in a faint shade of that block's
+  Rainbow brackets. *Avoid:* indent guides, scope.
+- **Reference highlights**: the marks on other occurrences of the word under the cursor; an underline, never a
+  background block. *Avoid:* links, word highlights, LSP references.
+- **Theme italics**: which Syntax types are drawn in italics, chosen in one picker with two sections: the options the
+  current Theme family offers, chosen separately for each family, then the Extra italics. *Avoid:* font style, italic
+  toggles.
+- **Extra italics**: Syntax types this config makes italic after any theme loads, chosen once and shared by every
+  theme. *Avoid:* custom italics, italic overrides.
+- **Flash**: a redraw showing a theme's solid background before Transparency clears it: at startup,
+  or on a switch or preview to the theme. *Avoid:* flicker; not flash.nvim's jumps.
+- **Theme read**: converge applying a theme for a moment to record its colours, for the **Mix** or
+  to leave the light Added themes out of the Curated themes. Nothing is saved or restyled
+  meanwhile, and the read that leaves out the light themes draws nothing. *Avoid:* capture, probe.
+
+## Why
+
+In the user's words: "I've just discovered this converge.nvim plugin for themes and I want to incorporate it", wanting
+"UI from one Curated theme, syntax from another", and then "the ability to add new themes by just pasting the theme's
+plugin repo", remembering "that converge.nvim has a recipe option that allows for overrides, ui and syntax".
+
+## What converge.nvim does, and where it met this config
+
+converge reads each theme once with a real `:colorscheme`, records every highlight group, caches that copy (refreshed
+when the theme's files change), and applies a mix of them as one colorscheme named `converge`. Slices: `ui`, `syntax`,
+`diagnostics`, `git`, `terminal`, `plugins`; overrides take single groups `from` another theme or `set` them.
+
+Before this change, `lua/theme.lua` found a theme's palette from its name (`^tokyonight%-`, `^catppuccin%-`), and
+`lua/theme_italics.lua` found the family the same way. Under converge the name is `converge`, so the Mode colours,
+Rainbow brackets and italics family all fell through; the fallback background read `Normal`, which the themes' own
+transparency leaves empty, so the Tint blended over black. converge's cache also ignores theme options, so a Theme
+italics change replayed stale colours.
+
+## Locked decisions
+
+### 1. converge is a dependency, locked, never vendored
+
+Pinned in `lazy-lock.json`. It has no licence, so its code is not copied in. *Rejected:* waiting; writing our own
+mixer (kept as the fallback if converge breaks).
+
+### 2. One Mix, written in `lua/config/themes.lua`, and one picker
+
+`mix = { ui = "tokyonight-moon", syntax = "catppuccin-mocha", overrides = { from = {}, set = {} } }`, shaped like
+converge's `recipe`. `diagnostics`, `git`, `terminal` and `plugins` follow the UI theme. The Mix is one entry in the
+Curated themes picker (`<leader>uC`), shown by its pair and override count, e.g. `tokyonight-moon + catppuccin-mocha ·
+2 overrides`, and applies `converge`. The theme saved in `theme.json` stays the only saved choice.
+
+`:Converge` is deleted when converge loads, and its saved recipe with it, because a recipe saved from its picker would
+win over the config. *Rejected:* `:Converge` beside the Curated picker (a second saved choice); replacing the Curated
+themes with recipes; several named Mixes (converge holds one recipe).
+
+### 3. Which theme the config's own colours come from
+
+On a Mix: the background (which the Tint, the Block guide and modes.nvim fade over) and the Mode colours from the UI
+theme; the Rainbow brackets and the Block guide from the syntax theme. A theme in a Theme family uses its palette; any
+other theme is read from its own highlight groups: the background from `Normal` (else `NormalFloat`, else `Pmenu`), and
+
+| Mode colour / bracket | Group |
+|---|---|
+| insert | `String` |
+| visual | `Keyword` |
+| delete | `DiagnosticError` |
+| copy | `DiagnosticWarn` |
+| normal | `Function` |
+| command | `Constant` |
+| brackets | `DiagnosticWarn`, `Keyword`, `Function` |
+
+A missing group leaves modes.nvim's own colour. The groups are read from the theme as it loads, before Transparency
+clears them; a theme that isn't the one applied (the Mix's halves) is read from converge's copy of it.
+
+### 4. Theme italics on a Mix
+
+`<leader>uy` offers the syntax theme's family options (or only the Extra italics, when it has no family). Any change to
+a family's options drops converge's copies of that family's themes, so the Mix is read again with them.
+
+### 5. Overrides: only on the Mix, and the config's look wins
+
+An override on something the config sets (the Tint, Transparency, Mode colours, Rainbow brackets, Block guide,
+Reference highlights, the always-italic groups) is replaced by it, and reported in a warning at startup, naming
+what it replaces. A `from` override or a `set` link brings the whole group, so every attribute the config sets
+counts. A `from` theme that isn't a Curated theme is reported too. A tweaked single theme is a Mix of that theme with
+itself. *Rejected:* overrides winning over the config's look (the same colour set in two places); overrides on any
+Curated theme (two override systems).
+
+### 6. Added themes: paste a repo
+
+`added = { "rebelot/kanagawa.nvim" }`. An entry is a repo, or a table `{ "repo", variants = { ... }, opts = { ... } }`
+(`opts` goes to the theme's `setup()` through lazy.nvim; `variants` narrows its themes; `dir` instead of a repo names a
+local plugin). Each becomes a lazy-loaded plugin. Every theme it ships is a Curated theme, except light ones: the first
+time the picker opens after adding one, each new theme is read once (a brief flash) and the light ones are dropped. The
+reads are kept in converge's cache, so they happen again only when the theme's files change. *Rejected:* a `:ThemeAdd`
+command; guessing light themes by name.
+
+A Mix can use any Curated theme. One whose syntax theme has no family offers only the Extra italics.
+
+### 7. A Mix naming something that isn't a Curated theme
+
+A warning at startup names it. A bad UI theme falls back to the default theme, a bad syntax theme to the UI theme. A
+test fails when the configured Mix names anything that isn't a Curated theme, or overrides a group the config sets.
+
+### 8. converge's reads are never your theme
+
+While converge reads a theme (for the Mix, or to find light ones), the theme hook ignores it: nothing is saved, tinted
+or restyled.
+
+### 9. The default theme stays `tokyonight-moon`
+
+It's what a fresh start falls back to, and it depends on the fewest things.
+
+## Testing
+
+`tests/mix_spec.lua`, through the same headless sandbox: the Mix's UI and syntax groups match their themes; its
+background and Mode colours come from the UI theme and its brackets from the syntax theme; it's listed by its pair and
+restored at the next start; reading themes saves nothing; Theme italics on a Mix rebuild it with the syntax theme's
+family; the configured Mix is valid; bad names and overrides on config-owned groups are reported. A fixture plugin with
+one dark and one light theme checks that only the dark one is offered, that a theme with no family takes its Mode
+colours and brackets from its own groups, and that a second check reads nothing.
+
+## Found in the whole-branch review
+
+- **A saved Mix wasn't drawn at startup on a cold cache.** This was a regression from naming
+  unnamed themes in the theme hook. converge reads the Mix's themes a tick after
+  `:colorscheme converge` and gives up if the theme's name changed meanwhile. The hook named the
+  unnamed startup theme `converge` at once, so the Mix was never drawn. The hook now waits until
+  converge has drawn it. A test empties the cache, starts a second Neovim, and checks the Mix's code
+  colours.
+- **`lua/mix.lua` owns everything about converge:**
+  - the Mix's name (`M.name`);
+  - its two halves (`M.halves`, which `theme.lua` and `theme_italics.lua` share);
+  - the snapshot reads.
+
+  The Curated themes moved to `lua/curated_themes.lua`. `is_curated` is now `mixable`, since it
+  leaves out the Mix itself.
+- **No change for a syntax theme "missing" a bracket's group.** A Theme read starts from
+  Neovim's defaults and records every group, so a loadable theme's snapshot always has
+  `DiagnosticWarn`, `Keyword` and `Function`. A theme that doesn't set one is drawn with Neovim's
+  default, which is then that theme's colour. Only a theme that won't load has no snapshot, and
+  then all three brackets follow the Mix's own groups.
+- **Left as the spec allows:** a light Added theme named in the Mix isn't reported until a Theme
+  read has run ("counting an added one not read yet"). Reading at startup would cost the Flash it
+  avoids.
+- **Left as is:** `forget()` clears converge's in-memory copies of every theme, not just the
+  family's. converge has no per-theme clear, and the next Mix reloads them from its cache on disk.
+- **The picker formats only the Mix itself.** Every other theme gets Snacks' own formatter.
+
+## Review of the fixes
+
+What the review of the fixes left as is:
+
+- **Reading converge's record directly.** `curated_themes` and transparency_spec read a Theme
+  read's record directly (`background`, `groups.Normal`). It's converge's own shape, shared by
+  every caller, and a wrapper for each field would only pass it through.
+- **`theme`, `mix` and `curated_themes` require one another, but only inside functions,** so
+  nothing fails at load. `theme.lightness` and `theme.apply_unsaved` are public for
+  `curated_themes`.
+- **"gutter" in the README and the added-theme doc.** The glossary's own Icon set entry says
+  "gutter signs". The _Avoid_ under Line numbers is about calling the line numbers a gutter.

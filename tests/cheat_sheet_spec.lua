@@ -8,7 +8,7 @@ h.attach_ui(160, 40)
 local readme = vim.fn.stdpath("config") .. "/README.md"
 
 h.test("<leader>sK is the cheat sheet", function()
-  h.eq("Keymaps & Features", vim.fn.maparg(vim.g.mapleader .. "sK", "n", false, true).desc, "<leader>sK")
+  h.eq("Open Keymaps & Features", vim.fn.maparg(vim.g.mapleader .. "sK", "n", false, true).desc, "<leader>sK")
 end)
 
 h.test("<leader>sK opens the README's text in a float over the file, read-only", function()

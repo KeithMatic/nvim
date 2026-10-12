@@ -181,7 +181,7 @@ end)
 -- Search keeps its background (see lua/theme.lua), and SagaSearch links to it.
 local keeps = { "SagaSearch" }
 
-for _, theme in ipairs(require("theme").themes) do
+for _, theme in ipairs(require("curated_themes").built_in) do
   h.test(theme .. ": Saga* groups have no background", function()
     require("lazy").load({ plugins = { "lspsaga.nvim" } })
     h.apply_theme(theme)
@@ -205,5 +205,5 @@ for _, theme in ipairs(require("theme").themes) do
 end
 
 h.test("there are Curated themes to check Saga* groups against", function()
-  h.eq(true, #require("theme").themes > 0, "require('theme').themes")
+  h.eq(true, #require("curated_themes").built_in > 0, "require('curated_themes').built_in")
 end)

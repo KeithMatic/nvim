@@ -8,23 +8,75 @@ theme-driven look and a handful of VS Code habits carried over.
 ### Look
 
 **Curated themes**:
-The short list of dark themes the theme picker offers; the last one applied is restored at startup.
+The dark themes the theme picker offers: some built in, any others added by naming their plugin
+(every dark theme it ships), and the **Mix**; the last one applied is restored at startup.
 _Avoid_: Colorschemes (for the curated list), theme list
 
 **Transparency**:
-Panel and float backgrounds cleared so the terminal's glass shows through, whatever the theme; also
-the **In-text blocks**, which keep only their colour.
+Panel and float backgrounds cleared so the terminal's glass shows through, whatever the theme, a
+float's **Frame** included; also the **In-text blocks**, which keep only their colour.
 _Avoid_: Glass, no-background
+
+**Frame**:
+A float's border, title, footer and prompt, with the prompt's icon (noice's cmdline icon): what
+surrounds a float's text, shown in its colour only, even when a theme or plugin links it to a group
+with a background.
+_Avoid_: chrome, decoration, border items
+
+**Float sweep**:
+The test that opens every float the config shows after a fresh start, on every **Curated theme**,
+and checks nothing it draws has a background but the accents that keep one (the selected item, the
+cursor, search matches, scrollbar thumbs, confirm buttons, progress bars, the picker's window labels).
+_Avoid_: float audit, popup test
 
 **In-text blocks**:
 Highlights drawn inside the text as a solid block: diagnostics at the end of a line, inlay hints, and
 Markdown heading bars, inline code and code blocks.
 _Avoid_: Chips (those are accents that keep their background)
 
+**Baseline**:
+What **Transparency** leaves solid on tokyonight-moon: the accents (folds, the colour column, the
+quickfix line, the wildmenu, the completion scrollbar, float shadows), which every theme keeps solid too.
+_Avoid_: Reference theme, default look
+
+**Flash**:
+A redraw showing a theme's solid background before **Transparency** clears it: at startup, or on a
+switch or preview to the theme.
+_Avoid_: flicker; not flash.nvim's jumps (Flash, the plugin, not this)
+
+**Theme read**:
+converge applying a theme for a moment to record its colours, for the **Mix** or to leave the light
+**Added themes** out of the **Curated themes**. Nothing is saved or restyled meanwhile, and the
+read that leaves out the light themes draws nothing.
+_Avoid_: capture, probe
+
+**Late plugin**:
+A plugin loaded after the startup theme (lualine and noice at VeryLazy, the notifier on the first
+notification, blink on the first insert), which defines its highlights then and is restyled as it
+loads, so a fresh start looks as applying the theme does.
+_Avoid_: lazy plugin, deferred plugin
+
 **Theme family**:
-Curated themes that share one setup and one set of options: tokyonight (night, storm, moon) and
-catppuccin (frappe, macchiato, mocha).
+Curated themes that share one setup and one set of options this config knows: tokyonight (night,
+storm, moon) and catppuccin (frappe, macchiato, mocha). Other Curated themes belong to no family.
 _Avoid_: Colorscheme family, theme pack
+
+**Mix**:
+A Curated theme made from two others: the editor's UI from one, the code's colours from another, as
+the config names them. Offered in the theme picker beside the rest.
+_Avoid_: Converge (the plugin, not the concept), blend, hybrid, recipe (converge's word for its
+settings, fine in code about them)
+
+**Override**:
+A single highlight group of the **Mix** taken from another theme or given its own colours, as the
+config names it. What this config's own look sets (the **Tint**, **Transparency**, the **Mode
+colours**, ...) wins over it.
+_Avoid_: Tweak, customisation
+
+**Added theme**:
+A Curated theme from a plugin named in the config rather than built in; only the dark themes it
+ships count.
+_Avoid_: Extra theme (Extra italics are something else), installed theme
 
 **Syntax type**:
 A kind of code text the editor colours on its own: comments, keywords, strings, function names,

@@ -1,7 +1,10 @@
--- Themes: the curated list of dark themes, persistence, transparency and the
--- tint. Every theme change, however it happens (the picker, `:colorscheme`),
--- goes through one ColorScheme hook, which:
---   1. records the theme's own editor background (`M.background`),
+-- Themes: the look of every Curated theme (lua/curated_themes.lua lists them),
+-- persistence, Transparency and the Tint. Every theme change,
+-- however it happens (the picker, `:colorscheme`), goes through one
+-- ColorScheme hook (but for converge's reads of themes, lua/mix.lua), which:
+--   1. records the theme's own editor background (`M.background`; on the Mix,
+--      its UI theme's, as are the Mode colours, while the brackets are its
+--      syntax theme's),
 --   2. gives modes.nvim the theme's mode colours, and the background to fade
 --      them over,
 --   3. tints the "where am I" lines: the tint colour faded over that background,
@@ -12,23 +15,84 @@
 --   6. saves the theme so the next start restores it (live previews in the
 --      picker and the theme applied at startup aren't saved),
 --   7. clears the background of whatever the themes' native transparency
---      options leave solid, so the terminal's glass shows through, makes
---      the line diagnostics and the Breadcrumbs italic, and applies the Extra
---      italics (lua/theme_italics.lua).
+--      options leave solid (all of it, on an added theme), so the terminal's
+--      glass shows through: at once, so no redraw shows the theme's background,
+--      and again once plugins have redefined theirs,
+--   8. makes the line diagnostics and the Breadcrumbs italic, and applies the
+--      Extra italics (lua/theme_italics.lua).
 local M = {}
-
--- The only themes the picker offers.
-M.themes = {
-  "catppuccin-frappe",
-  "catppuccin-macchiato",
-  "catppuccin-mocha",
-  "tokyonight-night",
-  "tokyonight-storm",
-  "tokyonight-moon",
-}
 
 -- Used when nothing is saved, or the saved theme won't load.
 M.default = "tokyonight-moon"
+
+--- The red, green and blue of "#rrggbb", 0 to 255 each.
+local function channels(hex)
+  return tonumber(hex:sub(2, 3), 16), tonumber(hex:sub(4, 5), 16), tonumber(hex:sub(6, 7), 16)
+end
+
+--- How light "#rrggbb" looks, from 0 (black) to 1 (white).
+---@param color string
+---@return number
+function M.lightness(color)
+  local r, g, b = channels(color)
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255
+end
+
+-- True while startup applies the saved theme (or a fallback), which is never saved.
+local restoring = false
+
+--- Apply theme `name` without saving it: the theme put back after a Theme read.
+---@param name string
+function M.apply_unsaved(name)
+  restoring = true
+  pcall(vim.cmd.colorscheme, name)
+  restoring = false
+end
+
+-- Command modifiers that may come before a `:redraw`.
+local modifiers = { "silent", "silent!", "unsilent", "noautocmd", "keepalt", "keepjumps", "keepmarks", "lockmarks" }
+
+--- Whether `command`, as `vim.cmd` takes it (a string, or a table such as
+--- { cmd = "redraw" }), is a `:redraw`, after any modifiers.
+---@param command string|table
+---@return boolean
+local function is_redraw(command)
+  if type(command) == "table" then
+    return type(command.cmd) == "string" and command.cmd:match("^redr[aw]*$") ~= nil
+  end
+  local words = vim.split(vim.trim(command), "%s+")
+  for i = 1, #words - 1 do
+    if not vim.list_contains(modifiers, words[i]) then
+      return false
+    end
+  end
+  return words[#words]:match("^redr[aw]*!?$") ~= nil
+end
+
+--- Run `fn` with nothing redrawn: 'lazyredraw' on, and Lua's `:redraw`
+--- (`vim.cmd.redraw()`, `vim.cmd("silent! redraw")`, `vim.cmd({ cmd = "redraw" })`)
+--- doing nothing, all put back after,
+--- errors too. An `nvim_command("redraw")` still draws: nothing stops that.
+---@param fn fun()
+function M.without_redraws(fn)
+  -- `vim.cmd` caches each command's function in itself, so putting back what
+  -- was there (nil, usually) brings :redraw back.
+  local redraw, lazyredraw = rawget(vim.cmd, "redraw"), vim.o.lazyredraw
+  local meta = getmetatable(vim.cmd)
+  local call = meta.__call
+  vim.cmd.redraw, vim.o.lazyredraw = function() end, true
+  meta.__call = function(cmd, command, ...)
+    if is_redraw(command) then
+      return
+    end
+    return call(cmd, command, ...)
+  end
+  local ok, err = pcall(fn)
+  vim.cmd.redraw, vim.o.lazyredraw, meta.__call = redraw, lazyredraw, call
+  if not ok then
+    error(err, 0)
+  end
+end
 
 -- The tint colour, and how much of it shows over the theme's background (0 to
 -- 1). Used when nothing valid is saved; `:Tint` changes it.
@@ -91,9 +155,6 @@ M.saved = read_state
 --- Merge `changes` into the saved state.
 M.save = save_state
 
--- True while startup applies the saved theme (or a fallback), which is never saved.
-local restoring = false
-
 --- Whether a colorscheme picker is open, so theme changes are only previews.
 local function previewing()
   return #Snacks.picker.get({ source = "colorschemes", tab = false }) > 0
@@ -138,13 +199,41 @@ local transparency = {
     "SnacksBackdrop",
     "TroubleNormal",
     "TroubleNormalNC",
+    -- What added themes give a background that the Theme families don't: the
+    -- git signs in the sign column, the completion menu's columns, inactive
+    -- windows' sign column, the end of the buffer, Snacks' inactive winbar, the
+    -- outline, terminal statuslines and the message separator.
+    "GitSignsAdd",
+    "GitSignsChange",
+    "GitSignsDelete",
+    "GitSignsTopdelete",
+    "GitSignsChangedelete",
+    "GitSignsUntracked",
+    "PmenuKind",
+    "PmenuExtra",
+    "PmenuBorder",
+    "SignColumnNC",
+    "NonText",
+    "SnacksWinBarNC",
+    "AerialNormal",
+    "StatusLineTerm",
+    "StatusLineTermNC",
+    "MsgSeparator",
+    -- Error and warning messages (and error notifications, Mason's warnings),
+    -- which noice and the notifier draw in floats: some themes (nord, oasis,
+    -- onedark) give them a block.
+    "ErrorMsg",
+    "WarningMsg",
   },
   prefixes = {
     "BlinkCmp",
     "BufferLine",
+    "DiagnosticSign", -- the diagnostic signs in the sign column
     "NeoTree",
     "NoiceCmdline",
     "NoiceConfirm",
+    "NoiceFormatLevel", -- a message's level: linked to an In-text block, flattened by the Mix
+    "NoiceLspProgress",
     "NoiceMini",
     "NoicePopup",
     "NoiceSplit",
@@ -162,7 +251,16 @@ local transparency = {
   -- loads after the theme, links its groups to ones that keep a background
   -- (DiffAdd, ColorColumn).
   in_text = { "@markup.heading", "@markup.raw", "DiagnosticVirtualText", "LspInlayHint", "RenderMarkdown" },
+  -- A float's Frame, by name: its border, title, footer and prompt, with the
+  -- prompt's icon (not other icons: dropbar's, which-key's). Cleared even when
+  -- linked to a group that keeps a background, and even when named after an
+  -- accent (noice's NoiceCmdlineIconSearch, which nordic makes solid).
+  frame = { "Border", "Title", "Footer", "Prompt", "CmdlineIcon", "InputIcon" },
   keep = { "Cursor", "Sel", "Visual", "Search", "Diff", "Thumb", "ScrollBar", "Scrollbar", "PickWin" },
+  -- The Baseline: the accents every theme keeps solid. One a theme draws by
+  -- linking it to a group cleared here (kanagawa's WildMenu is Pmenu) keeps the
+  -- block the theme drew.
+  baseline = { "Folded", "ColorColumn", "QuickFixLine", "WildMenu", "PmenuSbar", "FloatShadow", "FloatShadowThrough" },
 }
 
 --- Whether `name` starts with one of `prefixes`.
@@ -172,22 +270,63 @@ local function has_prefix(name, prefixes)
   end)
 end
 
-local function should_clear(name)
-  local listed = vim.list_contains(transparency.groups, name)
-    or has_prefix(name, transparency.prefixes)
-    or has_prefix(name, transparency.in_text)
-  return listed and not vim.iter(transparency.keep):any(function(word)
+--- Whether `name` contains one of `words`.
+local function has_word(name, words)
+  return vim.iter(words):any(function(word)
     return name:find(word, 1, true) ~= nil
   end)
 end
 
+--- Whether Transparency clears `name`: a listed group, unless it's an accent
+--- (`keep`). A Frame part is never an accent, even named after one (noice's
+--- NoiceCmdlineIconSearch).
+local function should_clear(name)
+  local listed = vim.list_contains(transparency.groups, name)
+    or has_prefix(name, transparency.prefixes)
+    or has_prefix(name, transparency.in_text)
+  return listed and (has_word(name, transparency.frame) or not has_word(name, transparency.keep))
+end
+
+--- The group `name`'s links end at.
+---@param name string
+---@return string
+local function link_target(name)
+  for _ = 1, 20 do -- a theme could link in a loop
+    local link = vim.api.nvim_get_hl(0, { name = name }).link
+    if not link then
+      break
+    end
+    name = link
+  end
+  return name
+end
+
 --- Clear the background of every group transparency covers. Linked groups are
---- left alone, to follow their target, except in-text ones, which take their
---- target's colours instead.
+--- left alone, to follow their target, except in-text ones (see `in_text`), and
+--- panel backgrounds and Frame parts linked to a group that keeps one
+--- (NeoTreeNormal to evergarden's Panel), which take their target's colours
+--- instead. Other links (NeoTreePreview to Search) keep their accent, and links
+--- to a group cleared here (noice's cmdline border to DiagnosticSignInfo) stay,
+--- to follow what's done to it next (the italics). First, a Baseline accent
+--- linked to a group cleared here takes that group's colours, block included.
 local function make_transparent()
+  -- Targets are read raw: `link = false` follows the current window's
+  -- 'winhighlight' too. A Baseline accent first, before its target is cleared.
+  for _, name in ipairs(transparency.baseline) do
+    local target = vim.api.nvim_get_hl(0, { name = link_target(name) })
+    if vim.api.nvim_get_hl(0, { name = name }).link and should_clear(link_target(name)) and target.bg then
+      target.default = nil
+      vim.api.nvim_set_hl(0, name, target)
+    end
+  end
   for name, hl in pairs(vim.api.nvim_get_hl(0, {})) do
-    if hl.link and has_prefix(name, transparency.in_text) then
-      hl = vim.api.nvim_get_hl(0, { name = name, link = false })
+    if hl.link and should_clear(name) then
+      local target = vim.api.nvim_get_hl(0, { name = link_target(name) })
+      local keeps_bg = (target.bg or target.ctermbg) and not should_clear(link_target(name))
+      local panel_or_frame = keeps_bg and (name:find("Normal", 1, true) or has_word(name, transparency.frame))
+      if panel_or_frame or has_prefix(name, transparency.in_text) then
+        hl = target
+      end
     end
     if not hl.link and (hl.bg or hl.ctermbg) and should_clear(name) then
       -- A `default` definition never replaces an existing one, so drop the flag.
@@ -223,14 +362,49 @@ local function restyle()
   require("theme_italics").apply_extras()
 end
 
---- The current theme's own editor background and mode colours, as "#rrggbb".
---- The curated themes' native transparency has already cleared Normal, so
---- theirs come from their palette. Other themes get only a background, and
---- modes.nvim's own colours.
---- Normal and command match the statusline's mode section.
+-- Other themes' Mode colours: each from a group's foreground.
+local mode_sources = {
+  insert = "String",
+  visual = "Keyword",
+  delete = "DiagnosticError",
+  copy = "DiagnosticWarn",
+  normal = "Function",
+  command = "Constant",
+}
+
+-- Other themes' nearest yellow, purple and blue, for the Rainbow brackets.
+local rainbow_fallback = { "DiagnosticWarn", "Keyword", "Function" }
+
+--- Theme `name`'s highlight groups, links followed: the live ones when it's
+--- the theme applied (read before Transparency clears them), else converge's
+--- copy of it (the Mix's halves).
+---@param name string
+---@return fun(group: string): table
+local function groups_of(name)
+  if name == vim.g.colors_name then
+    return function(group)
+      return vim.api.nvim_get_hl(0, { name = group, link = false })
+    end
+  end
+  local snap = require("mix").snapshot(name, vim.o.background)
+  return function(group)
+    return snap and snap.groups[group] or {}
+  end
+end
+
+--- `value` (a colour number) as "#rrggbb".
+local function hex(value)
+  return value and ("#%06x"):format(value)
+end
+
+--- Theme `name`'s own editor background, Mode colours and Rainbow brackets, as
+--- "#rrggbb". The Theme families' native transparency has already cleared
+--- Normal, so theirs come from their palette; any other theme's are read from
+--- its own groups, and a colour it doesn't have is left out (modes.nvim's own
+--- is used). Normal and command match the statusline's mode section.
+---@param name string
 ---@return {bg?: string, insert?: string, visual?: string, delete?: string, copy?: string, normal?: string, command?: string, rainbow?: string[]}
-local function theme_palette()
-  local name = vim.g.colors_name or ""
+local function palette_of(name)
   local style = name:match("^tokyonight%-(%a+)$")
   if style then
     local c = require("tokyonight.colors").setup({ style = style })
@@ -259,8 +433,30 @@ local function theme_palette()
       rainbow = { c.yellow, c.mauve, c.blue },
     }
   end
-  local bg = vim.api.nvim_get_hl(0, { name = "Normal", link = false }).bg
-  return { bg = bg and ("#%06x"):format(bg) }
+  local get = groups_of(name)
+  local palette = {}
+  -- A theme with its own transparency on clears Normal: try its floats and menus.
+  for _, group in ipairs({ "Normal", "NormalFloat", "Pmenu" }) do
+    palette.bg = palette.bg or hex(get(group).bg)
+  end
+  for mode, group in pairs(mode_sources) do
+    palette[mode] = hex(get(group).fg)
+  end
+  local rainbow = {}
+  for i, group in ipairs(rainbow_fallback) do
+    rainbow[i] = hex(get(group).fg)
+  end
+  palette.rainbow = rainbow[1] and rainbow[2] and rainbow[3] and rainbow or nil
+  return palette
+end
+
+--- The current theme's palette (see `palette_of`). On the Mix, the background
+--- and Mode colours are its UI theme's, the Rainbow brackets its syntax theme's.
+local function theme_palette()
+  local ui, syntax = require("mix").halves(vim.g.colors_name or "")
+  local palette = palette_of(ui)
+  palette.rainbow = palette_of(syntax).rainbow
+  return palette
 end
 
 --- Whether `color` is a "#rrggbb" colour.
@@ -276,12 +472,11 @@ end
 --- `color` at `alpha` over `base`, all "#rrggbb": a solid colour that looks
 --- like `color` faded.
 function M.blend(color, base, alpha)
-  local channels = {}
-  for i = 2, 6, 2 do
-    local c, b = tonumber(color:sub(i, i + 1), 16), tonumber(base:sub(i, i + 1), 16)
-    table.insert(channels, math.floor(alpha * c + (1 - alpha) * b + 0.5))
+  local c, b, mixed = { channels(color) }, { channels(base) }, {}
+  for i = 1, 3 do
+    mixed[i] = math.floor(alpha * c[i] + (1 - alpha) * b[i] + 0.5)
   end
-  return ("#%02x%02x%02x"):format(unpack(channels))
+  return ("#%02x%02x%02x"):format(unpack(mixed))
 end
 
 --- The global definition of `name`, links followed. Not `link = false` alone:
@@ -306,21 +501,14 @@ end
 
 M.apply_tint = apply_tint
 
--- Other themes' nearest yellow, purple and blue.
-local rainbow_fallback = { "DiagnosticWarn", "Keyword", "Function" }
-
---- Colour the Rainbow brackets from `colors` (yellow, purple, blue), or from
---- the theme's own groups when it has no palette here, and the Block guide
---- with the same colours faded.
+--- Colour the Rainbow brackets from `colors` (yellow, purple, blue), or link
+--- them to the groups they'd come from when the theme lacks one, and the Block
+--- guide with the same colours faded.
 ---@param colors? string[]
 local function apply_rainbow(colors)
   for i, name in ipairs(M.rainbow) do
     vim.api.nvim_set_hl(0, name, colors and { fg = colors[i] } or { link = rainbow_fallback[i] })
-    local fg = colors and colors[i]
-    if not fg then
-      local own = vim.api.nvim_get_hl(0, { name = rainbow_fallback[i], link = false }).fg
-      fg = own and ("#%06x"):format(own)
-    end
+    local fg = colors and colors[i] or hex(vim.api.nvim_get_hl(0, { name = rainbow_fallback[i], link = false }).fg)
     vim.api.nvim_set_hl(
       0,
       M.guide[i],
@@ -338,8 +526,49 @@ local function underline_references()
   end
 end
 
+--- What sets `attr` of highlight `group` whatever the theme says, by name, or
+--- nil when nothing does. With no `attr`: what sets the whole group.
+---@param group string
+---@param attr? string
+---@return string?
+function M.owner(group, attr)
+  if vim.list_contains(vim.tbl_values(mode_groups), group) then
+    return "the Mode colours"
+  elseif vim.list_contains(M.rainbow, group) then
+    return "the Rainbow brackets"
+  elseif vim.list_contains(M.guide, group) then
+    return "the Block guide"
+  elseif attr == "bg" and vim.list_contains(tinted, group) then
+    return "the Tint"
+  elseif
+    vim.list_contains({ "bg", "ctermbg", "reverse", "underline" }, attr) and vim.list_contains(references, group)
+  then
+    return "the Reference highlights"
+  elseif vim.list_contains({ "bg", "ctermbg" }, attr) and should_clear(group) then
+    return "Transparency"
+  elseif attr == "italic" and (vim.list_contains(italic.groups, group) or has_prefix(group, italic.prefixes)) then
+    return "the line diagnostics' and Breadcrumbs' italics"
+  end
+end
+
 --- The hook that runs on every theme change.
-local function on_change()
+local function on_change(args)
+  -- converge reading a theme for the Mix, or to find light ones: not a change.
+  -- Nor is Transparency applied: converge would record the theme cleared.
+  if require("mix").reading then
+    return
+  end
+  -- Name the theme as it was chosen, so it's read, saved and restored as
+  -- itself: palenight doesn't name itself, and kanagawa-dragon and
+  -- evergarden-spring name themselves after their family. Never the Mix, which
+  -- names itself once drawn: on a cold cache converge reads its themes a tick
+  -- later, and a name set now would tell it another theme was picked
+  -- meanwhile, so it would never draw.
+  local name = vim.g.colors_name
+  local named_as_chosen = args.match == "" or args.match == require("mix").name
+  if not named_as_chosen and (not name or vim.startswith(args.match, name .. "-")) then
+    vim.g.colors_name = args.match
+  end
   local palette = theme_palette()
   M.background = palette.bg
   -- modes.nvim's own ColorScheme hook, which runs after this one, reads its
@@ -352,12 +581,31 @@ local function on_change()
   apply_tint()
   apply_rainbow(palette.rainbow)
   underline_references()
+  -- Now, once the theme's own background is read above, so no frame shows it
+  -- (the Theme families' options already cleared theirs; added themes' haven't).
+  make_transparent()
   if not (restoring or previewing()) then
     save_state({ theme = vim.g.colors_name })
   end
   -- Scheduled, to run after plugins (bufferline, lualine, …) redefine their
   -- highlights for the new theme.
   vim.schedule(restyle)
+end
+
+-- True while a restyle for plugins that just loaded waits for the next tick.
+local restyle_pending = false
+
+--- `restyle` once on the next tick, however many plugins load before it
+--- (some 70 at startup).
+local function restyle_late()
+  if restyle_pending then
+    return
+  end
+  restyle_pending = true
+  vim.schedule(function()
+    restyle_pending = false
+    restyle()
+  end)
 end
 
 --- LazyVim's `colorscheme` option: set up the change hook, then apply the
@@ -382,12 +630,15 @@ function M.load()
 
   local group = vim.api.nvim_create_augroup("theme", { clear = true })
   vim.api.nvim_create_autocmd("ColorScheme", { group = group, callback = on_change })
-  -- Plugins that load later define their highlights then; restyle those too.
+  -- Late plugins define their highlights as they load: restyle those too.
   vim.api.nvim_create_autocmd("User", {
     group = group,
     pattern = { "LazyLoad", "VeryLazy" },
     callback = function()
-      vim.schedule(restyle)
+      -- A Theme read loads its theme's plugin: not a Late plugin.
+      if not require("mix").reading then
+        restyle_late()
+      end
     end,
   })
   -- Scheduled, so it also covers LazyVim's own fallback (habamax) should the default fail too.
@@ -399,6 +650,12 @@ function M.load()
   if not (type(saved) == "string" and pcall(vim.cmd.colorscheme, saved)) then
     vim.cmd.colorscheme(M.default)
   end
+  -- What's wrong with the Mix in lua/config/themes.lua, once the notifier is up.
+  vim.schedule(function()
+    for _, problem in ipairs(require("mix").problems()) do
+      vim.notify(problem, vim.log.levels.WARN, { title = "Mix" })
+    end
+  end)
 end
 
 --- Set the tint to `color` faded to `fade` (from 0, none, to 1, solid), apply it
@@ -451,11 +708,8 @@ function M.with_background(setup)
   vim.api.nvim_create_autocmd("ColorScheme", { group = group, callback = solidify_normal })
   solidify_normal()
   -- No redraws while Normal is solid: modes.nvim's setup redraws, which would
-  -- flash the theme's background over the glass at startup. `vim.cmd` caches
-  -- each command's function in itself, so clearing the stub brings it back.
-  vim.cmd.redraw = function() end
-  local ok, err = pcall(setup)
-  vim.cmd.redraw = nil
+  -- show a Flash of the theme's background over the glass at startup.
+  local ok, err = pcall(M.without_redraws, setup)
   restore_normal()
   if not ok then
     error(err, 0)
@@ -463,11 +717,22 @@ function M.with_background(setup)
   vim.api.nvim_create_autocmd("ColorScheme", { group = group, callback = restore_normal })
 end
 
---- A colorscheme picker, with live preview, limited to the curated themes.
+--- A colorscheme picker, with live preview, limited to the Curated themes.
+--- Added themes not read yet are read first, to leave out the light ones.
 function M.pick()
+  local curated_themes = require("curated_themes")
+  curated_themes.read_added()
+  local curated, mix = curated_themes.list(), require("mix")
   Snacks.picker.colorschemes({
     transform = function(item)
-      return vim.list_contains(M.themes, item.text)
+      return vim.list_contains(curated, item.text)
+    end,
+    -- The Mix by what's in it; picking it still applies `converge`.
+    format = function(item, picker)
+      if item.text == mix.name then
+        return { { mix.label() } }
+      end
+      return Snacks.picker.format.text(item, picker)
     end,
   })
 end
@@ -477,18 +742,31 @@ end
 --- every other section the theme's soft foreground, whatever the mode.
 --- A function, so lualine rebuilds it on every theme change.
 function M.lualine()
-  local theme = require("lualine.utils.loader").load_theme("auto")
+  -- A copy: a theme that ships its own lualine theme (oasis, evergarden)
+  -- returns the same table each time, which the next change would restyle again.
+  local theme = vim.deepcopy(require("lualine.utils.loader").load_theme("auto"))
   local soft = theme.normal.c.fg
-  for mode, sections in pairs(theme) do
-    for name, section in pairs(sections) do
-      if mode ~= "inactive" then
-        if name == "a" then
-          section.fg, section.gui = section.bg or section.fg, "bold"
-        else
-          section.fg, section.gui = soft, nil
+  -- Each section once: some themes share them between modes (evergarden's
+  -- command mode is its normal mode), and a second pass would lose the colour.
+  -- The active modes first, so a section shared with inactive is styled as theirs.
+  local seen = {}
+  local modes = vim.tbl_keys(theme)
+  table.sort(modes, function(a, b)
+    return (a == "inactive" and 1 or 0) < (b == "inactive" and 1 or 0)
+  end)
+  for _, mode in ipairs(modes) do
+    for name, section in pairs(theme[mode]) do
+      if not seen[section] then
+        seen[section] = true
+        if mode ~= "inactive" then
+          if name == "a" then
+            section.fg, section.gui = section.bg or section.fg, "bold"
+          else
+            section.fg, section.gui = soft, nil
+          end
         end
+        section.bg = "NONE"
       end
-      section.bg = "NONE"
     end
   end
   return theme

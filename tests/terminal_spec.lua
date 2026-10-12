@@ -74,7 +74,7 @@ h.test("<C-/> (and <C-_>) toggle the Terminal manager in normal and terminal mod
       local desc = vim.fn.maparg(lhs, mode, false, true).desc
       h.eq(
         true,
-        desc == "Terminal Manager" or desc == "which_key_ignore",
+        desc == "Toggle Terminal Manager" or desc == "which_key_ignore",
         lhs .. " in mode " .. mode .. ": " .. tostring(desc)
       )
     end

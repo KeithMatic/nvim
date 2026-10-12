@@ -1,26 +1,17 @@
 local h = require("harness")
 
+-- The built-in themes and the Mix (`converge`): tests/theme/themes.lua adds none.
 local curated = {
   "catppuccin-frappe",
   "catppuccin-macchiato",
   "catppuccin-mocha",
+  "converge",
   "tokyonight-moon",
   "tokyonight-night",
   "tokyonight-storm",
 }
 
 local state_file = vim.fn.stdpath("state") .. "/theme.json"
-
---- Boot a second headless Neovim on this config and assert that it starts with
---- `theme` and no errors. It shares this instance's sandbox, so it reads the
---- state this instance saved.
-local function assert_boots_with(theme)
-  local root = vim.fs.dirname(vim.fs.dirname(vim.env.TEST_SPEC))
-  local cmd = { "nvim", "--headless", "--cmd", "luafile " .. root .. "/tests/harness.lua" }
-  local env = { TEST_SPEC = root .. "/tests/theme/boot.lua", EXPECT_THEME = theme }
-  local result = vim.system(cmd, { env = env, text = true }):wait(60000)
-  h.eq(0, result.code, "second instance:\n" .. (result.stdout or "") .. (result.stderr or ""))
-end
 
 --- Open the <leader>uC picker and return it once it has its items.
 local function open_picker()
@@ -41,7 +32,7 @@ local function cancel(picker, theme)
   end, 50)
 end
 
-h.test("<leader>uC lists exactly the six curated dark themes", function()
+h.test("<leader>uC lists exactly the six built-in dark themes and the Mix", function()
   h.with_state(nil, function()
     local before = vim.g.colors_name
     local picker = open_picker()
@@ -77,7 +68,7 @@ h.test("the picker previews themes live, and cancelling restores and saves nothi
     h.eq(target, shown, "the theme under the cursor is applied")
     h.eq("tokyonight-night", saved, "a preview isn't saved")
     h.eq("tokyonight-night", vim.g.colors_name, "cancel restores the theme")
-    assert_boots_with("tokyonight-night")
+    h.boots_with("tokyonight-night")
   end)
 end)
 
@@ -97,34 +88,34 @@ h.test("a theme chosen in the picker is restored on the next start", function()
       return picker.closed and vim.g.colors_name == "catppuccin-mocha"
     end, 50)
     h.eq("catppuccin-mocha", vim.g.colors_name, "applied")
-    assert_boots_with("catppuccin-mocha")
+    h.boots_with("catppuccin-mocha")
   end)
 end)
 
 h.test("a theme applied with :colorscheme is restored on the next start", function()
   h.with_state(nil, function()
     vim.cmd.colorscheme("catppuccin-frappe")
-    assert_boots_with("catppuccin-frappe")
+    h.boots_with("catppuccin-frappe")
     vim.cmd.colorscheme("tokyonight-storm")
-    assert_boots_with("tokyonight-storm")
+    h.boots_with("tokyonight-storm")
   end)
 end)
 
 h.test("with no saved theme, startup uses tokyonight-moon", function()
   h.with_state(nil, function()
-    assert_boots_with("tokyonight-moon")
+    h.boots_with("tokyonight-moon")
   end)
 end)
 
 h.test("an unknown saved theme falls back to tokyonight-moon without errors", function()
   h.with_state('{"theme":"no-such-theme"}', function()
-    assert_boots_with("tokyonight-moon")
+    h.boots_with("tokyonight-moon")
   end)
 end)
 
 h.test("a corrupt state file falls back to tokyonight-moon without errors", function()
   h.with_state("{not json", function()
-    assert_boots_with("tokyonight-moon")
+    h.boots_with("tokyonight-moon")
   end)
 end)
 

@@ -57,6 +57,45 @@ h.test("visual r replaces every copy of the selection across the file, literally
   h.eq({ "Z x Z", "axb Z" }, vim.api.nvim_buf_get_lines(0, 0, -1, false), "every a.b, not axb")
 end)
 
+h.test("d. shrinks the run of spaces under the cursor to one, and leaves anything else alone", function()
+  for _, case in ipairs({
+    { "a    b", 3, "a b", "a run of spaces" },
+    { "a b", 1, "a b", "a single space" },
+    { "abc def", 1, "abc def", "a word" },
+  }) do
+    local line, col, expected, what = unpack(case)
+    scratch({ line }, { 1, col })
+    h.feed("d.", "xt")
+    h.eq({ expected }, vim.api.nvim_buf_get_lines(0, 0, -1, false), what)
+  end
+end)
+
+h.test("d. on a single space changes nothing, and . repeats it on the next run", function()
+  scratch({ "a b    c    d" }, { 1, 1 })
+  vim.bo.modified = false
+  h.feed("d.", "xt")
+  h.eq(false, vim.bo.modified, "a single space: the buffer unchanged")
+  vim.api.nvim_win_set_cursor(0, { 1, 4 })
+  h.feed("d.", "xt")
+  vim.api.nvim_win_set_cursor(0, { 1, 6 })
+  h.feed(".", "xt")
+  h.eq({ "a b c d" }, vim.api.nvim_buf_get_lines(0, 0, -1, false), ". shrank the second run")
+end)
+
+h.test("insert <C-a> goes to the line's first non-blank without leaving Insert mode", function()
+  scratch({ "    foo bar" }, { 1, 10 })
+  local left = 0
+  local id = vim.api.nvim_create_autocmd("InsertLeave", {
+    callback = function()
+      left = left + 1
+    end,
+  })
+  h.feed("a<C-a>X<Esc>", "xt")
+  vim.api.nvim_del_autocmd(id)
+  h.eq({ "    Xfoo bar" }, vim.api.nvim_buf_get_lines(0, 0, -1, false), "typed at the first non-blank")
+  h.eq(1, left, "Insert mode left once, by <Esc>")
+end)
+
 h.test("- opens mini.files on the current file's folder", function()
   h.open("lua")
   local file = vim.uv.fs_realpath(vim.api.nvim_buf_get_name(0))

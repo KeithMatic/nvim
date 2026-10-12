@@ -156,11 +156,7 @@ h.test("<leader>uN hides the filename, and a second boot keeps it hidden", funct
     end)
     h.eq(false, contains(text, "tracked.txt"), "no filename after <leader>uN\nstatusline: " .. text)
 
-    local root = vim.fs.dirname(vim.fs.dirname(vim.env.TEST_SPEC))
-    local cmd = { "nvim", "--headless", "--cmd", "luafile " .. root .. "/tests/harness.lua" }
-    local env = { TEST_SPEC = root .. "/tests/statusline/boot.lua", EXPECT_FILE = file, EXPECT_FILENAME = "hidden" }
-    local result = vim.system(cmd, { env = env, text = true }):wait(60000)
-    h.eq(0, result.code, "second instance:\n" .. (result.stdout or "") .. (result.stderr or ""))
+    h.boot("statusline/boot.lua", { EXPECT_FILE = file, EXPECT_FILENAME = "hidden" })
 
     vim.api.nvim_feedkeys(vim.g.mapleader .. "uN", "mx", false)
     text = wait_for_statusline(function(text)

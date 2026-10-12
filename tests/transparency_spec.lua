@@ -6,6 +6,7 @@ require("lazy").load({
   plugins = {
     "blink.cmp",
     "bufferline.nvim",
+    "gitsigns.nvim",
     "lualine.nvim",
     "mason.nvim",
     "neo-tree.nvim",
@@ -14,9 +15,12 @@ require("lazy").load({
     "which-key.nvim",
   },
 })
+-- neo-tree defines its groups (NeoTreePreview, ...) only once first used.
+require("neo-tree").ensure_config()
 
--- Per theme, its own editor background (from its palette).
-local themes = {
+-- Per theme, its own editor background (from its palette); an Added theme
+-- whose palette has none is missing here, and fails the test that checks it.
+local backgrounds = {
   ["catppuccin-frappe"] = "#303446",
   ["catppuccin-macchiato"] = "#24273a",
   ["catppuccin-mocha"] = "#1e1e2e",
@@ -24,6 +28,18 @@ local themes = {
   ["tokyonight-night"] = "#1a1b26",
   ["tokyonight-storm"] = "#24283b",
 }
+
+-- The Added themes (lua/config/themes.lua): every dark one, with its own
+-- editor background as converge's read of it found it. A repo pasted there is
+-- checked here without editing this file.
+local curated_themes = require("curated_themes")
+curated_themes.read_added()
+local themes = vim.tbl_keys(backgrounds)
+for _, name in ipairs(curated_themes.added()) do
+  table.insert(themes, name)
+  local normal = require("mix").snapshot(name, "dark").groups.Normal
+  backgrounds[name] = normal and normal.bg and ("#%06x"):format(normal.bg)
+end
 
 --- The background of `group`, following links.
 local function bg(group)
@@ -45,7 +61,6 @@ local transparent = {
   "TabLineFill",
   "BufferLineFill",
   "BufferLineBackground",
-  "BufferLineBufferSelected",
   -- floats: generic, completion, which-key, Lazy, Mason, notifications and pickers
   "NormalFloat",
   "FloatBorder",
@@ -86,10 +101,61 @@ local transparent = {
   "@markup.heading.1.markdown",
   "@markup.heading.2.markdown",
   "@markup.raw.markdown_inline",
+  -- what Added themes give a background that the Theme families don't (see
+  -- `transparency.groups` in lua/theme.lua)
+  "GitSignsAdd",
+  "GitSignsChange",
+  "GitSignsDelete",
+  "GitSignsTopdelete",
+  "GitSignsChangedelete",
+  "GitSignsUntracked",
+  "DiagnosticSignError",
+  "DiagnosticSignWarn",
+  "DiagnosticSignInfo",
+  "DiagnosticSignHint",
+  "PmenuKind",
+  "PmenuExtra",
+  "PmenuBorder",
+  "SignColumnNC",
+  "NonText",
+  "NoiceLspProgressTitle",
+  "NoiceLspProgressClient",
+  "NoiceLspProgressSpinner",
+  "SnacksWinBarNC",
+  "AerialNormal",
+  "StatusLineTerm",
+  "StatusLineTermNC",
+  "MsgSeparator",
+  -- error and warning messages, which noice and the notifier draw in floats
+  "ErrorMsg",
+  "WarningMsg",
 }
+
+-- What's drawn on the first redraw after a theme change, before the event loop
+-- runs anything scheduled: no theme's background may show there.
+local first_frame = {
+  "Normal",
+  "NormalNC",
+  "NormalFloat",
+  "FloatBorder",
+  "SignColumn",
+  "LineNr",
+  "EndOfBuffer",
+  "WinSeparator",
+  "StatusLine",
+  "Pmenu",
+}
+
+-- The Baseline: accents tokyonight keeps solid, which every theme keeps too.
+local baseline =
+  { "Folded", "ColorColumn", "QuickFixLine", "WildMenu", "PmenuSbar", "FloatShadow", "FloatShadowThrough" }
 
 -- The "where am I" highlights keep a background.
 local solid = { "CursorLine", "Visual", "PmenuSel", "BlinkCmpMenuSelection" }
+
+-- Panels' accents: where a theme links one to a group with a background (the
+-- Explorer's preview to Search), it keeps that background.
+local linked_accents = { "NeoTreePreview" }
 
 -- Accent chips each theme gives a background to, which aren't panels and keep it.
 local chips = {
@@ -97,7 +163,43 @@ local chips = {
   catppuccin = { "MasonMutedBlockBold" },
 }
 
-for theme, background in pairs(themes) do
+for _, theme in ipairs(themes) do
+  local background = backgrounds[theme]
+
+  h.test(theme .. ": the first redraw after the change shows no background (no flash)", function()
+    h.apply_theme("default")
+    vim.cmd.colorscheme(theme)
+    local solid_groups = {}
+    for _, group in ipairs(first_frame) do
+      if bg(group) then
+        table.insert(solid_groups, ("%s (#%06x)"):format(group, bg(group)))
+      end
+    end
+    h.eq({}, solid_groups, "groups with a background before the event loop runs")
+  end)
+
+  h.test(theme .. ": the Baseline's accents, and accents linked to a solid group, keep their background", function()
+    -- Read before applying it: a read applies the theme for a moment.
+    local snap = require("converge.snapshots").get(theme, "dark", { capture = true })
+    h.apply_theme(theme)
+    local cleared = {}
+    for _, group in ipairs(baseline) do
+      -- Linked too: kanagawa's WildMenu is Pmenu, which Transparency clears,
+      -- and it stays the solid block kanagawa drew it as.
+      local own = snap and snap.groups[group]
+      if own and own.bg and not bg(group) then
+        table.insert(cleared, group)
+      end
+    end
+    for _, group in ipairs(linked_accents) do
+      local own = snap and snap.links[group] and snap.groups[group]
+      if own and own.bg and not bg(group) then
+        table.insert(cleared, group)
+      end
+    end
+    h.eq({}, cleared, "accents cleared")
+  end)
+
   h.test(theme .. ": editor, sidebars, bars, floats and in-text blocks have no background", function()
     h.apply_theme(theme)
     local solid_groups = {}
@@ -118,7 +220,7 @@ for theme, background in pairs(themes) do
 
   h.test(theme .. ": accent chips (progress bar, badges, tab blocks) keep their background", function()
     h.apply_theme(theme)
-    for _, group in ipairs(chips[theme:match("^%a+")]) do
+    for _, group in ipairs(chips[theme:match("^%a+")] or {}) do
       h.eq(true, bg(group) ~= nil, group .. " has a background")
     end
   end)
@@ -159,6 +261,7 @@ for theme, background in pairs(themes) do
   end)
 
   h.test(theme .. ": its own editor background is recorded before clearing", function()
+    h.eq(true, background ~= nil, "the theme has an editor background of its own")
     h.apply_theme(theme)
     h.eq(background, require("theme").background)
   end)
@@ -268,4 +371,95 @@ end)
 h.test("the update checker runs without notifying", function()
   local checker = require("lazy.core.config").options.checker
   h.eq({ true, false }, { checker.enabled, checker.notify })
+end)
+
+-- A theme or plugin may link a float's Frame part to a group that keeps its
+-- background (an accent): the part shows none, while a part that isn't the
+-- Frame keeps the accent, as links do.
+h.test("a Frame part linked to a solid group shows no background, other links keep it", function()
+  local id = vim.api.nvim_create_autocmd("ColorScheme", {
+    callback = function()
+      vim.api.nvim_set_hl(0, "NoiceCmdlinePopupBorderFixture", { link = "Folded" })
+      vim.api.nvim_set_hl(0, "NoiceCmdlinePopupFixture", { link = "Folded" })
+    end,
+  })
+  h.apply_theme("tokyonight-moon")
+  vim.api.nvim_del_autocmd(id)
+  h.eq(true, bg("Folded") ~= nil, "Folded keeps its background (the Baseline)")
+  h.eq(nil, bg("NoiceCmdlinePopupBorderFixture"), "the Frame part")
+  h.eq(bg("Folded"), bg("NoiceCmdlinePopupFixture"), "the other link")
+end)
+
+-- A Frame part named after an accent (the search cmdline's icon, which nordic
+-- gives a background) is still the Frame: it shows no background, while the
+-- accent it's named after keeps one.
+h.test("a Frame part named after an accent (the search icon) shows no background", function()
+  local id = vim.api.nvim_create_autocmd("ColorScheme", {
+    callback = function()
+      vim.api.nvim_set_hl(0, "NoiceCmdlineIconSearchFixture", { fg = "#e0af68", bg = "#191d24" })
+    end,
+  })
+  h.apply_theme("tokyonight-moon")
+  vim.api.nvim_del_autocmd(id)
+  h.eq(nil, bg("NoiceCmdlineIconSearchFixture"), "the search icon")
+  h.eq(true, bg("Search") ~= nil, "Search keeps its background")
+end)
+
+-- Late plugins are restyled as they load: once a tick, however many load in
+-- it, and not during a Theme read (a read loads its theme's plugin).
+h.test("Late plugins are restyled once a tick, and not during a Theme read", function()
+  h.apply_theme("tokyonight-moon")
+  local mix = require("mix")
+  --- Whether a solid group in Transparency's reach is still solid after
+  --- `count` plugins load in one tick, `reading` or not.
+  local function solid_after_loads(count, reading)
+    vim.api.nvim_set_hl(0, "NoiceCmdlineLateFixture", { bg = "#191d24" })
+    mix.reading = reading
+    for _ = 1, count do
+      vim.api.nvim_exec_autocmds("User", { pattern = "LazyLoad", modeline = false })
+    end
+    mix.reading = false
+    vim.wait(100, function()
+      return false
+    end)
+    return bg("NoiceCmdlineLateFixture") ~= nil
+  end
+  h.eq(true, solid_after_loads(1, true), "loaded during a Theme read")
+  h.eq(false, solid_after_loads(1, false), "loaded otherwise")
+
+  -- A restyle walks every group: count the walks.
+  local walks, get_hl = 0, vim.api.nvim_get_hl
+  local function counting(ns, opts)
+    walks = walks + ((ns == 0 and next(opts) == nil) and 1 or 0)
+    return get_hl(ns, opts)
+  end
+  h.with_stub(vim.api, "nvim_get_hl", counting, function()
+    solid_after_loads(1, false)
+    local one = walks
+    walks = 0
+    solid_after_loads(5, false)
+    h.eq(one, walks, "walks for five loads in a tick, as for one")
+  end)
+end)
+
+-- A theme may draw a Baseline accent by linking it to a group Transparency
+-- clears (kanagawa's WildMenu is Pmenu): the accent keeps the solid block the
+-- theme drew it as, while the group it linked to is cleared.
+h.test("a Baseline accent linked to a group Transparency clears keeps the theme's background", function()
+  local dir = vim.fn.tempname()
+  vim.fn.mkdir(dir .. "/colors", "p")
+  vim.fn.writefile({
+    'vim.cmd("hi clear")',
+    'vim.o.background = "dark"',
+    'vim.g.colors_name = "linked-accent-dark"',
+    'vim.api.nvim_set_hl(0, "Normal", { fg = "#d0d0d0", bg = "#101820" })',
+    'vim.api.nvim_set_hl(0, "Pmenu", { fg = "#d0d0d0", bg = "#2a2a37" })',
+    'vim.api.nvim_set_hl(0, "WildMenu", { link = "Pmenu" })',
+  }, dir .. "/colors/linked-accent-dark.lua")
+  vim.opt.rtp:append(dir)
+  h.apply_theme("linked-accent-dark")
+  local wildmenu, pmenu = bg("WildMenu"), bg("Pmenu")
+  h.apply_theme("tokyonight-moon")
+  h.eq("#2a2a37", wildmenu and ("#%06x"):format(wildmenu), "WildMenu")
+  h.eq(nil, pmenu, "Pmenu")
 end)

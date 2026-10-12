@@ -24,7 +24,11 @@ vim.keymap.set = function(mode, lhs, rhs, opts)
   local caller = debug.getinfo(2, "S") -- nil when called straight from C
   local source = caller and caller.source:gsub("^@", "") or ""
   if vim.startswith(source, config_lua) then
-    table.insert(M.config_keymaps, { lhs = lhs, desc = opts and opts.desc, file = source:sub(#config_lua + 1) })
+    local modes = type(mode) == "table" and mode or { mode }
+    table.insert(
+      M.config_keymaps,
+      { lhs = lhs, desc = opts and opts.desc, file = source:sub(#config_lua + 1), modes = modes }
+    )
   end
   return orig_keymap_set(mode, lhs, rhs, opts)
 end
@@ -178,6 +182,50 @@ end
 local state_file = vim.fn.stdpath("state") .. "/theme.json"
 local toggle_state_file = vim.fn.stdpath("state") .. "/toggle-state.json"
 
+-- The tests folder, for booting a second Neovim from any spec.
+local tests_dir = vim.fs.dirname(debug.getinfo(1, "S").source:sub(2))
+
+--- Boot a second headless Neovim on this config, running `spec` (a path in the
+--- tests folder) with `env` in its environment, and assert that every test it
+--- runs passes. It shares this instance's sandbox, so it reads the state this
+--- instance saved.
+---@param spec string e.g. "theme/boot.lua"
+---@param env? table<string, string>
+---@param timeout? integer ms, default 60000
+function M.boot(spec, env, timeout)
+  local cmd = { "nvim", "--headless", "--cmd", "luafile " .. tests_dir .. "/harness.lua" }
+  env = vim.tbl_extend("force", env or {}, { TEST_SPEC = tests_dir .. "/" .. spec })
+  local result = vim.system(cmd, { env = env, text = true }):wait(timeout or 60000)
+  -- Its messages can run long: the last of them are enough to see why it failed.
+  local messages = vim.list_slice(vim.split(result.stderr or "", "\n"), -20)
+  M.eq(0, result.code, ("second instance (%s):\n%s%s"):format(spec, result.stdout or "", table.concat(messages, "\n")))
+end
+
+--- Boot a second Neovim (h.boot) that restores the saved theme, and assert
+--- that it starts with `theme` and no errors, and whatever `expect` adds
+--- (tests/theme/boot.lua's EXPECT_BG, EXPECT_FG, EXPECT_ITALIC).
+---@param theme string
+---@param expect? table<string, string>
+function M.boots_with(theme, expect)
+  M.boot("theme/boot.lua", vim.tbl_extend("force", expect or {}, { EXPECT_THEME = theme }))
+end
+
+--- Run `fn` with `target[key]` set to `value`, then put back what was there
+--- (nil included), errors too.
+---@param target table
+---@param key any
+---@param value any
+---@param fn fun()
+function M.with_stub(target, key, value, fn)
+  local before = rawget(target, key)
+  rawset(target, key, value)
+  local ok, err = pcall(fn)
+  rawset(target, key, before)
+  if not ok then
+    error(err, 0)
+  end
+end
+
 --- Run `fn` with the theme module's saved state set to `content` (nil: no
 --- state file), then put back whatever was saved before, so other specs boot
 --- as they would have.
@@ -271,6 +319,19 @@ end
 
 local spec = assert(vim.env.TEST_SPEC, "TEST_SPEC not set")
 package.path = vim.fs.dirname(spec) .. "/?.lua;" .. package.path
+
+-- These specs read tests/theme/themes.lua in place of lua/config/themes.lua, so
+-- the themes added there and its Mix don't change what they expect. Set in the
+-- environment, it reaches the second Neovim they boot too.
+local fixed_themes = { "mix_spec.lua", "theme_spec.lua" }
+if vim.list_contains(fixed_themes, vim.fs.basename(spec)) then
+  vim.env.TEST_THEMES = vim.fs.dirname(spec) .. "/theme/themes.lua"
+end
+if vim.env.TEST_THEMES then
+  package.preload["config.themes"] = function()
+    return dofile(vim.env.TEST_THEMES)
+  end
+end
 package.loaded.harness = M
 vim.api.nvim_create_autocmd("VimEnter", {
   once = true,

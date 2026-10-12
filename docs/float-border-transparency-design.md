@@ -1,0 +1,281 @@
+# Transparent float borders, titles and icons, and the statusline from startup
+
+Some float borders and their contents still show a background: noice's cmdline popup on kanagawa
+and nordic's search icon. A float's
+**Frame** (border, title, footer, prompt icon) will never keep a background on any Curated theme.
+A Frame group that links to a solid group loses that background, and the diagnostic signs in the sign column
+are cleared. Plugins that load after the startup theme (**Late plugins**) get the whole restyle
+when they load, so a fresh start looks exactly like a theme change. A **Float sweep** test opens
+every float the config shows on every Curated theme. A startup comparison per theme checks that a
+fresh start matches a theme change.
+
+## Terms
+
+These follow the glossary in `CONTEXT.md`.
+
+- **Frame**: a float's border, title, footer and prompt, with the prompt's icon (noice's cmdline
+  icon): what surrounds a float's text, shown in its colour only, even when a theme or plugin links
+  it to a group with a background. _Avoid_: chrome, decoration, border items.
+- **Late plugin**: a plugin loaded after the startup theme (lualine and noice at VeryLazy, the
+  notifier on the first notification, blink on the first insert), which defines its highlights then
+  and is restyled as it loads, so a fresh start looks as applying the theme does. _Avoid_: lazy
+  plugin, deferred plugin.
+- **Float sweep**: the test that opens every float the config shows after a fresh start, on every
+  Curated theme, and checks nothing it draws has a background but the accents that keep one (the
+  selected item, the cursor, search matches, scrollbar thumbs, confirm buttons, progress bars, the
+  picker's window labels). _Avoid_: float audit, popup test.
+- **Transparency**: panel and float backgrounds cleared so the terminal's glass shows through,
+  whatever the theme, a float's Frame included; also the In-text blocks, which keep only their
+  colour. _Avoid_: glass, no-background.
+- **Curated themes**: the dark themes the theme picker offers: some built in, any others added by
+  naming their plugin (every dark theme it ships), and the Mix. _Avoid_: colorschemes, theme list.
+- **Added theme**: a Curated theme from a plugin named in the config rather than built in.
+  _Avoid_: extra theme, installed theme.
+- **Baseline**: what Transparency leaves solid on tokyonight-moon: the accents (folds, the colour
+  column, the quickfix line, the wildmenu, the completion scrollbar, float shadows), which every
+  theme keeps solid too. _Avoid_: reference theme, default look.
+- **Tint**: the colour faded over the theme's background that marks "where am I" lines.
+  _Avoid_: cursorline colour, highlight.
+- **In-text blocks**: highlights drawn inside the text as a solid block (line diagnostics, inlay
+  hints, Markdown heading bars and code). _Avoid_: chips.
+- **Theme read**: converge applying a theme for a moment to record its colours, for the Mix or to
+  leave the light Added themes out of the Curated themes. Nothing is saved or restyled meanwhile,
+  and the read that leaves out the light themes draws nothing. _Avoid_: capture, probe.
+
+## Why
+
+The user's words: "I still get backgrounds on border items like noice for commandline and
+notifications. Ensure that this is removed and do a thorough work and tests without any issues."
+
+A probe of every Curated theme found three things. It covered the six built-in themes and the dark
+themes of the 11 added repos. It opened noice's cmdline popup and Snacks' notifications, both after
+a theme change and from a fresh start.
+
+- **Cmdline popup on kanagawa (wave, dragon, lotus excluded as light):** the border, title and icon
+  are solid (`#2a2a37` / `#282727`). noice's defaults link `NoiceCmdlinePopupBorder*`,
+  `NoiceCmdlinePopupTitle*` and `NoiceCmdlineIcon*` to `DiagnosticSignInfo` / `DiagnosticSignWarn`.
+  kanagawa gives the sign column's signs the SignColumn colour as a background. Transparency keeps links
+  unless they're panel backgrounds ("Normal" names) or In-text blocks, so the solid background comes
+  through the link.
+- **nordic:** `NoiceCmdlineIconSearch` is solid.
+- **At startup:** the probe read the statusline as solid on several themes, nord among them, until a
+  theme was applied again. That turned out to be an artifact of reading screen cells (see Found
+  during implementation): no statusline group has a background at startup.
+- **Snacks' notifications:** no group they draw with had a background in the probe, at startup or
+  after a change. Which notifications the user sees is unknown (Q1), so the Float sweep covers all
+  of them.
+
+## Locked decisions
+
+### Q2: Nothing in a float's Frame keeps a background
+
+The border, title, footer and prompt icon all show only their colour.
+
+- **Rejected B:** borders clear, titles keep a coloured block (a "tab" look). A solid title would be
+  the one solid patch on a clear float, which is the reported problem.
+- **Rejected C:** borders and titles clear, prompt icons keep a chip. The same objection applies:
+  noice's cmdline icon was part of the report.
+- **Trade-off accepted:** themes that style titles as solid tabs (oasis, nightfall's picker titles)
+  lose that look, and a title stands out by colour alone.
+
+### Q3: Late plugins get the restyle when they load (lazy.nvim's `LazyLoad` event)
+
+The restyle runs after every plugin load, and lualine is refreshed then.
+
+- **Rejected B, one more restyle after VeryLazy:** this misses everything loaded later: the notifier
+  on the first notification, blink on the first insert, neo-tree on first use.
+- **Rejected C, fixing lualine alone:** this fixes only the visible symptom. Every other Late plugin
+  stays exposed.
+- **Trade-off accepted:** one restyle pass (a walk over all highlight groups, a few ms) per plugin
+  load, mostly during startup.
+
+### Q5: Frame links are broken and the diagnostic signs in the sign column are cleared
+
+Both fixes apply:
+
+- For a Frame group among the cleared groups (a name containing `Border`, `Title`, `Footer`, `Icon`
+  or `Prompt`), break its link when the target has a background. This rule sits beside the existing
+  "Normal" panel rule in `make_transparent`.
+- Clear `DiagnosticSign*`, the diagnostic signs in the sign column. The sign column is transparent, and GitSigns'
+  signs were already cleared.
+
+Rejected:
+
+- **B, Frame link-breaking only:** kanagawa's sign column would keep solid sign blocks beside a clear
+  SignColumn.
+- **C, clearing `DiagnosticSign*` only:** this fixes today's kanagawa case by accident. A theme that
+  links a border to `Pmenu`, or that gives an icon its own background, stays solid. Nordic's search
+  icon isn't a sign at all.
+
+**Guard:** links outside the Frame names keep their accent (NeoTreePreview → Search, dropbar's
+context → Visual, blink's active parameter). The Keep list (`Sel`, `Visual`, `Search`, …) still
+applies. The risk is a plugin naming an accent `…Title` or `…Icon`; the Float sweep and the existing
+"accents linked to a solid group keep their background" test guard that.
+
+### Q6: A fresh start is compared with a theme change, for every Curated theme
+
+For each Curated theme, the test boots a fresh Neovim with that theme saved and loads every plugin.
+It compares every highlight group, and the drawn statusline, with the same theme applied after
+everything had loaded.
+
+- **Rejected B, a sample of themes:** the startup bug varied per theme (nord the whole bar, cendre
+  two cells), and the report came from nord.
+- **Rejected C, the Float sweep in a fresh start per theme:** this doubles the slowest spec. The
+  comparison proves the invariant (a fresh start == a theme change), so the in-process sweep's
+  result carries over.
+- **Trade-off accepted:** about 4 more minutes in the full suite (about 5 s per boot, 44 themes).
+
+**Changed when the spec was written:** the user chose to test at the boot seam only. The Float
+sweep and the comparison now both run inside one fresh Neovim per Curated theme: it starts with the
+theme saved, sweeps the floats (loading Late plugins as a user would), loads every plugin, then
+compares its highlight table with the same theme applied again. This replaces the in-process sweep
+and costs more suite time than the estimate above.
+
+### Q8: The restyle after a plugin load is the whole look, and the comparison checks every attribute
+
+The restyle runs the whole scheduled pass: Transparency, the Tint, the italics, the Extra italics
+and lualine. The startup comparison checks every attribute, not only backgrounds.
+
+- **Rejected B, Transparency only, comparing backgrounds:** this leaves the same class of startup bug
+  for colour and style. The Explorer's cursor line would have no Tint, or the breadcrumbs no
+  italics, until the next theme change.
+- **Risk:** a plugin that sets a group differently at load on purpose would fail the comparison and
+  needs a named exception.
+
+## Routine choices
+
+- **Q1, which notifications:** not known, so the Float sweep covers every float (D).
+- **Q4, what the Float sweep opens (A):** every float the config shows, which is:
+  - the cmdline popup in each format (`:`, `/`, `?`, `:!`, `:lua`, `:help`, `input()`);
+  - noice's confirm and message popups;
+  - Snacks' notifications at each level, and their history;
+  - LSP progress, hover and signature help;
+  - which-key, Lazy and Mason;
+  - the picker and input, and blink's menu and docs;
+  - the Explorer float, the Terminal manager and the Buffer list;
+  - the Habit tips float, the cheat sheet and the Runner.
+
+  For each float, the check resolves everything the window draws with: what its `winhighlight` maps
+  `Normal`, `NormalFloat`, `FloatBorder`, `FloatTitle` and `FloatFooter` to, plus every highlight
+  its text and virtual text use. Anything with a background fails, except the Q7 accents.
+- **Q7, accents inside a float that keep their background (A):**
+  - the selected item (the Tint);
+  - the scrollbar thumb, the cursor and search matches;
+  - noice's confirm buttons (`NoiceFormatConfirm*`) and progress bar (`NoiceFormatProgressDone/Todo`);
+  - the picker's window labels (`SnacksPickerPickWin`).
+
+## Verified facts
+
+- noice's defaults (`noice/config/highlights.lua`): `CmdlineIcon = "DiagnosticSignInfo"`,
+  `CmdlinePopupBorder = "DiagnosticSignInfo"`, `CmdlinePopupTitle = "DiagnosticSignInfo"`, and
+  `…Search = "DiagnosticSignWarn"`.
+- `make_transparent` (`lua/theme.lua`) breaks a link only for panel groups whose name contains
+  "Normal" and whose target has a background, and for In-text blocks.
+- `nvim__inspect_cell` can't be trusted for what's drawn: it reads floats' grids with no attributes,
+  and a cell drawn before a highlight was defined decodes through whatever group its attribute
+  number stands for now. lualine defines highlights while it draws, so the statusline's cells read
+  back as unrelated groups (barbar's `BufferCurrentIndex`). Checks resolve highlights instead: the
+  statusline through `nvim_eval_statusline`, floats through their `winhighlight` and extmarks.
+- The lualine theme is the function `require("theme").lualine`, which lualine calls on setup and on
+  each theme change.
+- neo-tree defines its groups only once first used (`require("neo-tree").ensure_config()`). Snacks'
+  notifier loads on the first notification.
+
+## Risks
+
+- A plugin that names an accent `…Title`, `…Icon` or `…Prompt` and links it to a solid group loses
+  that accent. Example: a selected-tab title linked to `TabLineSel`.
+- The Float sweep's openers depend on plugin APIs (noice, Snacks, blink, lspsaga), and may break
+  when a plugin updates.
+- Restyling on every `LazyLoad` costs startup time; measure it, and coalesce bursts into one pass
+  per tick if it's noticeable.
+- The startup comparison may flag groups a plugin sets on purpose at load time; each gets a named
+  exception.
+- The suite gets about 4+ minutes slower.
+
+## Deferred
+
+None.
+
+## Open threads
+
+- Which notifications the user saw with a background is unconfirmed. If the Float sweep finds
+  nothing for Snacks' notifications on any theme, ask for the theme and a screenshot.
+
+## Found during implementation
+
+- **The startup statusline was a probe artifact.** The cells the probe read as solid decode through
+  unrelated groups (see Verified facts). Evaluated with `nvim_eval_statusline`, the statusline draws
+  with no background on every Curated theme at startup. Restyling on each plugin load already
+  existed (`LazyLoad`, `VeryLazy`). It now runs once per tick instead of once per plugin (about 70
+  at startup). Applying the Tint there turned out unneeded: Late plugins link to the tinted groups.
+- **Theme variants were saved as their family.** kanagawa-dragon names itself `kanagawa`, and
+  evergarden-spring and -winter name themselves `evergarden`. The config saved and restored
+  `colors_name`, so picking kanagawa-dragon came back as kanagawa (wave) on the next start or theme
+  change. The theme hook now names a theme as chosen when its colours name it after its family. It
+  doesn't rename the Mix, which names itself a tick later. A default like `oasis` stays the variant
+  it is (`oasis-moonlight`).
+- **What the startup comparison leaves out:**
+  - groups only one side defines (plugins that define theirs on first use, or don't define them
+    again after a theme change);
+  - the `default` flag;
+  - the cursors, which modes.nvim colours per mode;
+  - which-key's icons, linked to mini.icons' colours only as which-key loads.
+- **The Frame's words are narrower than Q5's list.** "Icon" matched dropbar's breadcrumb icons and
+  which-key's icons. Breaking dropbar's links (to WinBarNC) dropped their italics. The Frame's icon
+  is the prompt's, so the words are Border, Title, Footer, Prompt, CmdlineIcon and InputIcon.
+- **A Frame or panel link is broken only when its final target keeps its background.** A target that
+  is cleared too (the diagnostic signs in the sign column, WinBar) ends up transparent anyway, and the link
+  keeps following what's done to it next. Copying it early froze a stale copy: neo-tree's title bar
+  lost WinBar's italics, depending on the order the groups were walked. With the diagnostic signs
+  cleared, kanagawa's cmdline popup is fixed through the link. No Curated theme needs the Frame rule
+  today, so a test with fixture groups covers it.
+- **nordic's solid search icon was hidden, not undrawn.** noice draws the icon as virtual text in
+  every cmdline view, the bottom one included. "Search" in the Keep list matched
+  `NoiceCmdlineIconSearch`, so Transparency kept it, and the Float sweep's accent check let it pass.
+  A Frame part is now never an accent, in both (found by the whole-branch review).
+- **The notifications' background was `ErrorMsg`.** Snacks' error notifications, and noice's error
+  messages, draw with `ErrorMsg`. nord (the user's theme), every oasis variant, onedark, oldworld,
+  palenight, vaporwave and others give it a solid block. The first probe only sent info and warn
+  notifications, so it missed this. `WarningMsg` is the same on nord: noice's warnings and Mason's
+  warning text. Both are now cleared: noice and the notifier draw every message in a float, and
+  there's no classic message area to keep a block for.
+- **The Mix flattens links.** converge records noice's message level label (`NoiceFormatLevel*`,
+  linked to an In-text block) as fixed colours, so the Mix kept the block that other themes lose
+  through the link. The `NoiceFormatLevel` prefix is now cleared.
+- **The accents a float keeps, as the sweep found them**, extend Q7's list:
+  - signature help's active parameter;
+  - scrollbar tracks (the Baseline already keeps `PmenuSbar`);
+  - Lazy's and Mason's tab buttons and blocks, which transparency_spec already treated as chips.
+- **The Float sweep resolves links itself.** `nvim_get_hl(…, link = false)` follows the current
+  window's 'winhighlight', so dropbar's dimmed icons for windows that aren't current leaked into
+  the comparison.
+- **More is left out of the startup comparison:** lualine's component groups (redrawn as they're
+  drawn), and Vim's syntax files' groups (lowercase names), which treesitter replaces.
+- **The Runner's window is a split, not a float**, so the sweep checks every window, splits
+  included (noice's split for long messages too).
+- **What the review changed, and what it left:**
+  - The Float sweep's accents are named exactly (Mason's and Lazy's blocks and buttons by name), not
+    by "Block" or "Button" anywhere in a name.
+  - The sweep also checks a window's line, sign and number highlights and its virtual lines.
+  - Q3's lualine refresh turned out unneeded: lualine rebuilds its theme on its own ColorScheme
+    hook and when it sets up, and the statusline check passes on every theme without it.
+  - The restyle for Late plugins has no reading guard: converge's reads run synchronously, so the
+    restyle, a tick later, never runs during one.
+  - The test keeps its own accent list and link walk rather than reading `lua/theme.lua`'s, so it
+    stays an independent check of what's drawn.
+
+## Found in the whole-branch review
+
+- **The startup comparison now catches a group that's empty at startup and drawn on a background
+  after a theme change**, such as the Tint missing from a Late plugin's groups. It still skips a
+  group solid at startup and empty after a change, because plugins that set their groups once
+  (Mason, crates, litee, blink's hacks) look like that. The Float sweep checks the floats it opens
+  at startup, so a group solid at startup outside those floats (crates', litee's, aerial's
+  windows, which the sweep doesn't open) goes unchecked: a known gap.
+- **The sweep sees highlights drawn by decoration providers:** blink's menu items, and treesitter
+  in hover and docs. Their extmarks only exist while a window is drawn, so the check wraps
+  `nvim_buf_set_extmark` around a full redraw and records them.
+- **Restyling Late plugins skips a load during a Theme read.** A read loads the theme's plugin,
+  which isn't a plugin to restyle. Loads in one tick still cost one pass. A test now covers both.
+- **A popup that never shows fails saying so**, with `h.drive`'s own error after it.

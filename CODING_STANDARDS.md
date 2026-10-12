@@ -4,7 +4,7 @@ Judgement calls a reviewer applies to every change. Anything a tool enforces (st
 
 ## which-key descriptions start with a verb, in Title Case
 
-A key's `desc` names the action it takes: a verb first, every word capitalised. A key that opens a status view may use a plain noun label instead.
+A key's `desc` names the action it takes: a verb first, every word capitalised but the short joining words (to, in, of, on, and, or, a, the), unless one comes first. A key that opens a status view may use a plain noun label instead.
 
 Why: which-key lists a group's keys side by side, so one shape lets you scan them as a list of actions.
 

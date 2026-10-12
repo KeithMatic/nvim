@@ -89,15 +89,7 @@ end)
 
 h.test("a fresh start restores the Extra italics", function()
   h.with_state('{"theme":"catppuccin-mocha","extra_italics":{"parameters":true}}', function()
-    local root = vim.fs.dirname(vim.fs.dirname(vim.env.TEST_SPEC))
-    local cmd = { "nvim", "--headless", "--cmd", "luafile " .. root .. "/tests/harness.lua" }
-    local env = {
-      TEST_SPEC = root .. "/tests/theme/boot.lua",
-      EXPECT_THEME = "catppuccin-mocha",
-      EXPECT_ITALIC = vim.json.encode({ ["@variable.parameter"] = true }),
-    }
-    local result = vim.system(cmd, { env = env, text = true }):wait(60000)
-    h.eq(0, result.code, "second instance:\n" .. (result.stdout or "") .. (result.stderr or ""))
+    h.boots_with("catppuccin-mocha", { EXPECT_ITALIC = vim.json.encode({ ["@variable.parameter"] = true }) })
   end)
 end)
 
