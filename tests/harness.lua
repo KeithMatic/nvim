@@ -178,6 +178,25 @@ end
 local state_file = vim.fn.stdpath("state") .. "/theme.json"
 local toggle_state_file = vim.fn.stdpath("state") .. "/toggle-state.json"
 
+-- The tests folder, for booting a second Neovim from any spec.
+local tests_dir = vim.fs.dirname(debug.getinfo(1, "S").source:sub(2))
+
+--- Boot a second headless Neovim on this config, running `spec` (a path in the
+--- tests folder) with `env` in its environment, and assert that every test it
+--- runs passes. It shares this instance's sandbox, so it reads the state this
+--- instance saved.
+---@param spec string e.g. "theme/boot.lua"
+---@param env? table<string, string>
+---@param timeout? integer ms, default 60000
+function M.boot(spec, env, timeout)
+  local cmd = { "nvim", "--headless", "--cmd", "luafile " .. tests_dir .. "/harness.lua" }
+  env = vim.tbl_extend("force", env or {}, { TEST_SPEC = tests_dir .. "/" .. spec })
+  local result = vim.system(cmd, { env = env, text = true }):wait(timeout or 60000)
+  -- Its messages can run long: the last of them are enough to see why it failed.
+  local messages = vim.list_slice(vim.split(result.stderr or "", "\n"), -20)
+  M.eq(0, result.code, ("second instance (%s):\n%s%s"):format(spec, result.stdout or "", table.concat(messages, "\n")))
+end
+
 --- Run `fn` with the theme module's saved state set to `content` (nil: no
 --- state file), then put back whatever was saved before, so other specs boot
 --- as they would have.

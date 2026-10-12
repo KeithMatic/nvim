@@ -1,6 +1,6 @@
--- Not a spec of its own: theme_spec.lua and tint_spec.lua boot a second Neovim
--- with this file as its TEST_SPEC, to check what a fresh start restores from
--- the saved state.
+-- Not a spec of its own: theme, tint, mix and theme italics specs boot a second
+-- Neovim with this file as its TEST_SPEC (h.boot), to check what a fresh start
+-- restores from the saved state.
 local h = require("harness")
 
 h.test("boots with " .. vim.env.EXPECT_THEME .. " and no errors", function()
@@ -13,6 +13,14 @@ for group, expected in pairs(vim.json.decode(vim.env.EXPECT_BG or "{}")) do
   h.test(("boots with %s's background %s"):format(group, expected), function()
     local bg = vim.api.nvim_get_hl(0, { name = group, link = false }).bg
     h.eq(expected, bg and ("#%06x"):format(bg))
+  end)
+end
+
+-- Optionally, the colours some groups should boot with: JSON, group name to "#rrggbb".
+for group, expected in pairs(vim.json.decode(vim.env.EXPECT_FG or "{}")) do
+  h.test(("boots with %s's colour %s"):format(group, expected), function()
+    local fg = vim.api.nvim_get_hl(0, { name = group, link = false }).fg
+    h.eq(expected, fg and ("#%06x"):format(fg))
   end)
 end
 

@@ -47,11 +47,7 @@ end
 --- Boot a second headless Neovim on this config and assert that it starts with
 --- `theme` and no errors (see theme_spec.lua).
 local function assert_boots_with(theme)
-  local root = vim.fs.dirname(vim.fs.dirname(vim.env.TEST_SPEC))
-  local cmd = { "nvim", "--headless", "--cmd", "luafile " .. root .. "/tests/harness.lua" }
-  local env = { TEST_SPEC = root .. "/tests/theme/boot.lua", EXPECT_THEME = theme }
-  local result = vim.system(cmd, { env = env, text = true }):wait(60000)
-  h.eq(0, result.code, "second instance:\n" .. (result.stdout or "") .. (result.stderr or ""))
+  h.boot("theme/boot.lua", { EXPECT_THEME = theme })
 end
 
 --- A local theme plugin: <prefix>-dark and <prefix>-dim (dark), <prefix>-light

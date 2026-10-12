@@ -7,15 +7,10 @@ local h = require("harness")
 local theme = require("theme")
 theme.detect()
 
-local root = vim.fs.dirname(vim.fs.dirname(vim.env.TEST_SPEC))
-
 for _, name in ipairs(theme.curated()) do
   h.test(name .. ": a fresh start looks as applying it does", function()
     h.with_state(vim.json.encode({ theme = name }), function()
-      local cmd = { "nvim", "--headless", "--cmd", "luafile " .. root .. "/tests/harness.lua" }
-      local env = { TEST_SPEC = root .. "/tests/startup/boot.lua", EXPECT_THEME = name }
-      local result = vim.system(cmd, { env = env, text = true }):wait(120000)
-      h.eq(0, result.code, "fresh start:\n" .. (result.stdout or ""))
+      h.boot("startup/boot.lua", { EXPECT_THEME = name }, 120000)
     end)
   end)
 end
