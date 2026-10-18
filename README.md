@@ -87,8 +87,9 @@ own. The words used below (Tint, Layer, Buffer sticks, ...) are defined in [CONT
 
 - **Smart semicolon**: in C-like languages, typing `;` mid-line puts it at the end of the code.
   Typing `;` again straight away moves it back to where the cursor was.
-- **Tabout**: `<Tab>` moves past a closing bracket or quote. It's part of the completion menu's
-  `<Tab>` chain.
+- **Tabout**: `<Tab>` moves past the closer under the cursor: a closing bracket (`)`, `]`, `}`,
+  `>`), a quote, or one of `;` `:` `,` `.` `=` `-`. It's part of the completion menu's `<Tab>`
+  chain.
 - **Menu keys**: `<C-h>`/`<C-j>`/`<C-k>`/`<C-l>` dismiss, move through and accept the completion menu,
   and move the cursor when no menu is open. The same keys walk the command-line history and the
   Database drawer.
@@ -270,7 +271,7 @@ any prefix.
 | --- | --- |
 | `jj` / `jk` ★ | Leave insert mode or the command line |
 | `;` ★ | Smart semicolon (insert, C-like languages) |
-| `<Tab>` ★ | Tab out of a bracket or quote (insert) |
+| `<Tab>` ★ | Tab out of a bracket, quote or punctuation (insert) |
 | `<C-h>` / `<C-j>` / `<C-k>` / `<C-l>` ★ | Menu keys: dismiss / next / previous / accept (insert, command line) |
 | `<C-q>` ★ | Hide / show snippet suggestions (insert, with the completion menu open) |
 | `<M-/>` | Toggle a line comment (insert) |

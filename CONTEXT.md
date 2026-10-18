@@ -229,7 +229,7 @@ _Avoid_: Code runner, executor
 A `;` typed mid-line lands at the end of the code; typing it again straight away puts it back where the cursor was.
 
 **Tabout**:
-Tab moves the cursor past a closing bracket or quote.
+Tab moves the cursor past the closer under it: a closing bracket (`)`, `]`, `}`, `>`), a quote, or one of `;` `:` `,` `.` `=` `-`.
 
 **Layer**:
 A named set of one-key actions laid over the usual keys until it's left (<esc> or q), when the
