@@ -262,6 +262,58 @@ function M.with_state(content, fn)
   end
 end
 
+--- A language server inside this Neovim, as `vim.lsp.start`'s `cmd`: it answers
+--- each request with `results[method]`. `on_start` gets the dispatchers, for
+--- sending notifications.
+---@param results table<string, any>
+---@param on_start? fun(dispatchers: table)
+---@return fun(dispatchers: table): table
+function M.fake_server(results, on_start)
+  return function(dispatchers)
+    if on_start then
+      on_start(dispatchers)
+    end
+    local closing = false
+    local id = 0
+    return {
+      request = function(method, _, callback)
+        id = id + 1
+        vim.schedule(function()
+          callback(nil, results[method])
+        end)
+        return true, id
+      end,
+      notify = function(method)
+        closing = closing or method == "exit"
+        return true
+      end,
+      is_closing = function()
+        return closing
+      end,
+      terminate = function()
+        closing = true
+      end,
+    }
+  end
+end
+
+--- Run `fn` with no saved toggle state, then put back whatever was saved.
+---@param fn fun()
+function M.without_saved_toggles(fn)
+  local before = vim.fn.filereadable(toggle_state_file) == 1 and vim.fn.readfile(toggle_state_file, "b") or nil
+  require("toggle_state").reset()
+  local ok, err = pcall(fn)
+  if before then
+    vim.fn.writefile(before, toggle_state_file, "b")
+  else
+    vim.fn.delete(toggle_state_file)
+  end
+  require("toggle_state").reload()
+  if not ok then
+    error(err, 0)
+  end
+end
+
 --- Every error the user would have seen: error notifications (early ones, and
 --- the notifier's history), error messages, and the last `v:errmsg`.
 ---@return string[]

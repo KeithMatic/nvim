@@ -241,6 +241,7 @@ local function ordinary()
   persist("ui.smooth_scroll", Snacks.toggle.scroll(), "<leader>uS")
   require("cursor_line").setup()
   persist("ui.cursor_line", require("cursor_line").toggle(), "<leader>uH")
+  persist("completion.snippets", require("snippet_toggle").toggle(), "<leader>uk")
 end
 
 -- A fresh process starts these off already, so their saved state is never
