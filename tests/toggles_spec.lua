@@ -56,17 +56,7 @@ h.test("a toggle saves its new state", function()
   require("toggle_state").reload()
 end)
 
---- Run `fn` with no saved toggle state, then put back whatever was saved.
-local function without_saved_toggles(fn)
-  local before = saved(toggle_file)
-  require("toggle_state").reset()
-  local ok, err = pcall(fn)
-  restore(toggle_file, before)
-  require("toggle_state").reload()
-  if not ok then
-    error(err, 0)
-  end
-end
+local without_saved_toggles = h.without_saved_toggles
 
 --- Edit a Lua file opened after boot, as from the Dashboard.
 local function open_lua()
@@ -138,6 +128,7 @@ end)
 
 h.test("a fresh process restores ordinary toggles and not temporary modes", function()
   child("saved", {
+    ["completion.snippets"] = false,
     ["diagnostics.enabled"] = false,
     ["editor.spell"] = true,
     ["editor.wrap"] = false,

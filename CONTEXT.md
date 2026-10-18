@@ -206,8 +206,20 @@ _Avoid_: Smoothcursor, smear
 
 ### Editing
 
+**Completion menu**:
+blink.cmp's list of suggestions while typing in Insert mode, the menu the **Menu keys** drive.
+_Avoid_: popup, autocomplete box, pum
+
 **Menu keys**:
-The Ctrl-h/j/k/l keys that drive an open completion menu (dismiss, next, previous, accept) and move the cursor when none is open.
+The Ctrl-h/j/k/l keys that drive an open **Completion menu** (dismiss, next, previous, accept) and move the cursor when none is open.
+
+**Snippet suggestion**:
+An entry in the **Completion menu** that inserts a template with jump points, shown with the Snippet icon; it comes from friendly-snippets or from a language server.
+_Avoid_: snippet completion, template, abbreviation
+
+**Snippet toggle**:
+The saved switch that hides or shows **Snippet suggestions**: `<leader>uk`, or Ctrl-q while the **Completion menu** is open.
+_Avoid_: snippet mode, snippets on/off
 
 **Runner**:
 Saves the current file and runs it in a reused bottom terminal.

@@ -92,6 +92,9 @@ own. The words used below (Tint, Layer, Buffer sticks, ...) are defined in [CONT
 - **Menu keys**: `<C-h>`/`<C-j>`/`<C-k>`/`<C-l>` dismiss, move through and accept the completion menu,
   and move the cursor when no menu is open. The same keys walk the command-line history and the
   Database drawer.
+- **Snippet toggle** (`<leader>uk`, or `<C-q>` while the completion menu is open): hide or show
+  snippet suggestions, from friendly-snippets and language servers alike. A language server's
+  function calls still fill in their arguments. Remembered across sessions.
 - **Better escape**: `jj` or `jk` leave insert mode and the command line, with no typing delay.
 - **Smart strings**: typing `{` inside a Python string makes it an f-string, and `${` inside a JS/TS
   quoted string makes it a template literal.
@@ -269,6 +272,7 @@ any prefix.
 | `;` ★ | Smart semicolon (insert, C-like languages) |
 | `<Tab>` ★ | Tab out of a bracket or quote (insert) |
 | `<C-h>` / `<C-j>` / `<C-k>` / `<C-l>` ★ | Menu keys: dismiss / next / previous / accept (insert, command line) |
+| `<C-q>` ★ | Hide / show snippet suggestions (insert, with the completion menu open) |
 | `<M-/>` | Toggle a line comment (insert) |
 | `gc` / `gcc` | Line comment by motion / current line |
 | `gb` / `gbc` | Block comment by motion / current line |
@@ -398,6 +402,7 @@ profiler), which always start off. `:ToggleStateReset` puts them all back to the
 | `<leader>uN` ★ | Statusline filename |
 | `<leader>uP` ★ | Motion hints |
 | `<leader>ut` ★ | Habit tips |
+| `<leader>uk` ★ | Snippet suggestions in the completion menu |
 | `<leader>ua` | Animations |
 | `<leader>uS` | Smooth scroll |
 | `<leader>uz` / `<leader>uZ` | Zen mode / zoom (`<leader>wm` too) |

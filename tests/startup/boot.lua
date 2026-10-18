@@ -331,53 +331,31 @@ end
 -- A language server in this Neovim, for hover, signature help, LSP progress and
 -- completion docs: `greet`, documented.
 local lsp_progress
-local function fake_server(dispatchers)
-  local closing = false
-  local results = {
-    initialize = {
-      capabilities = {
-        hoverProvider = true,
-        signatureHelpProvider = { triggerCharacters = { "(" } },
-        completionProvider = {},
-      },
+local fake_server = h.fake_server({
+  initialize = {
+    capabilities = {
+      hoverProvider = true,
+      signatureHelpProvider = { triggerCharacters = { "(" } },
+      completionProvider = {},
     },
-    ["textDocument/hover"] = {
-      contents = { kind = "markdown", value = "```lua\nfunction greet(name: string)\n```\nSays hello." },
-    },
-    ["textDocument/signatureHelp"] = {
-      signatures = { { label = "greet(name: string)", parameters = { { label = "name: string" } } } },
-      activeSignature = 0,
-      activeParameter = 0,
-    },
-    ["textDocument/completion"] = {
-      isIncomplete = false,
-      items = { { label = "greeting", kind = 6, documentation = { kind = "markdown", value = "A **greeting**." } } },
-    },
-  }
+  },
+  ["textDocument/hover"] = {
+    contents = { kind = "markdown", value = "```lua\nfunction greet(name: string)\n```\nSays hello." },
+  },
+  ["textDocument/signatureHelp"] = {
+    signatures = { { label = "greet(name: string)", parameters = { { label = "name: string" } } } },
+    activeSignature = 0,
+    activeParameter = 0,
+  },
+  ["textDocument/completion"] = {
+    isIncomplete = false,
+    items = { { label = "greeting", kind = 6, documentation = { kind = "markdown", value = "A **greeting**." } } },
+  },
+}, function(dispatchers)
   lsp_progress = function(kind, title)
     dispatchers.notification("$/progress", { token = "sweep", value = { kind = kind, title = title, percentage = 40 } })
   end
-  local id = 0
-  return {
-    request = function(method, _, callback)
-      id = id + 1
-      vim.schedule(function()
-        callback(nil, results[method])
-      end)
-      return true, id
-    end,
-    notify = function(method)
-      closing = closing or method == "exit"
-      return true
-    end,
-    is_closing = function()
-      return closing
-    end,
-    terminate = function()
-      closing = true
-    end,
-  }
-end
+end)
 
 --- A Lua buffer with the fake language server attached, in the current window.
 local function lsp_buffer()

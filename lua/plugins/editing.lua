@@ -41,6 +41,14 @@ return {
         ["<C-j>"] = { "select_next", insert_move("<Down>"), "fallback" },
         ["<C-k>"] = { "select_prev", insert_move("<Up>"), "fallback" },
         ["<C-l>"] = { "select_and_accept", insert_move("<C-g>U<Right>"), "fallback" },
+        -- The Snippet toggle without leaving Insert mode, which would autosave.
+        -- With no menu, <C-q> keeps Vim's meaning (insert a character literally).
+        ["<C-q>"] = {
+          function()
+            return require("snippet_toggle").flip_in_menu()
+          end,
+          "fallback",
+        },
         -- The only insert-mode <Tab>: accept → snippet forward → tabout → indent.
         -- Setting it here also stops LazyVim adding its own <Tab> chain, which
         -- would accept AI suggestions (no AI completion extra is enabled;
@@ -53,6 +61,12 @@ return {
           end,
           "fallback",
         },
+      },
+      -- Snippet suggestions go while the Snippet toggle hides them.
+      sources = {
+        transform_items = function(ctx, items)
+          return require("snippet_toggle").filter(ctx, items)
+        end,
       },
       -- The Menu keys in the cmdline: with no menu, <C-j>/<C-k> recall
       -- history as the arrow keys do, and <C-h>/<C-l> move the cursor.

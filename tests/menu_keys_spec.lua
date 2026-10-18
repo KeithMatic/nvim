@@ -128,6 +128,126 @@ h.test("<C-h> and <C-l> moves stay in the current undo step", function()
   h.eq({ "abcd" }, vim.api.nvim_buf_get_lines(0, 0, -1, false), "one undo removes the whole insert")
 end)
 
+-- Snippet toggle
+
+--- The open menu's items, sorted, each as "label (Kind)".
+local function menu_items()
+  local kinds = require("blink.cmp.types").CompletionItemKind
+  local items = vim.tbl_map(function(item)
+    return ("%s (%s)"):format(item.label, kinds[item.kind])
+  end, require("blink.cmp.completion.list").items)
+  table.sort(items)
+  return items
+end
+
+--- The menu's items after typing `da` below the word `datebook`: the buffer
+--- source offers the word, friendly-snippets' global snippets `date` and co.
+local function menu_after_da()
+  scratch({ "datebook", "" }, { 2, 0 })
+  local items
+  drive("ida", {
+    menu_open,
+    function()
+      items = menu_items()
+    end,
+  })
+  return items
+end
+
+local with_snippets =
+  { "date (Snippet)", "dateDMY (Snippet)", "dateMDY (Snippet)", "datebook (Text)", "datetime (Snippet)" }
+
+h.test("<leader>uk hides Snippet suggestions from the menu, and shows them again", function()
+  h.without_saved_toggles(function()
+    h.eq(with_snippets, menu_after_da(), "shown by default")
+    feed(vim.g.mapleader .. "uk", "mx")
+    h.eq({ "datebook (Text)" }, menu_after_da(), "hidden")
+    feed(vim.g.mapleader .. "uk", "mx")
+    h.eq(with_snippets, menu_after_da(), "shown again")
+  end)
+end)
+
+h.test("<C-q> with the menu open hides Snippet suggestions in place, and shows them again", function()
+  h.without_saved_toggles(function()
+    scratch({ "datebook", "" }, { 2, 0 })
+    local hidden, shown
+    drive("ida", {
+      menu_open,
+      -- Unmapped, <C-q> would take the closing <Esc> as a literal character.
+      function()
+        assert(vim.fn.maparg("<C-q>", "i") ~= "", "<C-q> isn't mapped in Insert mode")
+      end,
+      "<C-q>",
+      function()
+        return menu_open() and #menu_items() == 1 and menu_items()
+      end,
+      function()
+        hidden = { menu_items(), vim.api.nvim_get_current_line() }
+      end,
+      "<C-q>",
+      function()
+        return menu_open() and #menu_items() > 1
+      end,
+      function()
+        shown = { menu_items(), vim.api.nvim_get_current_line() }
+      end,
+    })
+    h.eq({ { "datebook (Text)" }, "da" }, hidden, "menu and typed word with snippets hidden")
+    h.eq({ with_snippets, "da" }, shown, "menu and typed word with snippets shown again")
+  end)
+end)
+
+h.test("hidden Snippet suggestions include a language server's, but not its functions", function()
+  scratch({ "" }, { 1, 0 })
+  local client = assert(vim.lsp.start({
+    name = "snippets",
+    root_dir = vim.fn.getcwd(),
+    cmd = h.fake_server({
+      initialize = { capabilities = { completionProvider = {} } },
+      ["textDocument/completion"] = {
+        isIncomplete = false,
+        items = {
+          { label = "loopover", kind = 15, insertTextFormat = 2, insertText = "for ${1:i} do\n\t$0\nend" },
+          -- A call that expands with its arguments, as lua_ls's callSnippet sends.
+          { label = "loopcount", kind = 3, insertTextFormat = 2, insertText = "loopcount(${1:n})" },
+        },
+      },
+    }),
+  }))
+  vim.wait(3000, function()
+    return vim.lsp.get_client_by_id(client).initialized
+  end, 20)
+  local function menu_after_loop()
+    vim.api.nvim_buf_set_lines(0, 0, -1, false, { "" })
+    local items
+    drive("iloop", {
+      menu_open,
+      function()
+        items = menu_items()
+      end,
+    })
+    return items
+  end
+  h.without_saved_toggles(function()
+    h.eq({ "loopcount (Function)", "loopover (Snippet)" }, menu_after_loop(), "shown")
+    feed(vim.g.mapleader .. "uk", "mx")
+    h.eq({ "loopcount (Function)" }, menu_after_loop(), "hidden")
+    feed(vim.g.mapleader .. "uk", "mx")
+  end)
+  vim.lsp.stop_client(client, true)
+end)
+
+h.test("<C-q> with no menu open inserts the next key literally, and leaves the Snippet toggle", function()
+  h.without_saved_toggles(function()
+    scratch({ "" }, { 1, 0 })
+    -- <C-a> is mapped in Insert mode (to the line's start), so only a literal
+    -- insert puts its character in the line.
+    feed("i<C-q><C-a><Esc>", "xt")
+    h.eq({ "\1" }, vim.api.nvim_buf_get_lines(0, 0, -1, false))
+    h.eq(with_snippets, menu_after_da(), "Snippet suggestions still shown")
+  end)
+end)
+
 -- Cmdline
 
 h.test("<C-k> and <C-j> in the cmdline with no menu recall history", function()
