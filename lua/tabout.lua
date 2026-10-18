@@ -2,7 +2,21 @@
 -- chain (see plugins/editing.lua).
 local M = {}
 
-local closers = { [")"] = true, ["]"] = true, ["}"] = true, ['"'] = true, ["'"] = true, ["`"] = true }
+local closers = {
+  [")"] = true,
+  ["]"] = true,
+  ["}"] = true,
+  [">"] = true,
+  ['"'] = true,
+  ["'"] = true,
+  ["`"] = true,
+  [";"] = true,
+  [":"] = true,
+  [","] = true,
+  ["."] = true,
+  ["="] = true,
+  ["-"] = true,
+}
 
 --- In insert mode, when the character under the cursor is a closer, returns
 --- the keys that move past it; otherwise nil, so the Tab chain falls through.
